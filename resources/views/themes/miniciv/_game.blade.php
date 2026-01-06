@@ -37,12 +37,7 @@
 
     <div class="miniciv-wrapper">
         <div class="miniciv-panel">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
-                <div>
-                    <div class="miniciv-badge">MINICIV</div>
-                    <div style="font-weight:800;font-size:1.05rem;margin-top:0.35rem;">Tiny Civilization</div>
-                </div>
-            </div>
+            <!-- header removed per request -->
 
             <div class="miniciv-controls">
                 <div class="miniciv-resources" id="resources"></div>
