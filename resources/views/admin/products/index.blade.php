@@ -20,7 +20,7 @@
             <a class="{{ request()->routeIs('admin.servers.*') ? 'active' : '' }}" href="{{ route('admin.servers.index') }}">Servers</a>
         @endif
         <a class="{{ request()->routeIs('admin.tools.license-validation') ? 'active' : '' }}" href="{{ route('admin.tools.license-validation') }}">License Validation</a>
-        <a href="{{ route('admin.products.create') }}" class="{{ request()->routeIs('admin.products.create') ? 'active' : '' }}">+ New product</a>
+        <a href="{{ route('admin.products.create') }}{{ request()->getQueryString() ? ('?' . request()->getQueryString()) : '' }}" class="{{ request()->routeIs('admin.products.create') ? 'active' : '' }}">+ New product</a>
     </div>
 </header>
 
@@ -56,10 +56,12 @@
                         <td style="padding:0.9rem 0.75rem;">{{ $product->category ?? '—' }}</td>
                         <td style="padding:0.9rem 0.75rem;max-width:320px;">{{ $product->description ? \Illuminate\Support\Str::limit($product->description, 120) : '—' }}</td>
                         <td style="padding:0.9rem 0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
-                            <a class="link" href="{{ route('admin.products.edit', $product) }}">Edit</a>
+                            <a class="link" href="{{ route('admin.products.edit', $product) }}{{ request()->getQueryString() ? ('?' . request()->getQueryString()) : '' }}">Edit</a>
                             <form method="POST" action="{{ route('admin.products.destroy', $product) }}" onsubmit="return confirm('Delete this product?');">
                                 @csrf
                                 @method('DELETE')
+                                <input type="hidden" name="page" value="{{ request()->query('page') }}">
+                                <input type="hidden" name="per_page" value="{{ request()->query('per_page') }}">
                                 <button type="submit" style="background:none;border:none;color:var(--error);cursor:pointer;padding:0;">Delete</button>
                             </form>
                         </td>
