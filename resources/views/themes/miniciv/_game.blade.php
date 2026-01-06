@@ -1,8 +1,8 @@
 <section class="card">
     <style>
-        :root { --mc-bg: var(--bg, #071028); --mc-panel: var(--panel, #0b1220); --mc-accent: var(--primary, #ff3b81); --mc-action: var(--accent, #00d1ff); }
+        :root { --mc-bg: #f4efe1; --mc-panel: #e6dcc3; --mc-accent: #b07a2b; --mc-action: #6b8a2f; }
         .miniciv-wrapper { display:flex; flex-direction:column; gap:1rem; align-items:stretch; }
-        .miniciv-panel { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06)); padding:0.6rem; border-radius:10px; border:1px solid rgba(255,255,255,0.03); width:100%; }
+        .miniciv-panel { background: var(--mc-panel); padding:0.6rem; border-radius:10px; border:1px solid rgba(0,0,0,0.06); width:100%; color:#1b1b1b; }
         .miniciv-controls { display:flex;flex-direction:column;gap:0.75rem; }
         .miniciv-resources { display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.25rem; }
         .miniciv-badge { background: linear-gradient(90deg,var(--mc-accent), rgba(255,59,129,0.85)); color:#fff; padding:0.35rem 0.6rem; border-radius:8px; font-weight:800; }
