@@ -2,12 +2,12 @@
     <style>
         :root { --mc-bg: var(--bg, #071028); --mc-panel: var(--panel, #0b1220); --mc-accent: var(--primary, #ff3b81); --mc-action: var(--accent, #00d1ff); }
         .miniciv-wrapper { display:flex; flex-direction:column; gap:1rem; align-items:stretch; }
-        .miniciv-panel { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06)); padding:1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.03); width:100%; }
+        .miniciv-panel { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06)); padding:0.6rem; border-radius:10px; border:1px solid rgba(255,255,255,0.03); width:100%; }
         .miniciv-controls { display:flex;flex-direction:column;gap:0.75rem; }
         .miniciv-resources { display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.25rem; }
         .miniciv-badge { background: linear-gradient(90deg,var(--mc-accent), rgba(255,59,129,0.85)); color:#fff; padding:0.35rem 0.6rem; border-radius:8px; font-weight:800; }
-        .miniciv-actions { display:flex;flex-direction:column;gap:0.5rem;margin-top:0.5rem; }
-        .miniciv-actions .play-btn { padding:0.6rem 0.8rem; border-radius:10px; font-weight:800; box-shadow:0 8px 20px rgba(0,0,0,0.45); width:100%; text-align:left; }
+        .miniciv-actions { display:flex;flex-direction:column;gap:0.4rem;margin-top:0.35rem; }
+        .miniciv-actions .play-btn { padding:0.45rem 0.6rem; border-radius:8px; font-weight:800; box-shadow:0 6px 14px rgba(0,0,0,0.35); width:100%; text-align:left; }
         .miniciv-actions .play-btn.active { outline:3px solid rgba(0,209,255,0.09); transform:translateY(-2px); }
         .miniciv-map-wrap { background:var(--mc-panel); padding:1rem; border-radius:12px; }
         .miniciv-map { display:grid; grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); gap:8px; }
@@ -19,7 +19,7 @@
         .miniciv-tile:active { transform:scale(0.995); }
             .miniciv-footer { margin-top:0.75rem; color:rgba(255,255,255,0.75); font-size:0.95rem; }
             @media (max-width:920px) {  }
-            .mc-icon { width:18px; height:18px; vertical-align:middle; margin-right:8px; }
+            .mc-icon { width:16px; height:16px; vertical-align:middle; margin-right:6px; }
     </style>
 
         <!-- Inline SVG icons for dashboard -->
@@ -85,7 +85,7 @@
 
     function fmtBadge(label, value, iconId){
         const icon = iconId ? `<svg class="mc-icon" aria-hidden="true"><use href="#icon-${iconId}" /></svg>` : '';
-        return `<div style="background:rgba(255,255,255,0.03);padding:0.4rem 0.6rem;border-radius:8px;font-weight:700;display:inline-flex;align-items:center;gap:0.4rem;">${icon}<span style=\"white-space:nowrap\">${label}: <strong style=\"margin-left:0.4rem;color:var(--mc-accent)\">${value}</strong></span></div>`;
+        return `<div style="background:rgba(255,255,255,0.03);padding:0.28rem 0.45rem;border-radius:8px;font-weight:700;display:inline-flex;align-items:center;gap:0.35rem;">${icon}<span style=\"white-space:nowrap;font-size:0.95rem\">${label}: <strong style=\"margin-left:0.32rem;color:var(--mc-accent)\">${value}</strong></span></div>`;
     }
 
     function renderResources(){
