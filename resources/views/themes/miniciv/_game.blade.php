@@ -83,6 +83,9 @@
     function renderResources(){
         resEl.innerHTML = `
             ${fmtBadge('Pop', state.population + '/' + (state.houses*2 + 1))}
+            ${fmtBadge('Houses', state.houses)}
+            ${fmtBadge('Farms', state.farms)}
+            ${fmtBadge('Walls', state.walls)}
             ${fmtBadge('Food', state.food)}
             ${fmtBadge('Wood', state.wood)}
             ${fmtBadge('Stone', state.stone)}
