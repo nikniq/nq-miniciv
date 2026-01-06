@@ -268,6 +268,7 @@
         .arcade-tile .play-btn { display:inline-block; background:#00d1ff;color:#021122;padding:0.5rem 0.65rem;border-radius:8px;font-weight:800;text-decoration:none; transition:transform .15s ease, box-shadow .15s ease; box-shadow:0 6px 18px rgba(0,209,255,0.12); }
         .arcade-tile:hover .play-btn { transform:translateY(-3px) scale(1.02); box-shadow:0 12px 34px rgba(0,209,255,0.22); }
     </style>
+        @stack('head')
 </head>
 <body>
     <div class="page">

@@ -3,6 +3,10 @@
 @section('title', 'Games')
 
 @section('content')
+@push('head')
+    <link rel="icon" type="image/svg+xml" href="/favicon-games.svg">
+    <link rel="shortcut icon" href="/favicon-games.svg">
+@endpush
     <style>
         .arcade-hero {
             background: linear-gradient(135deg,#0f172a 0%, #0b1020 40%, #24123b 100%);
