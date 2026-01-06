@@ -17,8 +17,8 @@
         .miniciv-tile.farm { background: linear-gradient(180deg,#8b6b2b,#6b4b1b); }
         .miniciv-tile.wall { background: linear-gradient(180deg,#6b6b6b,#3b3b3b); }
         .miniciv-tile:active { transform:scale(0.995); }
-        .miniciv-footer { margin-top:0.75rem; color:rgba(255,255,255,0.75); font-size:0.95rem; }
-        @media (max-width:920px) { .miniciv-map { grid-template-columns: repeat(auto-fit,minmax(44px,1fr)); } }
+            .miniciv-footer { margin-top:0.75rem; color:rgba(255,255,255,0.75); font-size:0.95rem; }
+            @media (max-width:920px) {  }
     </style>
 
     <div class="miniciv-wrapper">
@@ -51,7 +51,7 @@
         </div>
 
         <div class="miniciv-map-wrap">
-            <div class="miniciv-map" id="map"></div>
+                <!-- map removed per request -->
         </div>
     </div>
 </section>
