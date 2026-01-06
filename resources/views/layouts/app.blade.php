@@ -7,20 +7,23 @@
     <title>{{ config('site.name') }}</title>
     <style>
     :root{
-            --muted: #6b7280;
-            --primary: #2563eb;
-            --primary-dark: #1e40af;
+            --muted: #9aa6b2;
+            --primary: #ff3b81; /* games accent */
+            --primary-dark: #d9336a;
+            --accent-cyan: #00d1ff;
             --error: #dc2626;
             --success: #16a34a;
+            --bg: linear-gradient(135deg,#0f172a 0%, #0b1020 40%, #24123b 100%);
+            --text: #e6f7ff;
+            --panel: linear-gradient(180deg,#0b1220, #071028);
+            --panel-alt: rgba(255,59,129,0.06);
         }
         * { box-sizing: border-box; }
         body {
             margin: 0;
             min-height: 100vh;
             font-family: Figtree, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background: radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.18), transparent 45%),
-                radial-gradient(circle at 80% 0%, rgba(22, 163, 74, 0.15), transparent 40%),
-                var(--bg);
+            background: var(--bg);
             color: var(--text);
         }
         .page {
@@ -46,7 +49,7 @@
             background: var(--panel);
             border-radius: 1.2rem;
             padding: 2rem;
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+            box-shadow: 0 18px 40px rgba(0,0,0,0.55);
         }
         .card.alt {
             background: var(--panel-alt);
@@ -59,9 +62,8 @@
             gap: 0.75rem;
             padding: 0.75rem 1rem;
             border-radius: 999px;
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(12px);
-            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+            background: rgba(255,255,255,0.04);
+            box-shadow: 0 12px 30px rgba(2,6,23,0.45);
         }
         .site-nav a {
             text-decoration: none;
@@ -83,31 +85,31 @@
                 align-items: center;
                 justify-content: center;
                 padding: 0.55rem 0.9rem;
-                border: 1px solid rgba(15, 23, 42, 0.12);
+                border: 1px solid rgba(255,255,255,0.04);
                 border-radius: 0.9rem;
-                background: #fff;
-                box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+                background: rgba(255,255,255,0.02);
+                color: var(--text);
                 transition: transform 120ms ease, box-shadow 120ms ease;
             }
             .site-nav .nav-links a.nav-active {
-                background: var(--primary);
+                background: linear-gradient(135deg,var(--primary),var(--primary-dark));
                 color: #fff;
-                border-color: var(--primary-dark);
-                box-shadow: 0 10px 24px rgba(37, 99, 235, 0.25);
+                border-color: rgba(0,0,0,0.12);
+                box-shadow: 0 10px 24px rgba(0,0,0,0.32);
             }
             .site-nav .nav-links a:hover {
                 transform: translateY(-1px);
-                box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+                box-shadow: 0 10px 24px rgba(0,0,0,0.28);
             }
         .nav-toggle {
             display: none;
             margin-left: auto;
             border-radius: 0.9rem;
             padding: 0.55rem 0.9rem;
-            background: #0f172a;
-            color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
+            background: rgba(255,255,255,0.04);
+            color: var(--text);
+            border: 1px solid rgba(255,255,255,0.06);
+            box-shadow: 0 8px 18px rgba(0,0,0,0.28);
         }
         @media (max-width: 720px) {
             .site-nav {
@@ -178,13 +180,13 @@
             border: none;
             padding: 0.15rem 0.35rem;
             font-size: 1.05rem;
-            color: #ff3b81;
+            color: var(--primary);
             cursor: pointer;
             border-radius: 6px;
         }
         .favorite-btn[aria-pressed="true"] { color: #ff3860; font-weight:700; }
         .favorite-btn .icon { width:18px; height:18px; display:inline-block; vertical-align:middle; }
-        .favorite-btn .icon path { fill: transparent; stroke: #ff3b81; stroke-width:1.4; transition:fill .12s ease, stroke .12s ease; }
+        .favorite-btn .icon path { fill: transparent; stroke: var(--primary); stroke-width:1.4; transition:fill .12s ease, stroke .12s ease; }
         .favorite-btn[aria-pressed="true"] .icon path { fill: #ff3860; stroke: #ff1540; }
         .banner {
             border-radius: 1rem;
@@ -267,6 +269,30 @@
 
         .arcade-tile .play-btn { display:inline-block; background:#00d1ff;color:#021122;padding:0.5rem 0.65rem;border-radius:8px;font-weight:800;text-decoration:none; transition:transform .15s ease, box-shadow .15s ease; box-shadow:0 6px 18px rgba(0,209,255,0.12); }
         .arcade-tile:hover .play-btn { transform:translateY(-3px) scale(1.02); box-shadow:0 12px 34px rgba(0,209,255,0.22); }
+
+        /* Games theme helpers */
+        .arcade-hero {
+            background: linear-gradient(135deg,#0f172a 0%, #0b1020 40%, #24123b 100%);
+            color: var(--text);
+            padding: 3rem 1rem;
+            text-align: center;
+            border-bottom: 6px solid var(--primary);
+        }
+        .arcade-hero h1 { font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; letter-spacing: 2px; font-weight:800; font-size:2.25rem; margin:0.5rem 0; }
+        .arcade-sub { color: rgba(255,214,232,0.95); margin-bottom:1rem; }
+        .arcade-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; padding:1rem; }
+        .arcade-card { background: linear-gradient(180deg,#0b1220, #071028); border:2px solid rgba(255,59,129,0.08); padding:1rem; border-radius:8px; box-shadow: 0 6px 20px rgba(0,0,0,0.5); color:#e6f7ff; }
+        .arcade-card h3 { color:#fff; margin:0 0 0.5rem 0; font-weight:700; }
+        .arcade-badge { display:inline-block; padding:0.25rem 0.5rem; background:var(--primary); color:#fff; border-radius:4px; font-size:0.8rem; font-weight:700; }
+        .play-btn { display:inline-block; margin-top:0.75rem; background:var(--accent-cyan); color:#021122; padding:0.5rem 0.75rem; border-radius:6px; text-decoration:none; font-weight:700; }
+
+        /* Prominent search bar */
+        .games-search-form { display:flex; gap:0.5rem; align-items:center; max-width:960px; margin:0 auto; }
+        .games-search-input { flex:1; padding:0.9rem 1rem; border-radius:10px; border:3px solid rgba(10,10,10,0.92); background:#ffffff; color:#0b1220; font-size:1.05rem; box-shadow:none; }
+        .games-search-input::placeholder { color:rgba(11,18,32,0.45); }
+        .games-clear-btn { background:var(--primary); color:#fff; padding:0.5rem 0.8rem; border-radius:8px; text-decoration:none; font-weight:800; border:2px solid rgba(11,18,32,0.92); }
+
+        @media (min-width:768px){ .arcade-hero h1 { font-size:3rem; } }
     </style>
         @stack('head')
 </head>
