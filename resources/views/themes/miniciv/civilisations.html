@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Civilisations Encountered</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+        .container { max-width: 420px; margin: 40px auto; background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h1 { text-align: center; }
+        #civlist { background: #eaf6fb; padding: 12px; border-radius: 6px; margin-top: 18px; font-size: 18px; text-align: center; }
+        button { margin-top: 18px; padding: 8px 16px; font-size: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Civilisations Encountered</h1>
+        <div id="civlist">Loading...</div>
+        <button onclick="window.location.href='index.html'">Back to Game</button>
+    </div>
+    <script>
+    const DB_NAME = 'miniciv_db';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'game_state';
+    function loadCivilisations() {
+        document.getElementById('civlist').textContent = 'Loading...';
+        const request = window.indexedDB.open(DB_NAME, DB_VERSION);
+        request.onsuccess = function(e) {
+            const db = e.target.result;
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const getReq = store.get('current');
+            getReq.onsuccess = function(ev) {
+                const data = ev.target.result;
+                if (data && typeof data.civilisationsFound === 'number') {
+                    document.getElementById('civlist').textContent = `You have encountered ${data.civilisationsFound} civilisation${data.civilisationsFound === 1 ? '' : 's'}.`;
+                } else {
+                    document.getElementById('civlist').textContent = 'No civilisations encountered yet.';
+                }
+            };
+            getReq.onerror = function() {
+                document.getElementById('civlist').textContent = 'Error reading DB.';
+            };
+        };
+        request.onerror = function() {
+            document.getElementById('civlist').textContent = 'Error opening DB.';
+        };
+    }
+    window.onload = loadCivilisations;
+    </script>
+</body>
+</html>

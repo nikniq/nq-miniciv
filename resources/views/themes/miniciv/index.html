@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Civilisation Game</title>
+    <link rel="stylesheet" href="style.css">
+
+            <!-- Google tag (gtag.js) -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-34RWEG01MV"></script>
+        <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-34RWEG01MV');
+        </script>
+        <!-- End Google Analytics -->
+
+</head>
+<body>
+    <div class="container">
+        <h1>Mini Civilisation</h1>
+        <div id="log"></div>
+        <div id="asset-dashboard">
+            <div class="asset-row">
+                <div class="asset-item"><img src="assets/house.svg" class="asset-icon" alt="House"><span id="houses">0</span></div>
+                <div class="asset-item"><img src="assets/barracks.svg" class="asset-icon" alt="Barracks"><span id="barracks">0</span></div>
+                <div class="asset-item"><img src="assets/farm.svg" class="asset-icon" alt="Farm"><span id="farms">0</span></div>
+                <div class="asset-item"><img src="assets/wall.svg" class="asset-icon" alt="Wall"><span id="walls">0</span></div>
+            </div>
+        </div>
+        <div id="dashboard">
+            <div class="dashboard-row">
+                <div class="dashboard-item"><span class="dash-label">Turn</span><span id="turn">1</span></div>
+                <div class="dashboard-item"><span class="dash-label">Population</span><span id="population">1</span></div>
+                <div class="dashboard-item"><span class="dash-label">Food</span><span id="food">10</span></div>
+                <div class="dashboard-item"><span class="dash-label">Wood</span><span id="wood">10</span></div>
+                <div class="dashboard-item"><span class="dash-label">Stone</span><span id="stone">5</span></div>
+                <div class="dashboard-item"><span class="dash-label">Soldiers</span><span id="soldiers">0</span></div>
+            </div>
+            <div class="dashboard-row">
+                <div class="dashboard-item"><span class="dash-label">Explored</span><span id="explored">0</span></div>
+                <div class="dashboard-item"><span class="dash-label">Civilisations</span><a href="civilisations.html" style="text-decoration:none;color:inherit;"><span id="civilisations">0</span></a></div>
+            </div>
+            <div class="dashboard-row">
+                <div class="dashboard-item" style="flex:2;">
+                    <span class="dash-label">Exploration Progress</span>
+                    <div id="explore-bar-bg"><div id="explore-bar"></div></div>
+                </div>
+            </div>
+        </div>
+        <div id="actions">
+            <button onclick="gather('food')"><span style="text-decoration:underline;">F</span>ood</button>
+            <button onclick="gather('wood')"><span style="text-decoration:underline;">W</span>ood</button>
+            <button onclick="gather('stone')"><span style="text-decoration:underline;">S</span>tone</button>
+            <button onclick="build('house')">Build House (5 Wood, 2 Stone)</button>
+            <button onclick="build('farm')">Build Farm (8 Wood, 5 Stone)</button>
+            <button onclick="build('barracks')">Build Barracks (12 Wood, 10 Stone)</button>
+            <button onclick="build('wall')">Build Wall (6 Wood, 8 Stone)</button>
+            <button id="train-soldier-btn" onclick="trainSoldier()" style="display:none;">Train Soldier (5 Food, 1 Population, Barracks)</button>
+            <button id="explore-btn" onclick="explore()" style="display:none;">Explore (Requires 1 Soldier)</button>
+            <button id="manual-save-btn" onclick="manualSave()">Save Game</button>
+        </div>
+    </div>
+    <script src="game.js"></script>
+    <script>
+function manualSave() {
+    if (typeof saveAfterAction === 'function') saveAfterAction();
+    if (typeof saveSessionState === 'function') saveSessionState();
+    document.getElementById('log').textContent = 'Game saved!';
+}
+</script>
+</body>
+</html>

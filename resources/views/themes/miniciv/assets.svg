@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200">
+  <rect x="0" y="0" width="400" height="200" fill="#cceabb" />
+  <rect x="20" y="120" width="60" height="40" fill="#b5651d" stroke="#7a3e0a" stroke-width="2" /> <!-- House -->
+  <rect x="120" y="110" width="80" height="30" fill="#8bc34a" stroke="#558b2f" stroke-width="2" /> <!-- Farm -->
+  <circle cx="300" cy="150" r="25" fill="#888" stroke="#555" stroke-width="2" /> <!-- Stone -->
+  <rect x="350" y="130" width="30" height="50" fill="#6d4c41" stroke="#3e2723" stroke-width="2" /> <!-- Wood -->
+</svg>

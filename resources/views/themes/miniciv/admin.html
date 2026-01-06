@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MiniCiv Admin - IndexedDB Viewer</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+        .container { max-width: 500px; margin: 40px auto; background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h1 { text-align: center; }
+        pre { background: #eaf6fb; padding: 12px; border-radius: 6px; overflow-x: auto; }
+        button { margin-top: 10px; padding: 8px 16px; font-size: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MiniCiv Admin</h1>
+        <button onclick="loadDB()">Refresh DB</button>
+        <h2>Database Schema</h2>
+        <pre id="dbschema">{
+  population: number,
+  food: number,
+  wood: number,
+  stone: number,
+  houses: number,
+  farms: number,
+  barracks: number,
+  soldiers: number,
+  walls: number,
+  explored: number,
+  civilisationsFound: number,
+  turn: number
+}</pre>
+        <h2>Current Game State</h2>
+        <pre id="dbview">Loading...</pre>
+        <div id="dbvalues"></div>
+    </div>
+    <script>
+    const DB_NAME = 'miniciv_db';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'game_state';
+    function showValues(data) {
+        const container = document.getElementById('dbvalues');
+        if (!data) {
+            container.innerHTML = '<em>No game state found.</em>';
+            return;
+        }
+        let html = '<h3>Values</h3><ul style="padding-left:18px;">';
+        for (const key in data) {
+            html += `<li><strong>${key}:</strong> ${data[key]}</li>`;
+        }
+        html += '</ul>';
+        container.innerHTML = html;
+    }
+    function loadDB() {
+        document.getElementById('dbview').textContent = 'Loading...';
+        document.getElementById('dbvalues').innerHTML = '';
+        const request = window.indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = function(e) {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME);
+                // Insert default state
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                const store = tx.objectStore(STORE_NAME);
+                const defaultState = {
+                    population: 1,
+                    food: 10,
+                    wood: 10,
+                    stone: 5,
+                    houses: 0,
+                    farms: 0,
+                    barracks: 0,
+                    soldiers: 0,
+                    walls: 0,
+                    explored: 0,
+                    civilisationsFound: 0,
+                    turn: 1
+                };
+                store.put(defaultState, 'current');
+                console.log('Default state inserted');
+            }
+            console.log('onupgradeneeded: object store ensured');
+        };
+        request.onsuccess = function(e) {
+            const db = e.target.result;
+            try {
+                const tx = db.transaction(STORE_NAME, 'readonly');
+                const store = tx.objectStore(STORE_NAME);
+                const getReq = store.get('current');
+                getReq.onsuccess = function(ev) {
+                    const data = ev.target.result;
+                    document.getElementById('dbview').textContent = data ? JSON.stringify(data, null, 2) : 'No game state found.';
+                    showValues(data);
+                    console.log('DB loaded:', data);
+                };
+                getReq.onerror = function(event) {
+                    document.getElementById('dbview').textContent = 'Error reading DB.';
+                    document.getElementById('dbvalues').innerHTML = '';
+                    console.error('Error reading DB:', event);
+                };
+            } catch (err) {
+                document.getElementById('dbview').textContent = 'Error accessing object store.';
+                document.getElementById('dbvalues').innerHTML = '';
+                console.error('Error accessing object store:', err);
+            }
+        };
+        request.onerror = function(event) {
+            document.getElementById('dbview').textContent = 'Error opening DB.';
+            document.getElementById('dbvalues').innerHTML = '';
+            console.error('Error opening DB:', event);
+        };
+    }
+    window.onload = loadDB;
+    </script>
+</body>
+</html>
