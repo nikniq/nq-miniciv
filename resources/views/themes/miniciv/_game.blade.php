@@ -46,9 +46,9 @@
                     <button id="select-house" class="play-btn">🏠 Build House (5W)</button>
                     <button id="select-farm" class="play-btn">🌾 Build Farm (8W)</button>
                     <button id="select-wall" class="play-btn">🧱 Build Wall (6S)</button>
-                    <button id="collect-food" class="play-btn" style="background:#ffd6a6;color:#021122;width:100%;">🍎 Collect Food</button>
-                    <button id="collect-wood" class="play-btn" style="background:#ffd1ff;color:#021122;width:100%;">🪵 Collect Wood</button>
-                    <button id="collect-stone" class="play-btn" style="background:#e6e6e6;color:#021122;width:100%;">🪨 Collect Stone</button>
+                        <button id="collect-food" class="play-btn" style="background:#ffd6a6;color:#021122;width:100%;">🍎 Collect Food <span style="opacity:0.8;margin-left:8px;font-weight:700">(F)</span></button>
+                        <button id="collect-wood" class="play-btn" style="background:#ffd1ff;color:#021122;width:100%;">🪵 Collect Wood <span style="opacity:0.8;margin-left:8px;font-weight:700">(W)</span></button>
+                        <button id="collect-stone" class="play-btn" style="background:#e6e6e6;color:#021122;width:100%;">🪨 Collect Stone <span style="opacity:0.8;margin-left:8px;font-weight:700">(S)</span></button>
                     <button id="end-turn" class="play-btn" style="background:var(--mc-action);color:#021122;">End Turn</button>
                     <button id="reset" class="link button-reset" style="color:var(--mc-accent);">Reset</button>
                 </div>
@@ -135,6 +135,25 @@
     document.getElementById('reset').addEventListener('click', ()=>{
         if (!confirm('Reset MiniCiv game?')) return;
         state = JSON.parse(JSON.stringify(defaults)); save(state); update();
+    });
+
+    // Hotkeys: 1=House, 2=Farm, 3=Wall, 4=Collect Food, 5=Collect Wood, 6=Collect Stone, Space=End Turn, R=Reset
+    document.addEventListener('keydown', (e) => {
+        const tag = (e.target && e.target.tagName) || '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || e.altKey || e.ctrlKey || e.metaKey) return;
+        switch (e.key) {
+            case '1': buildHouse(); break;
+            case '2': buildFarm(); break;
+            case '3': buildWall(); break;
+            case '4': collectFood(); break;
+            case '5': collectWood(); break;
+            case '6': collectStone(); break;
+            case 'f': case 'F': collectFood(); break;
+            case 'w': case 'W': collectWood(); break;
+            case 's': case 'S': collectStone(); break;
+            case ' ': e.preventDefault(); document.getElementById('end-turn').click(); break;
+            case 'r': case 'R': document.getElementById('reset').click(); break;
+        }
     });
 
     update();
