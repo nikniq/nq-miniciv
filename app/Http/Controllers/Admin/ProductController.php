@@ -39,9 +39,10 @@ class ProductController extends Controller
         }
         Product::create($data);
 
-        return redirect()
-            ->route('admin.products.index')
-            ->with('status', 'Product added to the catalog.');
+        $qs = http_build_query($request->only(['page', 'per_page']));
+        $url = route('admin.products.index') . ($qs ? "?{$qs}" : '');
+
+        return redirect($url)->with('status', 'Product added to the catalog.');
     }
 
     public function edit(Product $product): View
@@ -58,23 +59,25 @@ class ProductController extends Controller
         }
         $product->update($data);
 
-        return redirect()
-            ->route('admin.products.index')
-            ->with('status', 'Product updated.');
+        $qs = http_build_query($request->only(['page', 'per_page']));
+        $url = route('admin.products.index') . ($qs ? "?{$qs}" : '');
+
+        return redirect($url)->with('status', 'Product updated.');
     }
 
-    public function destroy(Product $product): RedirectResponse
+    public function destroy(\Illuminate\Http\Request $request, Product $product): RedirectResponse
     {
         if ($product->licenses()->exists()) {
-            return redirect()
-                ->route('admin.products.index')
-                ->with('status', 'Cannot delete a product with attached licenses.');
+            $qs = http_build_query($request->only(['page', 'per_page']));
+            $url = route('admin.products.index') . ($qs ? "?{$qs}" : '');
+            return redirect($url)->with('status', 'Cannot delete a product with attached licenses.');
         }
 
         $product->delete();
 
-        return redirect()
-            ->route('admin.products.index')
-            ->with('status', 'Product removed.');
+        $qs = http_build_query($request->only(['page', 'per_page']));
+        $url = route('admin.products.index') . ($qs ? "?{$qs}" : '');
+
+        return redirect($url)->with('status', 'Product removed.');
     }
 }
