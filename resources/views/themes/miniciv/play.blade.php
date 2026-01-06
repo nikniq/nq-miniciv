@@ -4,9 +4,21 @@
 
 @section('content')
 <section class="card">
+    <style>
+        .miniciv-controls { display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap; }
+        .miniciv-resources { min-width:160px; }
+        .miniciv-map { display:grid; grid-template-columns:repeat(8,1fr); gap:6px; }
+        .miniciv-tile { aspect-ratio:1/1; min-height:48px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-weight:700; cursor:pointer; }
+        @media (max-width:720px) {
+            .miniciv-map { grid-template-columns:repeat(auto-fit,minmax(44px,1fr)); gap:8px; }
+            .miniciv-tile { min-height:56px; font-size:0.85rem; }
+            .miniciv-controls { gap:0.6rem; }
+        }
+    </style>
+
     <div style="display:flex;flex-direction:column;gap:1rem;">
-        <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
-            <div style="min-width:220px;">
+        <div class="miniciv-controls">
+            <div class="miniciv-resources">
                 <p class="eyebrow">Resources</p>
                 <div id="resources" style="display:flex;gap:0.75rem;flex-wrap:wrap;font-weight:700;"></div>
             </div>
@@ -22,7 +34,7 @@
 
         <div>
             <p class="eyebrow">Map</p>
-            <div id="map" style="display:grid;grid-template-columns:repeat(8,1fr);gap:6px;">
+            <div id="map" class="miniciv-map">
                 <!-- tiles injected here -->
             </div>
         </div>
@@ -69,13 +81,8 @@
         mapEl.innerHTML = '';
         state.tiles.forEach((tile, idx) => {
             const d = document.createElement('div');
-            d.style.minHeight = '56px';
-            d.style.borderRadius = '6px';
-            d.style.display = 'flex';
-            d.style.alignItems = 'center';
-            d.style.justifyContent = 'center';
-            d.style.fontWeight = '700';
-            d.style.cursor = 'pointer';
+            d.className = 'miniciv-tile';
+            // set simple visuals via inline styles for clarity
             d.style.background = tile.type === 'empty' ? 'rgba(255,255,255,0.03)' : 'linear-gradient(180deg,#0b1220,#071028)';
             d.style.color = tile.type === 'empty' ? 'var(--muted)' : '#fff';
             d.textContent = tile.type === 'empty' ? '' : tile.type.toUpperCase().slice(0,3);
