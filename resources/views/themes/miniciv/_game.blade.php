@@ -6,8 +6,8 @@
         .miniciv-controls { display:flex;flex-direction:column;gap:0.75rem; }
         .miniciv-resources { display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.25rem; }
         .miniciv-badge { background: linear-gradient(90deg,var(--mc-accent), rgba(255,59,129,0.85)); color:#fff; padding:0.35rem 0.6rem; border-radius:8px; font-weight:800; }
-        .miniciv-actions { display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem; }
-        .miniciv-actions .play-btn { padding:0.6rem 0.8rem; border-radius:10px; font-weight:800; box-shadow:0 8px 20px rgba(0,0,0,0.45); }
+        .miniciv-actions { display:flex;flex-direction:column;gap:0.5rem;margin-top:0.5rem; }
+        .miniciv-actions .play-btn { padding:0.6rem 0.8rem; border-radius:10px; font-weight:800; box-shadow:0 8px 20px rgba(0,0,0,0.45); width:100%; text-align:left; }
         .miniciv-actions .play-btn.active { outline:3px solid rgba(0,209,255,0.09); transform:translateY(-2px); }
         .miniciv-map-wrap { background:var(--mc-panel); padding:1rem; border-radius:12px; }
         .miniciv-map { display:grid; grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); gap:8px; }
@@ -40,12 +40,10 @@
                         <button id="select-farm" class="play-btn">🌾 Farm (8W)</button>
                         <button id="select-wall" class="play-btn">🧱 Wall (6S)</button>
                     </div>
-                    <div style="display:flex;flex-direction:column;gap:0.5rem;align-items:flex-end;">
-                        <div style="display:flex;gap:0.5rem;">
-                            <button id="collect-food" class="play-btn" style="background:#ffd6a6;color:#021122;">🍎 Collect Food</button>
-                            <button id="collect-wood" class="play-btn" style="background:#ffd1ff;color:#021122;">🪵 Collect Wood</button>
-                            <button id="collect-stone" class="play-btn" style="background:#e6e6e6;color:#021122;">🪨 Collect Stone</button>
-                        </div>
+                    <div style="display:flex;flex-direction:column;gap:0.5rem;align-items:stretch;">
+                        <button id="collect-food" class="play-btn" style="background:#ffd6a6;color:#021122;width:100%;">🍎 Collect Food</button>
+                        <button id="collect-wood" class="play-btn" style="background:#ffd1ff;color:#021122;width:100%;">🪵 Collect Wood</button>
+                        <button id="collect-stone" class="play-btn" style="background:#e6e6e6;color:#021122;width:100%;">🪨 Collect Stone</button>
                     </div>
                     <div style="display:flex;flex-direction:column;gap:0.5rem;align-items:flex-end;">
                         <button id="end-turn" class="play-btn" style="background:var(--mc-action);color:#021122;">End Turn</button>
