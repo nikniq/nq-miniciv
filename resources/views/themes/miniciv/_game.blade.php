@@ -1,8 +1,8 @@
 <section class="card">
     <style>
         :root { --mc-bg: var(--bg, #071028); --mc-panel: var(--panel, #0b1220); --mc-accent: var(--primary, #ff3b81); --mc-action: var(--accent, #00d1ff); }
-        .miniciv-wrapper { display:grid; grid-template-columns: 360px 1fr; gap:1rem; align-items:start; }
-        .miniciv-panel { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06)); padding:1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.03); }
+        .miniciv-wrapper { display:flex; flex-direction:column; gap:1rem; align-items:stretch; }
+        .miniciv-panel { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06)); padding:1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.03); width:100%; }
         .miniciv-controls { display:flex;flex-direction:column;gap:0.75rem; }
         .miniciv-resources { display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.25rem; }
         .miniciv-badge { background: linear-gradient(90deg,var(--mc-accent), rgba(255,59,129,0.85)); color:#fff; padding:0.35rem 0.6rem; border-radius:8px; font-weight:800; }
@@ -10,7 +10,7 @@
         .miniciv-actions .play-btn { padding:0.6rem 0.8rem; border-radius:10px; font-weight:800; box-shadow:0 8px 20px rgba(0,0,0,0.45); }
         .miniciv-actions .play-btn.active { outline:3px solid rgba(0,209,255,0.09); transform:translateY(-2px); }
         .miniciv-map-wrap { background:var(--mc-panel); padding:1rem; border-radius:12px; }
-        .miniciv-map { display:grid; grid-template-columns:repeat(8,1fr); gap:8px; }
+        .miniciv-map { display:grid; grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); gap:8px; }
         .miniciv-tile { aspect-ratio:1/1; min-height:64px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:800; cursor:pointer; color:#fff; background:linear-gradient(180deg,#081026,#0b1220); box-shadow: inset 0 -6px 12px rgba(0,0,0,0.4); }
         .miniciv-tile.empty { background: linear-gradient(180deg,#0b1220,#071028); color:rgba(255,255,255,0.6); }
         .miniciv-tile.house { background: linear-gradient(180deg,#3b8b3b,#2b6b2b); }
@@ -18,7 +18,7 @@
         .miniciv-tile.wall { background: linear-gradient(180deg,#6b6b6b,#3b3b3b); }
         .miniciv-tile:active { transform:scale(0.995); }
         .miniciv-footer { margin-top:0.75rem; color:rgba(255,255,255,0.75); font-size:0.95rem; }
-        @media (max-width:920px) { .miniciv-wrapper { grid-template-columns: 1fr; } .miniciv-map { grid-template-columns: repeat(auto-fit,minmax(48px,1fr)); } }
+        @media (max-width:920px) { .miniciv-map { grid-template-columns: repeat(auto-fit,minmax(44px,1fr)); } }
     </style>
 
     <div class="miniciv-wrapper">
