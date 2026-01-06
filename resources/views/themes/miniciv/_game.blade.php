@@ -41,6 +41,13 @@
                         <button id="select-wall" class="play-btn">🧱 Wall (6S)</button>
                     </div>
                     <div style="display:flex;flex-direction:column;gap:0.5rem;align-items:flex-end;">
+                        <div style="display:flex;gap:0.5rem;">
+                            <button id="collect-food" class="play-btn" style="background:#ffd6a6;color:#021122;">🍎 Collect Food</button>
+                            <button id="collect-wood" class="play-btn" style="background:#ffd1ff;color:#021122;">🪵 Collect Wood</button>
+                            <button id="collect-stone" class="play-btn" style="background:#e6e6e6;color:#021122;">🪨 Collect Stone</button>
+                        </div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:0.5rem;align-items:flex-end;">
                         <button id="end-turn" class="play-btn" style="background:var(--mc-action);color:#021122;">End Turn</button>
                         <button id="reset" class="link button-reset" style="color:var(--mc-accent);">Reset</button>
                     </div>
@@ -56,7 +63,7 @@
     </div>
 </section>
 
-<script>
+    <script>
 (() => {
     const STORAGE_KEY = 'miniciv_state_v1';
     const defaults = {
@@ -67,19 +74,15 @@
         stone: 10,
         houses: 0,
         farms: 0,
-        walls: 0,
-        tiles: Array.from({length:64}).map(()=>({type:'empty'}))
+        walls: 0
     };
 
     function load() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaults; } catch(e){ return defaults; } }
     function save(s){ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
     let state = load();
 
-    const mapEl = document.getElementById('map');
     const resEl = document.getElementById('resources');
     const turnEl = document.getElementById('turn-number');
-
-    let selected = null; // 'house' | 'farm' | 'wall' | null
 
     function fmtBadge(label, value) {
         return `<div style="background:rgba(255,255,255,0.03);padding:0.4rem 0.6rem;border-radius:8px;font-weight:700;">${label}: <strong style=\"margin-left:0.4rem;color:var(--mc-accent)\">${value}</strong></div>`;
@@ -95,60 +98,23 @@
         turnEl.textContent = state.turn;
     }
 
-    function tileIcon(type){
-        if(type==='house') return '🏠';
-        if(type==='farm') return '🌾';
-        if(type==='wall') return '🧱';
-        return '';
-    }
+    function update(){ renderResources(); save(state); }
 
-    function renderMap(){
-        mapEl.innerHTML = '';
-        state.tiles.forEach((tile, idx) => {
-            const d = document.createElement('div');
-            d.className = 'miniciv-tile ' + (tile.type === 'empty' ? 'empty' : tile.type);
-            d.dataset.idx = idx;
-            d.innerHTML = `<div style="text-align:center;line-height:1">${tileIcon(tile.type)}<div style="font-size:0.7rem;margin-top:4px;opacity:0.9">${tile.type==='empty' ? '' : tile.type}</div></div>`;
-            d.onclick = () => onTileClick(idx);
-            mapEl.appendChild(d);
-        });
-    }
+    function buildHouse(){ if(state.wood < 5) return alert('Not enough wood'); state.wood -= 5; state.houses += 1; update(); }
+    function buildFarm(){ if(state.wood < 8) return alert('Not enough wood'); state.wood -= 8; state.farms += 1; update(); }
+    function buildWall(){ if(state.stone < 6) return alert('Not enough stone'); state.stone -= 6; state.walls += 1; update(); }
 
-    function canPlace(type){
-        if(type==='house') return state.wood >= 5;
-        if(type==='farm') return state.wood >= 8;
-        if(type==='wall') return state.stone >= 6;
-        return false;
-    }
+    function collectFood(){ state.food += 3; update(); }
+    function collectWood(){ state.wood += 5; update(); }
+    function collectStone(){ state.stone += 4; update(); }
 
-    function placeAt(idx, type){
-        if(!canPlace(type)) { alert('Not enough resources'); return; }
-        if(state.tiles[idx].type !== 'empty') return;
-        if(type==='house'){ state.wood -= 5; state.houses += 1; }
-        if(type==='farm'){ state.wood -= 8; state.farms += 1; }
-        if(type==='wall'){ state.stone -= 6; state.walls += 1; }
-        state.tiles[idx].type = type;
-        update();
-    }
+    document.getElementById('select-house').addEventListener('click', buildHouse);
+    document.getElementById('select-farm').addEventListener('click', buildFarm);
+    document.getElementById('select-wall').addEventListener('click', buildWall);
 
-    function onTileClick(idx){
-        if(selected){ placeAt(idx, selected); return; }
-        // if no selection, show quick info
-        const t = state.tiles[idx].type;
-        alert(t === 'empty' ? 'Empty tile' : `Tile: ${t}`);
-    }
-
-    function setSelection(sel){
-        selected = sel;
-        document.querySelectorAll('#select-house,#select-farm,#select-wall').forEach(b => b.classList.remove('active'));
-        if(sel) document.getElementById('select-' + sel).classList.add('active');
-    }
-
-    function update(){ renderResources(); renderMap(); save(state); }
-
-    document.getElementById('select-house').addEventListener('click', ()=> setSelection(selected === 'house' ? null : 'house'));
-    document.getElementById('select-farm').addEventListener('click', ()=> setSelection(selected === 'farm' ? null : 'farm'));
-    document.getElementById('select-wall').addEventListener('click', ()=> setSelection(selected === 'wall' ? null : 'wall'));
+    document.getElementById('collect-food').addEventListener('click', collectFood);
+    document.getElementById('collect-wood').addEventListener('click', collectWood);
+    document.getElementById('collect-stone').addEventListener('click', collectStone);
 
     document.getElementById('end-turn').addEventListener('click', ()=>{
         state.turn += 1;
