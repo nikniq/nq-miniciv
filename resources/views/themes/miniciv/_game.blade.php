@@ -42,7 +42,6 @@
                     <div class="miniciv-badge">MINICIV</div>
                     <div style="font-weight:800;font-size:1.05rem;margin-top:0.35rem;">Tiny Civilization</div>
                 </div>
-                <div style="text-align:right;color:rgba(255,255,255,0.8);font-weight:700;">Turn <span id="turn-number">1</span></div>
             </div>
 
             <div class="miniciv-controls">
@@ -88,7 +87,6 @@
     let state = load();
 
     const resEl = document.getElementById('resources');
-    const turnEl = document.getElementById('turn-number');
 
     function fmtBadge(label, value, iconId){
         const icon = iconId ? `<svg class="mc-icon" aria-hidden="true"><use href="#icon-${iconId}" /></svg>` : '';
@@ -97,6 +95,7 @@
 
     function renderResources(){
         resEl.innerHTML = `
+            ${fmtBadge('Turn', state.turn)}
             ${fmtBadge('Pop', state.population + '/' + (state.houses*2 + 1))}
             ${fmtBadge('Houses', state.houses, 'house')}
             ${fmtBadge('Farms', state.farms, 'farm')}
@@ -105,7 +104,6 @@
             ${fmtBadge('Wood', state.wood)}
             ${fmtBadge('Stone', state.stone)}
         `;
-        turnEl.textContent = state.turn;
     }
 
     function update(){ renderResources(); save(state); }
