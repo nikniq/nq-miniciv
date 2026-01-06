@@ -19,7 +19,21 @@
         .miniciv-tile:active { transform:scale(0.995); }
             .miniciv-footer { margin-top:0.75rem; color:rgba(255,255,255,0.75); font-size:0.95rem; }
             @media (max-width:920px) {  }
+            .mc-icon { width:18px; height:18px; vertical-align:middle; margin-right:8px; }
     </style>
+
+        <!-- Inline SVG icons for dashboard -->
+        <svg style="display:none;" aria-hidden="true">
+            <symbol id="icon-house" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M12 3l9 7v11a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10l9-7z" />
+            </symbol>
+            <symbol id="icon-farm" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M12 2c1.1 0 2 .9 2 2 0 .55-.22 1.05-.59 1.41L13 7h-2l1.59-1.59C12.78 5.05 12.5 4.55 12.5 4 12.5 2.9 13.4 2 14.5 2zM4 13c0 4 4 7 8 7s8-3 8-7c0-2.2-1-4.17-2.5-5.5L12 3 6.5 7.5C5 8.83 4 10.8 4 13z" />
+            </symbol>
+            <symbol id="icon-wall" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M3 7h18v3H3V7zm0 5h18v3H3v-3zm0 5h18v2H3v-2z" />
+            </symbol>
+        </svg>
 
     <div class="miniciv-wrapper">
         <div class="miniciv-panel">
@@ -76,16 +90,17 @@
     const resEl = document.getElementById('resources');
     const turnEl = document.getElementById('turn-number');
 
-    function fmtBadge(label, value) {
-        return `<div style="background:rgba(255,255,255,0.03);padding:0.4rem 0.6rem;border-radius:8px;font-weight:700;">${label}: <strong style=\"margin-left:0.4rem;color:var(--mc-accent)\">${value}</strong></div>`;
+    function fmtBadge(label, value, iconId){
+        const icon = iconId ? `<svg class="mc-icon" aria-hidden="true"><use href="#icon-${iconId}" /></svg>` : '';
+        return `<div style="background:rgba(255,255,255,0.03);padding:0.4rem 0.6rem;border-radius:8px;font-weight:700;display:inline-flex;align-items:center;gap:0.4rem;">${icon}<span style=\"white-space:nowrap\">${label}: <strong style=\"margin-left:0.4rem;color:var(--mc-accent)\">${value}</strong></span></div>`;
     }
 
     function renderResources(){
         resEl.innerHTML = `
             ${fmtBadge('Pop', state.population + '/' + (state.houses*2 + 1))}
-            ${fmtBadge('Houses', state.houses)}
-            ${fmtBadge('Farms', state.farms)}
-            ${fmtBadge('Walls', state.walls)}
+            ${fmtBadge('Houses', state.houses, 'house')}
+            ${fmtBadge('Farms', state.farms, 'farm')}
+            ${fmtBadge('Walls', state.walls, 'wall')}
             ${fmtBadge('Food', state.food)}
             ${fmtBadge('Wood', state.wood)}
             ${fmtBadge('Stone', state.stone)}
