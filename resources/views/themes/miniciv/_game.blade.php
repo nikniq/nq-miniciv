@@ -34,21 +34,15 @@
             <div class="miniciv-controls">
                 <div class="miniciv-resources" id="resources"></div>
 
-                <div style="display:flex;gap:0.5rem;align-items:center;justify-content:space-between;">
-                    <div class="miniciv-actions">
-                        <button id="select-house" class="play-btn">🏠 House (5W)</button>
-                        <button id="select-farm" class="play-btn">🌾 Farm (8W)</button>
-                        <button id="select-wall" class="play-btn">🧱 Wall (6S)</button>
-                    </div>
-                    <div style="display:flex;flex-direction:column;gap:0.5rem;align-items:stretch;">
-                        <button id="collect-food" class="play-btn" style="background:#ffd6a6;color:#021122;width:100%;">🍎 Collect Food</button>
-                        <button id="collect-wood" class="play-btn" style="background:#ffd1ff;color:#021122;width:100%;">🪵 Collect Wood</button>
-                        <button id="collect-stone" class="play-btn" style="background:#e6e6e6;color:#021122;width:100%;">🪨 Collect Stone</button>
-                    </div>
-                    <div style="display:flex;flex-direction:column;gap:0.5rem;align-items:flex-end;">
-                        <button id="end-turn" class="play-btn" style="background:var(--mc-action);color:#021122;">End Turn</button>
-                        <button id="reset" class="link button-reset" style="color:var(--mc-accent);">Reset</button>
-                    </div>
+                <div class="miniciv-actions">
+                    <button id="select-house" class="play-btn">🏠 Build House (5W)</button>
+                    <button id="select-farm" class="play-btn">🌾 Build Farm (8W)</button>
+                    <button id="select-wall" class="play-btn">🧱 Build Wall (6S)</button>
+                    <button id="collect-food" class="play-btn" style="background:#ffd6a6;color:#021122;width:100%;">🍎 Collect Food</button>
+                    <button id="collect-wood" class="play-btn" style="background:#ffd1ff;color:#021122;width:100%;">🪵 Collect Wood</button>
+                    <button id="collect-stone" class="play-btn" style="background:#e6e6e6;color:#021122;width:100%;">🪨 Collect Stone</button>
+                    <button id="end-turn" class="play-btn" style="background:var(--mc-action);color:#021122;">End Turn</button>
+                    <button id="reset" class="link button-reset" style="color:var(--mc-accent);">Reset</button>
                 </div>
             </div>
 
