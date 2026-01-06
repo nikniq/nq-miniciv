@@ -13,10 +13,10 @@
             --accent-cyan: #00d1ff;
             --error: #dc2626;
             --success: #16a34a;
-            --bg: linear-gradient(135deg,#0f172a 0%, #0b1020 40%, #24123b 100%);
-            --text: #e6f7ff;
-            --panel: linear-gradient(180deg,#0b1220, #071028);
-            --panel-alt: rgba(255,59,129,0.06);
+            --bg: #f4efe1;
+            --text: #1b1b1b;
+            --panel: #ffffff;
+            --panel-alt: rgba(176,122,43,0.06);
         }
         * { box-sizing: border-box; }
         body {
