@@ -88,6 +88,8 @@
         </div>
     </section>
 
+@include('themes.miniciv._game')
+
 @include('partials.footer')
 
 @endsection
