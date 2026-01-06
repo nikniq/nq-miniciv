@@ -81,6 +81,11 @@ if (config('games.enabled')) {
     Route::get('/games', [App\Http\Controllers\GamesController::class, 'index'])->name('games.index');
 }
 
+// MiniCiv play page (simple client-side demo)
+Route::get('/miniciv/play', function () {
+    return view('themes.miniciv.play');
+})->name('miniciv.play');
+
 // WordPress posts index and single post
 if (config('posts.enabled')) {
     Route::get('/posts', [WpPostController::class, 'index'])->name('posts.index');

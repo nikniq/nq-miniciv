@@ -73,17 +73,17 @@
             <div class="arcade-card">
                 <h3>MiniCiv Starter</h3>
                 <p class="lead">A tiny scenario to get your civilisation going — build houses, farms and walls to survive the first ten turns.</p>
-                <a class="play-btn" href="#">Play →</a>
+                <a class="play-btn" href="{{ route('miniciv.play') }}">Play →</a>
             </div>
             <div class="arcade-card">
                 <h3>Skirmish Mode</h3>
                 <p class="lead">Quick multiplayer skirmishes against AI or friends (coming soon).</p>
-                <a class="play-btn" href="#">Preview →</a>
+                <a class="play-btn" href="{{ route('miniciv.play') }}">Preview →</a>
             </div>
             <div class="arcade-card">
                 <h3>World Builder</h3>
                 <p class="lead">Customize maps and civilizations, export and share with the community.</p>
-                <a class="play-btn" href="#">Open →</a>
+                <a class="play-btn" href="{{ route('miniciv.play') }}">Open →</a>
             </div>
         </div>
     </section>
