@@ -281,8 +281,9 @@
         .arcade-hero h1 { font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; letter-spacing: 2px; font-weight:800; font-size:2.25rem; margin:0.5rem 0; }
         .arcade-sub { color: rgba(255,214,232,0.95); margin-bottom:1rem; }
         .arcade-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; padding:1rem; }
-        .arcade-card { background: linear-gradient(180deg,#0b1220, #071028); border:2px solid rgba(255,59,129,0.08); padding:1rem; border-radius:8px; box-shadow: 0 6px 20px rgba(0,0,0,0.5); color:#e6f7ff; }
+        .arcade-card { background: linear-gradient(180deg,#0b1220, #071028); border:2px solid rgba(255,59,129,0.08); padding:1rem; border-radius:8px; box-shadow: 0 6px 20px rgba(0,0,0,0.5); color:#e6f7ff; display:flex; flex-direction:column; height:100%; }
         .arcade-card h3 { color:#fff; margin:0 0 0.5rem 0; font-weight:700; }
+        .arcade-card .play-btn { margin-top: auto; }
         .arcade-badge { display:inline-block; padding:0.25rem 0.5rem; background:var(--primary); color:#fff; border-radius:4px; font-size:0.8rem; font-weight:700; }
         .play-btn { display:inline-block; margin-top:0.75rem; background:var(--accent-cyan); color:#021122; padding:0.5rem 0.75rem; border-radius:6px; text-decoration:none; font-weight:700; }
 
