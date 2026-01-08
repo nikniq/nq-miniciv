@@ -69,7 +69,6 @@
         </div>
     </dl>
 </section>
-@endif
 
 @if(isset($minicivStates) && $minicivStates->isNotEmpty())
 <section class="card">
@@ -97,6 +96,7 @@
         @endforeach
     </div>
 </section>
+@endif
 @endif
 
 @if (config('license.enabled') && config('license.purchase_enabled'))
