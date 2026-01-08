@@ -118,7 +118,7 @@
         save(state);
     }
 
-    function buildHouse(){ if(state.wood < 5) return alert('Not enough wood'); state.wood -= 5; state.houses += 1; update(); }
+    function buildHouse(){ if(state.wood < 5) return alert('Not enough wood'); state.wood -= 5; state.houses += 1; state.population = Math.min(state.population + 1, state.houses*2 + 1); update(); }
     function buildFarm(){ if(state.wood < 8) return alert('Not enough wood'); state.wood -= 8; state.farms += 1; update(); }
     function buildWall(){ if(state.stone < 6) return alert('Not enough stone'); state.stone -= 6; state.walls += 1; update(); }
 
