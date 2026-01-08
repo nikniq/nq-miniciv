@@ -215,6 +215,8 @@
     @endif
     </section>
 
+    @endif
+
     @if(config('games.enabled'))
     <section class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
