@@ -47,7 +47,6 @@
     </section>
 @endif
 
-@if(config('games.enabled'))
 <section class="card">
     <h2>Account details</h2>
     <dl class="details">
@@ -96,7 +95,6 @@
         @endforeach
     </div>
 </section>
-@endif
 @endif
 
 @if (config('license.enabled') && config('license.purchase_enabled'))
@@ -216,9 +214,9 @@
         @endif
     @endif
     </section>
-@endif
 
-<section class="card">
+    @if(config('games.enabled'))
+    <section class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
         <div>
             <p class="eyebrow" style="margin-bottom:0.35rem;">Favorites</p>
@@ -259,6 +257,8 @@
         </div>
     </div>
 </section>
+
+@endif
 
 @if (config('license.enabled'))
 <section class="card">
