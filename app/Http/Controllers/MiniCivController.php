@@ -25,4 +25,25 @@ class MiniCivController extends Controller
 
         return response()->json(['status' => 'saved']);
     }
+
+    /** Delete a saved MiniCiv state (only owner) */
+    public function delete(Request $request)
+    {
+        $user = $request->user();
+        if (! $user) {
+            return redirect()->route('login');
+        }
+
+        $id = $request->input('id');
+        if (! $id) {
+            return back()->withErrors(['miniciv' => 'Missing state id']);
+        }
+
+        $state = MiniCivState::where('id', $id)->where('user_id', $user->id)->first();
+        if ($state) {
+            $state->delete();
+        }
+
+        return back()->with('status', 'Saved civilisation removed.');
+    }
 }

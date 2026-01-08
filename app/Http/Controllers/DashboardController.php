@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\License;
 use App\Models\Product;
 use App\Models\Favourite;
+use App\Models\MiniCivState;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -27,6 +28,7 @@ class DashboardController extends Controller
 
         return view('dashboard', [
             'user' => Auth::user(),
+            'minicivStates' => Auth::check() ? MiniCivState::where('user_id', Auth::id())->orderBy('updated_at', 'desc')->get() : collect(),
             'licenses' => $licenseEnabled
                 ? License::with(['product', 'domains'])->where('user_id', Auth::id())->orderBy('expires_at')->get()
                 : collect(),

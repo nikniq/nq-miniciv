@@ -69,6 +69,34 @@
     </dl>
 </section>
 
+@if(isset($minicivStates) && $minicivStates->isNotEmpty())
+<section class="card">
+    <h2>Saved Civilisations</h2>
+    <p style="color:var(--muted);margin-top:0">Your saved MiniCiv civilisations.</p>
+    <div style="margin-top:1rem;display:grid;gap:0.75rem;">
+        @foreach($minicivStates as $state)
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem;border-radius:0.75rem;background:var(--bg);">
+                <div>
+                    <strong>Saved</strong>
+                    <div style="font-size:0.9rem;color:var(--muted);">{{ $state->updated_at->diffForHumans() }} · [Turn {{ data_get($state->state, 'turn', '—') }}]</div>
+                    <div style="margin-top:0.35rem;font-size:0.95rem;color:var(--muted);">
+                        Pop: {{ data_get($state->state, 'population', 0) }} · Food: {{ data_get($state->state, 'food', 0) }} · Wood: {{ data_get($state->state, 'wood', 0) }} · Stone: {{ data_get($state->state, 'stone', 0) }}
+                    </div>
+                </div>
+                <div style="display:flex;gap:0.5rem;align-items:center;">
+                    <button type="button" class="link" data-action="restore" data-state='@json($state->state)'>Restore</button>
+                    <form method="POST" action="{{ route('miniciv.delete') }}" style="margin:0;">
+                        @csrf
+                        <input type="hidden" name="id" value="{{ $state->id }}">
+                        <button type="submit" class="link" style="color:var(--error);">Delete</button>
+                    </form>
+                </div>
+            </div>
+        @endforeach
+    </div>
+</section>
+@endif
+
 @if (config('license.enabled') && config('license.purchase_enabled'))
 <section class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">

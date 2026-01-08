@@ -400,6 +400,23 @@
     })();
     </script>
     @endif
+    <script>
+    (function () {
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest && e.target.closest('[data-action="restore"]');
+            if (!btn) return;
+            try {
+                const data = btn.getAttribute('data-state');
+                if (!data) return;
+                // parse and write to localStorage, then navigate to play
+                localStorage.setItem('miniciv_state_v1', data);
+                window.location = '{{ route('miniciv.play') }}';
+            } catch (err) {
+                console.error('restore error', err);
+            }
+        });
+    })();
+    </script>
     @stack('scripts')
 </body>
 </html>
