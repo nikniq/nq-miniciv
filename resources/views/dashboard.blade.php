@@ -47,6 +47,7 @@
     </section>
 @endif
 
+@if(config('games.enabled'))
 <section class="card">
     <h2>Account details</h2>
     <dl class="details">
@@ -68,6 +69,7 @@
         </div>
     </dl>
 </section>
+@endif
 
 @if(isset($minicivStates) && $minicivStates->isNotEmpty())
 <section class="card">
