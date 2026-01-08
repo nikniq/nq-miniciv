@@ -103,7 +103,6 @@
             ${fmtBadge('Food', state.food)}
             ${fmtBadge('Wood', state.wood)}
             ${fmtBadge('Stone', state.stone)}
-            <div style="width:100%;margin-top:0.45rem;text-align:right;"><button id="reset-civ" style="background:none;border:none;color:var(--mc-accent);font-weight:700;cursor:pointer">Reset Civilization</button></div>
         `;
     }
 
@@ -115,14 +114,7 @@
         // show barracks button when population is greater than 20
         const bb = document.getElementById('build-barrack');
         if (bb) bb.style.display = (state.population && state.population > 20) ? 'block' : 'none';
-        // attach reset handler (safe, idempotent)
-        const rc = document.getElementById('reset-civ');
-        if (rc) rc.onclick = () => {
-            if (!confirm('Reset MiniCiv civilization to defaults?')) return;
-            state = JSON.parse(JSON.stringify(defaults));
-            save(state);
-            update();
-        };
+        // reset-civ removed
         save(state);
     }
 
