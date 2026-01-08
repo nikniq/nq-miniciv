@@ -86,6 +86,10 @@ Route::get('/miniciv/play', function () {
     return view('themes.miniciv.play');
 })->name('miniciv.play');
 
+// Save MiniCiv state (requires auth)
+Route::post('/miniciv/save', [App\Http\Controllers\MiniCivController::class, 'save'])
+    ->middleware('auth')
+    ->name('miniciv.save');
 // WordPress posts index and single post
 if (config('posts.enabled')) {
     Route::get('/posts', [WpPostController::class, 'index'])->name('posts.index');

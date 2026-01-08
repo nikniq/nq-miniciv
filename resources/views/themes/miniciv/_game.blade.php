@@ -145,17 +145,39 @@
     const barrackBtn = document.getElementById('build-barrack');
     if (barrackBtn) barrackBtn.addEventListener('click', buildBarrack);
 
-    document.getElementById('end-turn').addEventListener('click', ()=>{
-        state.turn += 1;
-        state.food += Math.max(1, state.farms * 3);
-        state.wood += 2;
-        state.stone += 1;
-        const foodNeeded = Math.max(1, state.population);
-        if (state.food >= foodNeeded) { state.food -= foodNeeded; }
-        else { state.population = Math.max(1, state.population - 1); }
-        const cap = state.houses*2 + 1;
-        if (state.population < cap && state.food >= 2) { state.population += 1; state.food -=2; }
-        update();
+    // Save button: persist current state to server for authenticated users
+    document.getElementById('end-turn').addEventListener('click', async () => {
+        const SAVE_URL = '{{ route('miniciv.save') }}';
+        const CSRF = '{{ csrf_token() }}';
+        try {
+            const res = await fetch(SAVE_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': CSRF,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ state })
+            });
+
+            if (res.status === 401) {
+                if (confirm('You must be logged in to save. Go to login page?')) {
+                    window.location = '{{ route('login') }}';
+                }
+                return;
+            }
+
+            const payload = await res.json().catch(() => ({}));
+            if (res.ok) {
+                // brief feedback
+                alert(payload.status ? 'Saved' : 'Saved');
+            } else {
+                alert(payload.error || 'Save failed');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Save failed — network error');
+        }
     });
 
     // Reset removed by user request
