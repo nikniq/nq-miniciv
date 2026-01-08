@@ -24,6 +24,11 @@ class FavouriteController extends Controller
             'product' => Product::class,
         ];
 
+        // If games are disabled, do not allow favoriting products (games)
+        if ($request->input('type') === 'product' && ! config('games.enabled')) {
+            return response()->json(['message' => 'Games are disabled'], 403);
+        }
+
         $type = $request->input('type');
         $id = (int) $request->input('id');
 
