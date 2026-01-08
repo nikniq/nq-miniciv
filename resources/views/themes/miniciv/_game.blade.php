@@ -107,9 +107,9 @@
     function buildFarm(){ if(state.wood < 8) return alert('Not enough wood'); state.wood -= 8; state.farms += 1; update(); }
     function buildWall(){ if(state.stone < 6) return alert('Not enough stone'); state.stone -= 6; state.walls += 1; update(); }
 
-    function collectFood(){ state.food += 3; update(); }
-    function collectWood(){ state.wood += 5; update(); }
-    function collectStone(){ state.stone += 4; update(); }
+    function collectFood(){ state.food += 3; state.turn += 1; update(); }
+    function collectWood(){ state.wood += 5; state.turn += 1; update(); }
+    function collectStone(){ state.stone += 4; state.turn += 1; update(); }
 
     document.getElementById('select-house').addEventListener('click', buildHouse);
     document.getElementById('select-farm').addEventListener('click', buildFarm);
