@@ -46,6 +46,7 @@
                     <button id="select-house" class="play-btn">🏠 Build House (5W)</button>
                     <button id="select-farm" class="play-btn">🌾 Build Farm (8W)</button>
                     <button id="select-wall" class="play-btn">🧱 Build Wall (6S)</button>
+                    <button id="build-sawmill" class="play-btn" style="display:none">🪚 Build Sawmill (10W)</button>
                         <button id="collect-food" class="play-btn" style="background:#ffd6a6;color:#021122;width:100%;">🍎 Collect Food <span style="opacity:0.8;margin-left:8px;font-weight:700">(F)</span></button>
                         <button id="collect-wood" class="play-btn" style="background:#ffd1ff;color:#021122;width:100%;">🪵 Collect Wood <span style="opacity:0.8;margin-left:8px;font-weight:700">(W)</span></button>
                         <button id="collect-stone" class="play-btn" style="background:#e6e6e6;color:#021122;width:100%;">🪨 Collect Stone <span style="opacity:0.8;margin-left:8px;font-weight:700">(S)</span></button>
@@ -74,7 +75,8 @@
         stone: 10,
         houses: 0,
         farms: 0,
-        walls: 0
+        walls: 0,
+        sawmills: 0
     };
 
     function load() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaults; } catch(e){ return defaults; } }
