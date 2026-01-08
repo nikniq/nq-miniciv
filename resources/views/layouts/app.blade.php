@@ -372,6 +372,20 @@
         });
     })();
     </script>
+    <script>
+    (function () {
+        try {
+            const logoutSelector = 'form[action="' + '{{ route('logout') }}' + '"]';
+            const logoutForms = document.querySelectorAll(logoutSelector);
+            if (!logoutForms || !logoutForms.length) return;
+            logoutForms.forEach(f => f.addEventListener('submit', () => {
+                try { localStorage.removeItem('miniciv_state_v1'); } catch (e) {}
+            }));
+        } catch (e) {
+            // ignore
+        }
+    })();
+    </script>
     @stack('scripts')
 </body>
 </html>

@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use App\Models\MiniCivState;
 
 class LoginController extends Controller
 {
@@ -75,6 +76,16 @@ class LoginController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $user = $request->user();
+
+        if ($user) {
+            try {
+                MiniCivState::where('user_id', $user->id)->delete();
+            } catch (\Throwable $e) {
+                // Don't prevent logout for cleanup failures
+            }
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
