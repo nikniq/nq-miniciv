@@ -97,20 +97,27 @@
             ${fmtBadge('Houses', state.houses, 'house')}
             ${fmtBadge('Farms', state.farms, 'farm')}
             ${fmtBadge('Walls', state.walls, 'wall')}
+            ${fmtBadge('Sawmills', state.sawmills)}
             ${fmtBadge('Food', state.food)}
             ${fmtBadge('Wood', state.wood)}
             ${fmtBadge('Stone', state.stone)}
         `;
     }
 
-    function update(){ renderResources(); save(state); }
+    function update(){
+        renderResources();
+        // show sawmill button only when at least one farm exists
+        const bs = document.getElementById('build-sawmill');
+        if (bs) bs.style.display = (state.farms && state.farms > 0) ? 'block' : 'none';
+        save(state);
+    }
 
     function buildHouse(){ if(state.wood < 5) return alert('Not enough wood'); state.wood -= 5; state.houses += 1; update(); }
     function buildFarm(){ if(state.wood < 8) return alert('Not enough wood'); state.wood -= 8; state.farms += 1; update(); }
     function buildWall(){ if(state.stone < 6) return alert('Not enough stone'); state.stone -= 6; state.walls += 1; update(); }
 
     function collectFood(){ state.food += 3 + (state.farms || 0); state.turn += 1; update(); }
-    function collectWood(){ state.wood += 5; state.turn += 1; update(); }
+    function collectWood(){ state.wood += 5 + ((state.sawmills || 0) * 3); state.turn += 1; update(); }
     function collectStone(){ state.stone += 4; state.turn += 1; update(); }
 
     document.getElementById('select-house').addEventListener('click', buildHouse);
@@ -120,6 +127,11 @@
     document.getElementById('collect-food').addEventListener('click', collectFood);
     document.getElementById('collect-wood').addEventListener('click', collectWood);
     document.getElementById('collect-stone').addEventListener('click', collectStone);
+
+    // Build sawmill (available after at least one farm)
+    function buildSawmill(){ if(state.wood < 10) return alert('Not enough wood'); state.wood -= 10; state.sawmills += 1; update(); }
+    const sawBtn = document.getElementById('build-sawmill');
+    if (sawBtn) sawBtn.addEventListener('click', buildSawmill);
 
     document.getElementById('end-turn').addEventListener('click', ()=>{
         state.turn += 1;
