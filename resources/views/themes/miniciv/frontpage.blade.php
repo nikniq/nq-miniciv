@@ -62,10 +62,11 @@
 
     <section class="arcade-grid">
         <div style="grid-column:1/-1; padding:0 1rem 0 1rem;">
-            <form method="GET" action="{{ route('games.index') }}" class="games-search-form">
+            @php $gamesIndex = Route::has('games.index') ? route('games.index') : url('/'); @endphp
+            <form method="GET" action="{{ $gamesIndex }}" class="games-search-form">
                 <input name="q" class="games-search-input" value="{{ old('q', $q ?? request('q')) }}" placeholder="Search scenarios, buildings or civ names..." aria-label="Search MiniCiv">
                 @if(!empty($q))
-                    <a href="{{ route('games.index') }}" class="games-clear-btn">Clear</a>
+                    <a href="{{ $gamesIndex }}" class="games-clear-btn">Clear</a>
                 @endif
             </form>
         </div>
