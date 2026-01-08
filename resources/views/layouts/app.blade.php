@@ -386,6 +386,20 @@
         }
     })();
     </script>
+    @if(session('miniciv_restore'))
+    <script>
+    (function () {
+        try {
+            const state = JSON.stringify(@json(session('miniciv_restore')));
+            if (state) {
+                try { localStorage.setItem('miniciv_state_v1', state); } catch (e) {}
+            }
+        } catch (e) {
+            // ignore
+        }
+    })();
+    </script>
+    @endif
     @stack('scripts')
 </body>
 </html>

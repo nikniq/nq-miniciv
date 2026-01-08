@@ -50,6 +50,16 @@ class LoginController extends Controller
             Auth::login($user, $remember);
             $request->session()->regenerate();
 
+            // If the user has a saved MiniCiv state, make it available to the next request
+            try {
+                $saved = MiniCivState::where('user_id', $user->id)->first();
+                if ($saved && $saved->state) {
+                    $request->session()->flash('miniciv_restore', $saved->state);
+                }
+            } catch (\Throwable $e) {
+                // ignore restore failures
+            }
+
             EventLogger::log(EventLog::TYPE_LOGIN, $user->id, [
                 'email' => $user->email,
                 'remember' => $remember,
@@ -146,6 +156,16 @@ class LoginController extends Controller
 
         Auth::loginUsingId($userId, $remember);
         $request->session()->regenerate();
+
+        // If the user has a saved MiniCiv state, make it available to the next request
+        try {
+            $saved = MiniCivState::where('user_id', $userId)->first();
+            if ($saved && $saved->state) {
+                $request->session()->flash('miniciv_restore', $saved->state);
+            }
+        } catch (\Throwable $e) {
+            // ignore restore failures
+        }
 
         EventLogger::log(EventLog::TYPE_LOGIN, $userId, [
             'two_factor' => true,
