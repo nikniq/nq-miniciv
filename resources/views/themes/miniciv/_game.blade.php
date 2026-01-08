@@ -51,8 +51,7 @@
                     <button id="select-wall" class="play-btn">🧱 Build Wall (6S)</button>
                     <button id="build-sawmill" class="play-btn" style="display:none">🪚 Build Sawmill (10W)</button>
                     <button id="build-barrack" class="play-btn" style="display:none">🏰 Build Barracks (15W, 10S)</button>
-                    <button id="end-turn" class="play-btn" style="background:var(--mc-action);color:#021122;">End Turn</button>
-                    <button id="reset" class="link button-reset" style="color:var(--mc-accent);">Reset</button>
+                    <button id="end-turn" class="play-btn" style="background:var(--mc-action);color:#021122;">Save</button>
                 </div>
             </div>
 
@@ -158,10 +157,7 @@
         update();
     });
 
-    document.getElementById('reset').addEventListener('click', ()=>{
-        if (!confirm('Reset MiniCiv game?')) return;
-        state = JSON.parse(JSON.stringify(defaults)); save(state); update();
-    });
+    // Reset removed by user request
 
     // Hotkeys: 1=House, 2=Farm, 3=Wall, 4=Collect Food, 5=Collect Wood, 6=Collect Stone, Space=End Turn, R=Reset
     document.addEventListener('keydown', (e) => {
@@ -178,7 +174,7 @@
             case 'w': case 'W': collectWood(); break;
             case 's': case 'S': collectStone(); break;
             case ' ': e.preventDefault(); document.getElementById('end-turn').click(); break;
-            case 'r': case 'R': document.getElementById('reset').click(); break;
+            // 'R' hotkey removed (reset removed)
         }
     });
 
