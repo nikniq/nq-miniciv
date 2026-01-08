@@ -48,6 +48,7 @@
                     <button id="select-wall" class="play-btn">🧱 Build Wall (6S)</button>
                     <button id="build-sawmill" class="play-btn" style="display:none">🪚 Build Sawmill (10W)</button>
                         <button id="collect-food" class="play-btn" style="background:#ffd6a6;color:#021122;width:100%;">🍎 Collect Food <span style="opacity:0.8;margin-left:8px;font-weight:700">(F)</span></button>
+                        <button id="build-barrack" class="play-btn" style="display:none">🏰 Build Barracks (15W, 10S)</button>
                         <button id="collect-wood" class="play-btn" style="background:#ffd1ff;color:#021122;width:100%;">🪵 Collect Wood <span style="opacity:0.8;margin-left:8px;font-weight:700">(W)</span></button>
                         <button id="collect-stone" class="play-btn" style="background:#e6e6e6;color:#021122;width:100%;">🪨 Collect Stone <span style="opacity:0.8;margin-left:8px;font-weight:700">(S)</span></button>
                     <button id="end-turn" class="play-btn" style="background:var(--mc-action);color:#021122;">End Turn</button>
@@ -76,7 +77,8 @@
         houses: 0,
         farms: 0,
         walls: 0,
-        sawmills: 0
+        sawmills: 0,
+        barracks: 0
     };
 
     function load() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaults; } catch(e){ return defaults; } }
@@ -98,6 +100,7 @@
             ${fmtBadge('Farms', state.farms, 'farm')}
             ${fmtBadge('Walls', state.walls, 'wall')}
             ${fmtBadge('Sawmills', state.sawmills)}
+            ${fmtBadge('Barracks', state.barracks)}
             ${fmtBadge('Food', state.food)}
             ${fmtBadge('Wood', state.wood)}
             ${fmtBadge('Stone', state.stone)}
@@ -109,6 +112,9 @@
         // show sawmill button only when at least one farm exists
         const bs = document.getElementById('build-sawmill');
         if (bs) bs.style.display = (state.farms && state.farms > 0) ? 'block' : 'none';
+        // show barracks button when population is greater than 20
+        const bb = document.getElementById('build-barrack');
+        if (bb) bb.style.display = (state.population && state.population > 20) ? 'block' : 'none';
         save(state);
     }
 
@@ -119,6 +125,8 @@
     function collectFood(){ state.food += 3 + (state.farms || 0); state.turn += 1; update(); }
     function collectWood(){ state.wood += 5 + ((state.sawmills || 0) * 3); state.turn += 1; update(); }
     function collectStone(){ state.stone += 4; state.turn += 1; update(); }
+
+    function buildBarrack(){ if(state.wood < 15) return alert('Not enough wood'); if(state.stone < 10) return alert('Not enough stone'); state.wood -= 15; state.stone -= 10; state.barracks += 1; update(); }
 
     document.getElementById('select-house').addEventListener('click', buildHouse);
     document.getElementById('select-farm').addEventListener('click', buildFarm);
@@ -132,6 +140,10 @@
     function buildSawmill(){ if(state.wood < 10) return alert('Not enough wood'); state.wood -= 10; state.sawmills += 1; update(); }
     const sawBtn = document.getElementById('build-sawmill');
     if (sawBtn) sawBtn.addEventListener('click', buildSawmill);
+
+    // Build barracks (available after population > 20)
+    const barrackBtn = document.getElementById('build-barrack');
+    if (barrackBtn) barrackBtn.addEventListener('click', buildBarrack);
 
     document.getElementById('end-turn').addEventListener('click', ()=>{
         state.turn += 1;
