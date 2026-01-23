@@ -11,7 +11,9 @@
     </div>
     <div class="admin-nav" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
         <a class="{{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">Dashboard</a>
-        <a class="{{ request()->routeIs('admin.licenses.*') ? 'active' : '' }}" href="{{ route('admin.licenses.index') }}">Licenses</a>
+        @if(config('license.enabled'))
+            <a class="{{ request()->routeIs('admin.licenses.*') ? 'active' : '' }}" href="{{ route('admin.licenses.index') }}">Licenses</a>
+        @endif
         @if(config('products.enabled'))
             <a class="{{ request()->routeIs('admin.products.*') ? 'active' : '' }}" href="{{ route('admin.products.index') }}">Products</a>
         @endif
