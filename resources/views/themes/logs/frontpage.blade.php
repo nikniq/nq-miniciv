@@ -17,7 +17,7 @@
             @if(config('admin.servers_enabled'))
                 <a class="link button-reset" style="font-weight:600;" href="{{ route('admin.servers.index') }}">Servers</a>
             @endif
-            @if(config('license.enabled') && config('license.public_validation'))
+            @if(config('license.enabled') && config('license.public_validation') && Route::has('admin.tools.license-validation'))
                 <a class="link button-reset" style="font-weight:600;" href="{{ route('admin.tools.license-validation') }}">License Validation</a>
             @endif
         </div>

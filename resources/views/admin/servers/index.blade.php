@@ -24,7 +24,9 @@
                <a class="{{ request()->routeIs('admin.external-logs.index') ? 'active' : '' }}" href="{{ route('admin.external-logs.index') }}">External Logs</a>
            @endif
         <a class="active" href="{{ route('admin.servers.index') }}">Servers</a>
-        <a class="{{ request()->routeIs('admin.tools.license-validation') ? 'active' : '' }}" href="{{ route('admin.tools.license-validation') }}">License Validation</a>
+        @if(config('license.enabled') && config('license.public_validation') && Route::has('admin.tools.license-validation'))
+            <a class="{{ request()->routeIs('admin.tools.license-validation') ? 'active' : '' }}" href="{{ route('admin.tools.license-validation') }}">License Validation</a>
+        @endif
         <a class="{{ request()->routeIs('admin.servers.create') ? 'active' : '' }}" href="{{ route('admin.servers.create') }}">+ Add server</a>
     </div>
 </header>

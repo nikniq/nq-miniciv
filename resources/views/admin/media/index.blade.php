@@ -23,7 +23,7 @@
         @if (config('admin.servers_enabled'))
             <a class="{{ request()->routeIs('admin.servers.*') ? 'active' : '' }}" href="{{ route('admin.servers.index') }}">Servers</a>
         @endif
-        @if(config('license.enabled') && config('license.public_validation'))
+        @if(config('license.enabled') && config('license.public_validation') && Route::has('admin.tools.license-validation'))
             <a class="{{ request()->routeIs('admin.tools.license-validation') ? 'active' : '' }}" href="{{ route('admin.tools.license-validation') }}">License Validation</a>
         @endif
         <a href="{{ route('admin.media.create') }}" class="{{ request()->routeIs('admin.media.create') ? 'active' : '' }}">+ Upload</a>
