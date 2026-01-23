@@ -10,5 +10,5 @@ return [
     |
     */
 
-    'enabled' => env('APP_PRODUCT_ENABLED', false),
+    'enabled' => env('APP_PRODUCTS_ENABLED', false),
 ];
