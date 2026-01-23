@@ -13,14 +13,14 @@ return [
      */
 
     // Master toggle for all license features
-    'enabled' => (bool) env('APP_LICENSES_ENABLED', true),
+    'enabled' => (bool) env('APP_LICENSES_ENABLED', false),
 
     // Allow public license validation route (/license/{license_code})
-    'public_validation' => (bool) env('APP_LICENSES_PUBLIC_VALIDATION', true),
+    'public_validation' => (bool) env('APP_LICENSES_PUBLIC_VALIDATION', false),
 
     // Allow users to purchase licenses (POST /dashboard/licenses)
-    'purchase_enabled' => (bool) env('APP_LICENSES_PURCHASE_ENABLED', true),
+    'purchase_enabled' => (bool) env('APP_LICENSES_PURCHASE_ENABLED', false),
 
     // Enable admin CRUD for licenses
-    'admin_enabled' => (bool) env('APP_LICENSES_ADMIN', true),
+    'admin_enabled' => (bool) env('APP_LICENSES_ADMIN', false),
 ];
