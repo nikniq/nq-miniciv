@@ -8,6 +8,9 @@ class ShopService
 {
     public function getProducts()
     {
+        if (!config('products.enabled')) {
+            return collect();
+        }
         return Product::orderBy('name')->get();
     }
 
