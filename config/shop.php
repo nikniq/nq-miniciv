@@ -2,5 +2,5 @@
 
 return [
     // Toggle to enable or disable the shop functionality
-    'enabled' => env('SHOP_ENABLED', true),
+    'enabled' => env('APP_SHOP_ENABLED', true),
 ];

@@ -53,7 +53,7 @@ The application is configured via the `.env` file and various config files in `c
 - `APP_LICENSES_PURCHASE_ENABLED`: Enable purchases (true/false)
 - `APP_GAMES_ENABLED`: Enable games feature (default: false)
 - `APP_MINICIV_ENABLED`: Enable MiniCiv game feature (true/false)
-- `SHOP_ENABLED`: Enable shop (true/false)
+- `APP_SHOP_ENABLED`: Enable shop (true/false)
 - `APILAB_ENABLED`: Enable API lab (true/false)
 
 ### Admin
