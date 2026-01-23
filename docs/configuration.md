@@ -51,7 +51,7 @@ The application is configured via the `.env` file and various config files in `c
 - `FRONTPAGE_THEME`: Frontpage theme (default, games, license, login)
 - `APP_LICENSES_ENABLED`: Enable license features (true/false)
 - `APP_LICENSES_PURCHASE_ENABLED`: Enable purchases (true/false)
-- `GAMES_ENABLED`: Enable games feature (true/false)
+- `GAMES_ENABLED`: Enable games feature (default: false)
 - `SHOP_ENABLED`: Enable shop (true/false)
 - `APILAB_ENABLED`: Enable API lab (true/false)
 

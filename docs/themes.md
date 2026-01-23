@@ -126,7 +126,7 @@ Themes extend the main `layouts.app` and can override sections:
 
 - `FRONTPAGE_THEME`: Active frontpage theme (default, games, license, login)
 - `GAMES_CATEGORY`: Product category for games theme
-- `GAMES_ENABLED`: Enable games features
+- `GAMES_ENABLED`: Enable games features (default: false)
 - `APP_LICENSES_PUBLIC_VALIDATION`: Enable license validation on license theme
 
 ### Theme-Specific Config
