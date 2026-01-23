@@ -8,6 +8,7 @@ Welcome to the MiniCiv project documentation. This is a Laravel 11 application t
 - [Configuration](configuration.md)
 - [Features](features.md)
 - [API Reference](api.md)
+- [License Server Setup](license-server.md)
 - [Log Server Setup](log-server.md)
 - [Game Server Setup](game-server.md)
 - [Database](database.md)
