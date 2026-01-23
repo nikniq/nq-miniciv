@@ -59,6 +59,7 @@ The application is configured via the `.env` file and various config files in `c
 ### Admin
 
 - `APP_LICENSES_ADMIN`: Enable admin license management (true/false)
+- `APP_PRODUCT_ENABLED`: Enable admin product management (default: false)
 - `ADMIN_SERVERS_ENABLED`: Enable server management (true/false)
 - `ADMIN_EXTERNAL_LOGS_ENABLED`: Enable external logs (true/false)
 
@@ -71,6 +72,7 @@ The application is configured via the `.env` file and various config files in `c
 - `config/license.php`: License feature toggles
 - `config/games.php`: Games config
 - `config/miniciv.php`: MiniCiv game config
+- `config/products.php`: Products config
 - `config/shop.php`: Shop config
 - `config/paypal.php`: PayPal config
 - `config/stripe.php`: Stripe config

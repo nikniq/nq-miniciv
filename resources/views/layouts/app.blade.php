@@ -310,7 +310,7 @@
                 @auth
                     <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'nav-active' : '' }}">Dashboard</a>
                     <a href="{{ route('profile.show') }}" class="{{ request()->routeIs('profile.show') ? 'nav-active' : '' }}">Profile</a>
-                    @if(config('shop.enabled'))
+                    @if(config('shop.enabled') && config('products.enabled'))
                         <a href="{{ url('/shop') }}" class="{{ request()->routeIs('shop') || request()->routeIs('shop.products.show') ? 'nav-active' : '' }}">Shop</a>
                     @endif
                         @if(config('apilab.enabled') && Route::has('api.lab'))
@@ -323,7 +323,7 @@
                             <a href="{{ route('posts.index') }}" class="{{ request()->routeIs('posts.index') || request()->routeIs('posts.show') ? 'nav-active' : '' }}">Posts</a>
                         @endif
                 @else
-                    @if(config('shop.enabled'))
+                    @if(config('shop.enabled') && config('products.enabled'))
                         <a href="{{ url('/shop') }}" class="{{ request()->routeIs('shop') || request()->routeIs('shop.products.show') ? 'nav-active' : '' }}">Shop</a>
                     @endif
                         @if(config('apilab.enabled') && Route::has('api.lab'))

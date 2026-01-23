@@ -10,7 +10,7 @@
         <p class="lead">Experiment with the `POST /api/licenses/validate` endpoint, then wire the same payloads into your own services.</p>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0.5rem;align-items:center;">
-        @if(config('shop.enabled'))
+        @if(config('shop.enabled') && config('products.enabled'))
             <a class="link" href="{{ url('/shop') }}" style="display:block;text-align:center;padding:0.65rem 0.9rem;border:1px solid rgba(15,23,42,0.12);border-radius:0.9rem;background:#fff;box-shadow:0 6px 18px rgba(15,23,42,0.08);font-weight:600;">Browse products</a>
         @endif
         <a class="link" href="{{ route('register') }}" style="display:block;text-align:center;padding:0.65rem 0.9rem;border:1px solid rgba(15,23,42,0.12);border-radius:0.9rem;background:#fff;box-shadow:0 6px 18px rgba(15,23,42,0.08);font-weight:600;">Create dashboard account</a>
