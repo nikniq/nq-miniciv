@@ -17,7 +17,8 @@ class DashboardController extends Controller
         $purchaseEnabled = $licenseEnabled && (bool) config('license.purchase_enabled');
 
         $favorites = collect();
-        if ($user = Auth::user() && config('games.enabled')) {
+        $user = Auth::user();
+        if ($user && config('games.enabled')) {
             $favorites = Favourite::with('favoritable.media')
                 ->where('user_id', $user->id)
                 ->where('favoritable_type', Product::class)
