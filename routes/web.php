@@ -82,18 +82,20 @@ if (config('games.enabled')) {
 }
 
 // MiniCiv play page (simple client-side demo)
-Route::get('/miniciv/play', function () {
-    return view('themes.miniciv.play');
-})->name('miniciv.play');
+if (config('miniciv.enabled')) {
+    Route::get('/miniciv/play', function () {
+        return view('themes.miniciv.play');
+    })->name('miniciv.play');
 
-// Save MiniCiv state (requires auth)
-Route::post('/miniciv/save', [App\Http\Controllers\MiniCivController::class, 'save'])
-    ->middleware('auth')
-    ->name('miniciv.save');
-// Delete a saved MiniCiv state
-Route::post('/miniciv/delete', [App\Http\Controllers\MiniCivController::class, 'delete'])
-    ->middleware('auth')
-    ->name('miniciv.delete');
+    // Save MiniCiv state (requires auth)
+    Route::post('/miniciv/save', [App\Http\Controllers\MiniCivController::class, 'save'])
+        ->middleware('auth')
+        ->name('miniciv.save');
+    // Delete a saved MiniCiv state
+    Route::post('/miniciv/delete', [App\Http\Controllers\MiniCivController::class, 'delete'])
+        ->middleware('auth')
+        ->name('miniciv.delete');
+}
 // WordPress posts index and single post
 if (config('posts.enabled')) {
     Route::get('/posts', [WpPostController::class, 'index'])->name('posts.index');

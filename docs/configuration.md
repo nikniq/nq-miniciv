@@ -51,7 +51,8 @@ The application is configured via the `.env` file and various config files in `c
 - `FRONTPAGE_THEME`: Frontpage theme (default, games, license, login)
 - `APP_LICENSES_ENABLED`: Enable license features (true/false)
 - `APP_LICENSES_PURCHASE_ENABLED`: Enable purchases (true/false)
-- `GAMES_ENABLED`: Enable games feature (default: false)
+- `APP_GAMES_ENABLED`: Enable games feature (default: false)
+- `APP_MINICIV_ENABLED`: Enable MiniCiv game feature (true/false)
 - `SHOP_ENABLED`: Enable shop (true/false)
 - `APILAB_ENABLED`: Enable API lab (true/false)
 
@@ -69,6 +70,7 @@ The application is configured via the `.env` file and various config files in `c
 - `config/mail.php`: Mail config
 - `config/license.php`: License feature toggles
 - `config/games.php`: Games config
+- `config/miniciv.php`: MiniCiv game config
 - `config/shop.php`: Shop config
 - `config/paypal.php`: PayPal config
 - `config/stripe.php`: Stripe config

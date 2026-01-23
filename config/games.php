@@ -2,7 +2,7 @@
 
 return [
     // Enable or disable the Games feature.
-    'enabled' => env('GAMES_ENABLED', false),
+    'enabled' => env('APP_GAMES_ENABLED', false),
 
     // Category name in the `products` table used to identify games.
     'category' => env('GAMES_CATEGORY', 'Game'),

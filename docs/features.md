@@ -32,6 +32,13 @@ MiniCiv includes several key features for managing users, licenses, and games.
 - Curated game list fallback
 - Theme integration
 
+## MiniCiv
+
+- Browser-based civilization game
+- Save/load game states
+- User-specific game progress
+- Simple client-side demo
+
 ## Shop
 
 - Product catalog

@@ -30,7 +30,7 @@ FRONTPAGE_THEME=default
 ```env
 FRONTPAGE_THEME=games
 GAMES_CATEGORY=Game
-GAMES_ENABLED=true
+APP_GAMES_ENABLED=true
 ```
 
 #### License Theme (`license`)
@@ -126,7 +126,7 @@ Themes extend the main `layouts.app` and can override sections:
 
 - `FRONTPAGE_THEME`: Active frontpage theme (default, games, license, login)
 - `GAMES_CATEGORY`: Product category for games theme
-- `GAMES_ENABLED`: Enable games features (default: false)
+- `APP_GAMES_ENABLED`: Enable games features (default: false)
 - `APP_LICENSES_PUBLIC_VALIDATION`: Enable license validation on license theme
 
 ### Theme-Specific Config
