@@ -10,5 +10,5 @@ return [
     | `API_LAB_ENABLED=false` in the environment to hide routes and links.
     |
     */
-    'enabled' => filter_var(env('API_LAB_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+    'enabled' => filter_var(env('API_LAB_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
 ];
