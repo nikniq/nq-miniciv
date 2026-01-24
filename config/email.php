@@ -11,5 +11,5 @@ return [
     | and routes for sending test messages.
     |
     */
-    'enabled' => filter_var(env('APP_EMAIL_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+    'enabled' => filter_var(env('APP_EMAIL_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
 ];
