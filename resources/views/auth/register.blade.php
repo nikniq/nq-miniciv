@@ -1,12 +1,12 @@
 @extends('layouts.app')
 
-@section('title', 'Create account · GD Login')
+@section('title', "Create account · " . config('site.name'))
 
 @section('content')
 <header class="hero">
     <div>
         <p class="eyebrow">New here?</p>
-        <h1>Create your GD Login account</h1>
+        <h1>Create your {{ config('site.name') }} account</h1>
         <p class="lead">Fill out the details below to unlock your dashboard instantly.</p>
     </div>
 </header>
