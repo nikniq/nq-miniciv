@@ -24,7 +24,7 @@
         @if(config('logs.enabled') && Route::has('admin.event-logs.index'))
             <a class="{{ request()->routeIs('admin.event-logs.index') ? 'active' : '' }}" href="{{ route('admin.event-logs.index') }}">Event Logs</a>
         @endif
-        @if (config('admin.external_logs_enabled'))
+        @if (config('admin.external_logs_enabled') && Route::has('admin.external-logs.index'))
             <a class="{{ request()->routeIs('admin.external-logs.index') ? 'active' : '' }}" href="{{ route('admin.external-logs.index') }}">External Logs</a>
         @endif
         @if (config('admin.servers_enabled'))

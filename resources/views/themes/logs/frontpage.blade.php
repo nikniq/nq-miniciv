@@ -12,7 +12,7 @@
             @if(config('logs.enabled') && Route::has('admin.event-logs.index'))
                 <a class="link button-reset" style="font-weight:600;" href="{{ route('admin.event-logs.index') }}">Event Logs</a>
             @endif
-            @if(config('admin.external_logs_enabled'))
+            @if(config('admin.external_logs_enabled') && Route::has('admin.external-logs.index'))
                 <a class="link button-reset" style="font-weight:600;" href="{{ route('admin.external-logs.index') }}">External Logs</a>
             @endif
             @if(config('logs.enabled') && Route::has('admin.logs.index'))
@@ -30,7 +30,7 @@
         @if(config('logs.enabled') && Route::has('admin.event-logs.index'))
             <a class="link" href="{{ route('admin.event-logs.index') }}" style="display:block;text-align:center;padding:0.65rem 0.9rem;border:1px solid rgba(15,23,42,0.12);border-radius:0.9rem;background:#fff;box-shadow:0 6px 18px rgba(15,23,42,0.08);font-weight:600;">Browse Event Logs</a>
         @endif
-        @if(config('admin.external_logs_enabled'))
+        @if(config('admin.external_logs_enabled') && Route::has('admin.external-logs.index'))
             <a class="link" href="{{ route('admin.external-logs.index') }}" style="display:block;text-align:center;padding:0.65rem 0.9rem;border:1px solid rgba(15,23,42,0.12);border-radius:0.9rem;background:#fff;box-shadow:0 6px 18px rgba(15,23,42,0.08);font-weight:600;">External Logs</a>
         @endif
         @if(config('logs.enabled') && Route::has('admin.logs.index'))
@@ -53,8 +53,8 @@
             <p class="eyebrow" style="margin-bottom:0.35rem;">Ingested Logs</p>
             <h2 style="margin-top:0;">External sources</h2>
             <p>Review logs from external systems and integrations. Filter by source, IP, and occurrence time to prioritize incidents.</p>
-            @if(config('admin.external_logs_enabled'))
-            <a class="link" href="{{ route('admin.external-logs.index') }}">Open External Logs</a>
+            @if(config('admin.external_logs_enabled') && Route::has('admin.external-logs.index'))
+                <a class="link" href="{{ route('admin.external-logs.index') }}">Open External Logs</a>
             @endif
         </article>
         <article>
