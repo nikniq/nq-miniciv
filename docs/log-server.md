@@ -7,7 +7,8 @@ The application includes a log server for ingesting external event logs via API.
 To enable the log server, set the following in your `.env` file:
 
 ```env
-ADMIN_EXTERNAL_LOGS_ENABLED=true
+APP_EXTLOGS_ENABLED=true
+# legacy: ADMIN_EXTERNAL_LOGS_ENABLED=true is still supported as a fallback
 ```
 
 ## API Endpoint
@@ -127,6 +128,7 @@ Logs can be viewed in the admin panel under "Logs" > "External Logs".
 ## Troubleshooting
 
 - Ensure `ADMIN_EXTERNAL_LOGS_ENABLED` is set to `true`
+ - Ensure `APP_EXTLOGS_ENABLED` is set to `true` (legacy `ADMIN_EXTERNAL_LOGS_ENABLED` is supported)
 - Check application logs for API errors
 - Verify JSON payload is valid
 - Confirm database connection is working

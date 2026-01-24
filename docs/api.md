@@ -49,7 +49,7 @@ Validate a license key via URL parameter.
 
 #### POST /api/logs
 
-Receive external event logs. Requires `ADMIN_EXTERNAL_LOGS_ENABLED=true`.
+Receive external event logs. Requires `APP_EXTLOGS_ENABLED=true` (legacy `ADMIN_EXTERNAL_LOGS_ENABLED` supported).
 
 **Request Body:**
 ```json
