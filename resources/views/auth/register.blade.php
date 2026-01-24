@@ -12,14 +12,7 @@
 </header>
 
 <div class="grid">
-    <section class="card alt" style="color:var(--text);">
-        <style>
-            /* Override .card.alt default white text for this form so inputs are readable */
-            .card.alt input,
-            .card.alt textarea,
-            .card.alt label span,
-            .card.alt h2 { color: var(--text) !important; }
-        </style>
+    <section class="card">
         <h2>Create account</h2>
         <form method="POST" action="{{ route('register') }}">
             @csrf
