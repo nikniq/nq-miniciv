@@ -54,9 +54,9 @@
 <section class="card alt">
     <div style="display:flex;flex-direction:column;gap:1rem;">
                 <div>
-                        <p class="eyebrow" style="color:rgba(255,255,255,0.7);">API quickstart</p>
+                        <p class="eyebrow" style="color:#000;">API quickstart</p>
                         <h2 style="margin:0;">`POST /api/licenses/validate`</h2>
-                        <p style="margin:0;color:rgba(255,255,255,0.8);">Send a license code plus requested seats to confirm availability, expiration, and seat counts—all responses structured for easy automation.</p>
+                        <p style="margin:0;color:inherit;">Send a license code plus requested seats to confirm availability, expiration, and seat counts—all responses structured for easy automation.</p>
                 </div>
                 <pre style="margin:0;background:rgba(0,0,0,0.3);padding:1rem;border-radius:0.9rem;color:#fff;font-family:monospace;overflow:auto;">{
     "license_code": "ACTV-ABCD-1234",
