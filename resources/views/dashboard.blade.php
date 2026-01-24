@@ -7,7 +7,7 @@
     <div>
         <p class="eyebrow">Session active</p>
         <h1>Welcome, {{ $user->name }}!</h1>
-        <p class="lead">You are signed in with Laravel sessions. Manage your account below.</p>
+        <p class="lead">You are signed in. Manage your account below.</p>
     </div>
     <form method="POST" action="{{ route('logout') }}">
         @csrf
