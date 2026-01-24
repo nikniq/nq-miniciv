@@ -17,7 +17,7 @@
             </label>
             <div style="display:flex;gap:0.5rem;">
                 <button type="submit">Lookup</button>
-                @if(config('shop.enabled'))
+                @if(config('shop.enabled') && config('products.enabled'))
                     <a class="link" href="{{ url('/shop') }}">Browse products</a>
                 @endif
                 @if(config('apilab.enabled'))
