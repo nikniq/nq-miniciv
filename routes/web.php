@@ -168,10 +168,12 @@ if (config('license.enabled')) {
         ->name('licenses.show');
 }
 
-Route::middleware('auth')->group(function () {
-    Route::get('/email-test', [EmailTestController::class, 'create'])->name('email.test');
-    Route::post('/email-test', [EmailTestController::class, 'store'])->name('email.test.send');
-});
+if (config('email.enabled')) {
+    Route::middleware('auth')->group(function () {
+        Route::get('/email-test', [EmailTestController::class, 'create'])->name('email.test');
+        Route::post('/email-test', [EmailTestController::class, 'store'])->name('email.test.send');
+    });
+}
 
 Route::prefix('admin')
     ->name('admin.')
