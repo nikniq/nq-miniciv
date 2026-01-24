@@ -18,7 +18,9 @@
             <a class="{{ request()->routeIs('admin.products.*') ? 'active' : '' }}" href="{{ route('admin.products.index') }}">Products</a>
         @endif
         <a class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}">Users</a>
-        <a class="{{ request()->routeIs('admin.event-logs.index') ? 'active' : '' }}" href="{{ route('admin.event-logs.index') }}">Logs</a>
+        @if(config('logs.enabled') && Route::has('admin.event-logs.index'))
+            <a class="{{ request()->routeIs('admin.event-logs.index') ? 'active' : '' }}" href="{{ route('admin.event-logs.index') }}">Logs</a>
+        @endif
         @if(config('license.enabled') && config('license.public_validation') && Route::has('admin.tools.license-validation'))
             <a class="active" href="{{ route('admin.tools.license-validation') }}">License Validation</a>
         @endif
