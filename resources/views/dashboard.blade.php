@@ -40,7 +40,9 @@
             @if (config('admin.servers_enabled') && Route::has('admin.servers.index'))
                 <a class="link" href="{{ route('admin.servers.index') }}" style="display:block;text-align:center;padding:0.65rem 0.9rem;border:1px solid rgba(15,23,42,0.12);border-radius:0.9rem;background:#fff;box-shadow:0 6px 18px rgba(15,23,42,0.08);font-weight:600;">Manage servers</a>
             @endif
-            <a class="link" href="{{ route('admin.event-logs.index') }}" style="display:block;text-align:center;padding:0.65rem 0.9rem;border:1px solid rgba(15,23,42,0.12);border-radius:0.9rem;background:#fff;box-shadow:0 6px 18px rgba(15,23,42,0.08);font-weight:600;">Logs</a>
+            @if(config('logs.enabled') && Route::has('admin.event-logs.index'))
+                <a class="link" href="{{ route('admin.event-logs.index') }}" style="display:block;text-align:center;padding:0.65rem 0.9rem;border:1px solid rgba(15,23,42,0.12);border-radius:0.9rem;background:#fff;box-shadow:0 6px 18px rgba(15,23,42,0.08);font-weight:600;">Logs</a>
+            @endif
             @if(config('license.enabled') && config('license.public_validation') && Route::has('admin.tools.license-validation'))
                 <a class="link" href="{{ route('admin.tools.license-validation') }}" style="display:block;text-align:center;padding:0.65rem 0.9rem;border:1px solid rgba(15,23,42,0.12);border-radius:0.9rem;background:#fff;box-shadow:0 6px 18px rgba(15,23,42,0.08);font-weight:600;">License validation</a>
             @endif
