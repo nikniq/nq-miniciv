@@ -55,6 +55,7 @@ The application is configured via the `.env` file and various config files in `c
 - `APP_MINICIV_ENABLED`: Enable MiniCiv game feature (true/false)
 - `APP_SHOP_ENABLED`: Enable shop (true/false)
 - `APILAB_ENABLED`: Enable API lab (true/false)
+- `APP_POST_ENABLED`: Enable posts/blog feature (true/false) — preferred; legacy `POST_ENABLED` and `POSTS_ENABLED` are still supported as fallbacks
 
 ### Admin
 
