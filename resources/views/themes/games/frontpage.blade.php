@@ -63,12 +63,21 @@
     {{-- Primary games grid: prefer $products (DB) then fallback to config $games --}}
     <section class="arcade-grid">
         <div style="grid-column:1/-1; padding:0 1rem 0 1rem;">
-            <form method="GET" action="{{ route('games.index') }}" class="games-search-form">
-                <input name="q" class="games-search-input" value="{{ old('q', $q ?? request('q')) }}" placeholder="Search games by name, description or code..." aria-label="Search games">
-                @if(!empty($q))
-                    <a href="{{ route('games.index') }}" class="games-clear-btn">Clear</a>
-                @endif
-            </form>
+            @php
+                $gamesRouteAvailable = \Illuminate\Support\Facades\Route::has('games.index') && config('games.enabled');
+            @endphp
+            @if($gamesRouteAvailable)
+                <form method="GET" action="{{ route('games.index') }}" class="games-search-form">
+                    <input name="q" class="games-search-input" value="{{ old('q', $q ?? request('q')) }}" placeholder="Search games by name, description or code..." aria-label="Search games">
+                    @if(!empty($q))
+                        <a href="{{ route('games.index') }}" class="games-clear-btn">Clear</a>
+                    @endif
+                </form>
+            @else
+                <form method="GET" action="#" class="games-search-form">
+                    <input name="q" class="games-search-input" value="{{ old('q', $q ?? request('q')) }}" placeholder="Search games by name, description or code..." aria-label="Search games">
+                </form>
+            @endif
             @if(isset($products) )
                 <p id="games-results-count" style="color:rgba(255,255,255,0.8);margin-top:0.5rem;font-size:0.95rem;">Showing {{ $products->count() }} result{{ $products->count() === 1 ? '' : 's' }}@if(!empty($q)) for "{{ e($q) }}"@endif</p>
             @endif
@@ -210,7 +219,10 @@
 
                 async function doSearch(){
                     const q = input.value.trim();
-                    const url = `{{ route('games.index') }}` + (q ? '?q=' + encodeURIComponent(q) : '');
+                    const url = (function(){
+                        // gamesIndexUrl is injected below depending on route availability
+                        return window.__gamesIndexUrl || '#';
+                    })() + (q ? '?q=' + encodeURIComponent(q) : '');
                     try {
                         const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
                         if (!res.ok) { return; }
@@ -226,6 +238,11 @@
                     debounceTimer = setTimeout(doSearch, 300);
                 });
             })();
+        </script>
+        @php $gamesRouteAvailable = \Illuminate\Support\Facades\Route::has('games.index') && config('games.enabled'); @endphp
+        <script>
+            // expose a safe games index URL for client-side code
+            window.__gamesIndexUrl = {!! $gamesRouteAvailable ? json_encode(route('games.index')) : json_encode('#') !!};
         </script>
             <script>
                 (function () {
