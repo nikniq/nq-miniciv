@@ -61,7 +61,7 @@ The application is configured via the `.env` file and various config files in `c
 
 - `APP_LICENSES_ADMIN`: Enable admin license management (true/false)
 - `APP_PRODUCTS_ENABLED`: Enable admin product management (default: false)
-- `ADMIN_SERVERS_ENABLED`: Enable server management (true/false)
+- `APP_SERVERS_ENABLED`: Enable server management (true/false) — preferred; legacy `ADMIN_SERVERS_ENABLED` is still supported as a fallback
 - `ADMIN_SERVERS_ENABLED`: Enable server management (true/false)
 - `APP_EXTLOGS_ENABLED`: Enable external logs (true/false) — preferred; legacy `ADMIN_EXTERNAL_LOGS_ENABLED` is still supported as a fallback
 

@@ -7,7 +7,8 @@ The application includes server management for tracking and monitoring game serv
 To enable server management, set the following in your `.env` file:
 
 ```env
-ADMIN_SERVERS_ENABLED=true
+APP_SERVERS_ENABLED=true
+# legacy: ADMIN_SERVERS_ENABLED=true is still supported as a fallback
 ```
 
 ## Admin Panel
@@ -122,6 +123,7 @@ Servers are stored in the `servers` table:
 ## Troubleshooting
 
 - Ensure `ADMIN_SERVERS_ENABLED` is true
+ - Ensure `APP_SERVERS_ENABLED` is true (legacy `ADMIN_SERVERS_ENABLED` is supported)
 - Check API logs for heartbeat errors
 - Verify server hostnames are unique
 - Use the admin panel to manually update status if needed
