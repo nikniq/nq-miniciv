@@ -17,7 +17,7 @@
             </label>
             <div style="display:flex;gap:0.5rem;justify-content:flex-start;">
                 <button type="submit">Lookup</button>
-                @if(config('shop.enabled'))
+                @if(config('shop.enabled') && config('products.enabled'))
                     <a class="link" href="{{ url('/shop') }}">Browse products</a>
                 @endif
             </div>
