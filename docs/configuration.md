@@ -56,6 +56,9 @@ The application is configured via the `.env` file and various config files in `c
 - `APP_SHOP_ENABLED`: Enable shop (true/false)
 - `APILAB_ENABLED`: Enable API lab (true/false)
 - `APP_POSTS_ENABLED`: Enable posts/blog feature (true/false) — preferred; legacy `APP_POST_ENABLED`, `POST_ENABLED` and `POSTS_ENABLED` are still supported as fallbacks
+ - `APP_ETH_ENABLED`: Enable Ethereum integration (true/false)
+ - `ETH_PROVIDER_URL`: Ethereum JSON-RPC provider URL (Alchemy/Infura/QuickNode)
+ - `ETH_CHAIN_ID`: Ethereum chain id (1 = mainnet)
 
 ### Admin
 
