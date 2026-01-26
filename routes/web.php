@@ -24,6 +24,7 @@ use App\Http\Controllers\WhoisController;
 use App\Http\Controllers\WpPostController;
 use App\Http\Controllers\CertController;
 use App\Http\Controllers\SubdomainController;
+use App\Http\Controllers\Admin\EthereumController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -197,6 +198,9 @@ Route::prefix('admin')
         Route::get('event-logs', [EventLogController::class, 'index'])->name('event-logs.index');
         if (config('admin.external_logs_enabled')) {
             Route::get('external-logs', [ExternalLogController::class, 'index'])->name('external-logs.index');
+        }
+        if (config('ethereum.enabled')) {
+            Route::get('ethereum', [EthereumController::class, 'index'])->name('ethereum.index');
         }
         // Admin media management
         Route::get('media', [App\Http\Controllers\Admin\MediaController::class, 'index'])->name('media.index');
