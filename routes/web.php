@@ -83,11 +83,15 @@ if (config('games.enabled')) {
 }
 
 // MiniCiv play page (simple client-side demo)
-Route::get('/miniciv/play', function () {
+Route::get('/miniciv/play', function (Illuminate\Http\Request $request) {
     if (!config('miniciv.enabled')) {
         abort(404);
     }
-    return view('themes.miniciv.play');
+    $savedState = null;
+    if ($request->user()) {
+        $savedState = App\Models\MiniCivState::where('user_id', $request->user()->id)->value('state');
+    }
+    return view('themes.miniciv.play', ['minicivSavedState' => $savedState]);
 })->name('miniciv.play');
 
 // Save MiniCiv state (requires auth)

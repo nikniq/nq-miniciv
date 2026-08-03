@@ -16,7 +16,8 @@ class MiniCivController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        $data = $request->input('state');
+        $validated = $request->validate(['state' => 'required|array']);
+        $data = $validated['state'];
 
         MiniCivState::updateOrCreate(
             ['user_id' => $user->id],
