@@ -29,6 +29,9 @@ final class Actions
         if (! $tile->canSettle()) {
             return 'A city cannot be founded on '.strtolower(Rules::TERRAIN[$tile->terrain]['name']).'.';
         }
+        if ($tile->camp) {
+            return 'A barbarian camp occupies this tile. Clear it first.';
+        }
         if ($tile->empire_id && $tile->empire_id !== $empire->id) {
             return 'That land belongs to another empire.';
         }
@@ -87,7 +90,7 @@ final class Actions
     {
         $claimed = 0;
         foreach ($tiles as $t) {
-            if ($t->empire_id !== null) {
+            if ($t->empire_id !== null || $t->camp) {
                 continue;
             }
             $d = ($t->x - $centre->x) ** 2 + ($t->y - $centre->y) ** 2;
@@ -151,10 +154,13 @@ final class Actions
      *
      * @param  Collection<int, Tile>  $tiles  every tile in the game
      */
-    public function attackProblem(Empire $attacker, City $target, Collection $tiles): ?string
+    public function attackProblem(Empire $attacker, City $target, Collection $tiles, ?Game $game = null): ?string
     {
         if ($target->empire_id === $attacker->id) {
             return 'That is your own city.';
+        }
+        if ($game && ! $game->atWar($attacker->id, $target->empire_id)) {
+            return 'You are at peace with this empire. Declare war first.';
         }
         if ($attacker->army < 1) {
             return 'You have no army. Build units in a city first.';
@@ -201,14 +207,14 @@ final class Actions
      */
     public function attack(Game $game, Empire $attacker, City $target, Collection $tiles): array
     {
-        $problem = $this->attackProblem($attacker, $target, $tiles);
+        $problem = $this->attackProblem($attacker, $target, $tiles, $game);
         if ($problem) {
             throw new InvalidArgumentException($problem);
         }
 
         $defender = $game->empires->firstWhere('id', $target->empire_id);
         $garrison = $this->garrison($defender);
-        $defense = Rules::cityDefense($target, $garrison);
+        $defense = Rules::cityDefense($target, $garrison, Economy::empireEffects($defender)['defense'] ?? 0);
         $eliminated = null;
 
         if ($attacker->army > $defense) {
@@ -246,6 +252,105 @@ final class Actions
 
         return ['captured' => false, 'eliminated' => null,
             'text' => "{$attacker->name}'s assault on {$target->name} was repelled (defence {$defense})."];
+    }
+
+    public function warProblem(Game $game, Empire $a, Empire $b): ?string
+    {
+        if ($a->id === $b->id) {
+            return 'You cannot declare war on yourself.';
+        }
+        if ($b->eliminated) {
+            return 'That empire no longer exists.';
+        }
+        $rel = $game->relation($a->id, $b->id);
+        if ($rel['state'] === 'war') {
+            return 'You are already at war.';
+        }
+        if ($rel['since'] > 0 && $game->turn - $rel['since'] < Rules::PEACE_MIN_TURNS) {
+            $left = Rules::PEACE_MIN_TURNS - ($game->turn - $rel['since']);
+            return "The peace treaty holds for another {$left} turns.";
+        }
+
+        return null;
+    }
+
+    public function declareWar(Game $game, Empire $a, Empire $b): void
+    {
+        $problem = $this->warProblem($game, $a, $b);
+        if ($problem) {
+            throw new InvalidArgumentException($problem);
+        }
+        $game->setDiplomacy($a->id, $b->id, 'war');
+        $game->save();
+    }
+
+    /** Whether the AI empire $b would accept peace from $a right now. */
+    public function peaceAcceptable(Game $game, Empire $a, Empire $b): bool
+    {
+        $rel = $game->relation($a->id, $b->id);
+        if ($rel['state'] !== 'war') {
+            return false;
+        }
+        $duration = $game->turn - $rel['since'];
+
+        // Tired of a long war, or clearly losing it.
+        return $duration >= 12 || $b->army < $a->army * 0.6;
+    }
+
+    public function proposePeace(Game $game, Empire $a, Empire $b): bool
+    {
+        if (! $game->atWar($a->id, $b->id)) {
+            throw new InvalidArgumentException('You are not at war with that empire.');
+        }
+        if (! $this->peaceAcceptable($game, $a, $b)) {
+            return false;
+        }
+        $game->setDiplomacy($a->id, $b->id, 'peace');
+        $game->save();
+
+        return true;
+    }
+
+    public function campProblem(Empire $empire, Tile $tile, Collection $tiles): ?string
+    {
+        if (! $tile->camp) {
+            return 'There is no camp here.';
+        }
+        if ($empire->army < Rules::CAMP_CLEAR_ARMY) {
+            return 'You need an army of at least '.Rules::CAMP_CLEAR_ARMY.' to clear a camp.';
+        }
+        $near = $tiles->first(fn (Tile $t) => $t->empire_id === $empire->id && $t->distanceTo($tile) <= 2);
+        if (! $near) {
+            return 'The camp is too far from your territory (within 2 tiles).';
+        }
+
+        return null;
+    }
+
+    /** Clear a barbarian camp. Returns the gold looted. */
+    public function clearCamp(Empire $empire, Tile $tile, Collection $tiles): int
+    {
+        $problem = $this->campProblem($empire, $tile, $tiles);
+        if ($problem) {
+            throw new InvalidArgumentException($problem);
+        }
+        $empire->army -= Rules::CAMP_CLEAR_LOSS;
+        $loot = 20 + 5 * (($tile->x + $tile->y) % 7);
+        $empire->gold += $loot;
+        $empire->save();
+        $tile->camp = false;
+        $tile->save();
+
+        return $loot;
+    }
+
+    public function setFocus(City $city, string $focus): void
+    {
+        if (! isset(Rules::FOCUS[$focus])) {
+            throw new InvalidArgumentException('Unknown focus.');
+        }
+        $city->focus = $focus;
+        $city->save();
     }
 
     private function nextCityName(Empire $empire, Game $game): string

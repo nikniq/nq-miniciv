@@ -103,6 +103,11 @@ final class MapSvg
             if (isset($worked[$t->id]) && ! $city) {
                 $out[] = sprintf('<circle cx="%d" cy="%d" r="2.5" fill="#fff" opacity="0.85"/>', $t->x * $s + $s - 7, $t->y * $s + $s - 7);
             }
+            if ($t->camp) {
+                $out[] = sprintf('<g style="pointer-events:none"><circle cx="%s" cy="%s" r="11" fill="#1c1917" stroke="#ef4444" stroke-width="2"/><text x="%s" y="%s" font-size="14" text-anchor="middle" dominant-baseline="central">☠</text></g>', $cx, $cy, $cx, $cy + 0.5);
+
+                continue;
+            }
             if ($t->resource && ! $city) {
                 $out[] = sprintf('<text x="%s" y="%s" font-size="15" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">%s</text>', $cx, $cy, Rules::RESOURCES[$t->resource]['icon']);
             }
@@ -120,6 +125,7 @@ final class MapSvg
             $e = $t->empire_id ? $empiresById->get($t->empire_id) : null;
             $title = Rules::TERRAIN[$t->terrain]['name']
                 .($t->resource ? ', '.Rules::RESOURCES[$t->resource]['name'] : '')
+                .($t->camp ? ' · Barbarian camp' : '')
                 .($e ? ' · '.$e->name : '')
                 .($city ? ' · '.$city->name.' ('.$city->population.')' : '');
             $sel = $selectedId === $t->id ? ' is-selected' : '';

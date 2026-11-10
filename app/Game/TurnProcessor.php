@@ -38,16 +38,21 @@ final class TurnProcessor
                     continue;
                 }
                 $effects = Economy::empireEffects($empire);
-                $happiness = Economy::happiness($empire);
+                $happiness = Economy::happiness($empire, Economy::warsCount($game, $empire));
                 if ($happiness['unhappy']) {
-                    $this->note($empire, 'Unrest across your empire: no growth and production is down. Build monuments and temples.');
+                    $this->note($empire, 'Unrest across your empire: no growth and production is down.'.($happiness['war_weariness'] ? ' War weariness is part of it.' : ' Build monuments and temples.'));
                 }
                 $science = 0;
                 $gold = 0;
 
                 foreach ($empire->cities as $city) {
                     $cityTiles = $this->tiles->where('city_id', $city->id);
-                    $y = Economy::cityYields($city, $empire, $cityTiles, $effects, $happiness['unhappy']);
+                    $centre = $this->tiles->firstWhere('id', $city->tile_id);
+                    $pillaged = $centre ? Economy::campsNear($centre, $this->tiles) : 0;
+                    if ($pillaged) {
+                        $this->note($empire, "Barbarians are pillaging around {$city->name} (−".(2 * $pillaged).' food). Clear the camp with your army.');
+                    }
+                    $y = Economy::cityYields($city, $empire, $cityTiles, $effects, $happiness['unhappy'], $pillaged);
                     $science += $y['science'];
                     $gold += $y['gold'];
 
@@ -78,6 +83,7 @@ final class TurnProcessor
                 $empire->save();
             }
 
+            $this->spawnCamps($game);
             $game->turn += 1;
             $this->scoresAndVictory($game, $player);
 
@@ -244,6 +250,15 @@ final class TurnProcessor
 
                 return;
             }
+            if (Economy::culture($empire) >= Rules::CULTURE_VICTORY) {
+                $game->status = $empire->is_ai ? 'lost' : 'won';
+                $game->winner_empire_id = $empire->id;
+                array_unshift($this->events, $empire->is_ai
+                    ? "The culture of {$empire->name} has eclipsed all others. The age belongs to them."
+                    : 'Your culture is the envy of the world. Cultural victory!');
+
+                return;
+            }
         }
 
         if ($game->turn > $game->max_turns && $best) {
@@ -253,6 +268,35 @@ final class TurnProcessor
                 ? "Time is up. {$best->name} finishes with the greatest empire."
                 : 'Time is up. Your empire stands above all others. Victory!');
         }
+    }
+
+    /** A new barbarian camp every 12 turns on empty land away from cities. */
+    private function spawnCamps(Game $game): void
+    {
+        if ($game->turn % 12 !== 0 || $game->turn > 100) {
+            return;
+        }
+        $centres = $this->tiles->whereIn('id', $game->cities->pluck('tile_id'));
+        $candidates = $this->tiles->filter(function (Tile $t) use ($centres) {
+            if (! $t->canSettle() || $t->empire_id || $t->camp) {
+                return false;
+            }
+            foreach ($centres as $c) {
+                if ($c->distanceTo($t) < 3) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+        if ($candidates->isEmpty()) {
+            return;
+        }
+        mt_srand($game->seed + $game->turn);
+        $pick = $candidates->values()->get(mt_rand(0, $candidates->count() - 1));
+        $pick->camp = true;
+        $pick->save();
+        $this->events[] = 'Barbarians have made camp in the wilds.';
     }
 
     private function wondersBuilt(Game $game): array

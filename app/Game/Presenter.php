@@ -19,7 +19,7 @@ final class Presenter
         $tiles = $game->tiles;
         $player = $game->playerEmpire();
         $effects = Economy::empireEffects($player);
-        $happiness = Economy::happiness($player);
+        $happiness = Economy::happiness($player, Economy::warsCount($game, $player));
         $upkeep = Economy::upkeep($player);
 
         $wondersBuilt = [];
@@ -36,7 +36,8 @@ final class Presenter
         $totals = ['food' => 0, 'prod' => 0, 'gold' => 0, 'science' => 0];
         $worked = [];
         foreach ($player->cities as $city) {
-            $y = Economy::cityYields($city, $player, $tiles->where('city_id', $city->id), $effects, $happiness['unhappy']);
+            $centre = $tiles->firstWhere('id', $city->tile_id);
+            $y = Economy::cityYields($city, $player, $tiles->where('city_id', $city->id), $effects, $happiness['unhappy'], $centre ? Economy::campsNear($centre, $tiles) : 0);
             $cityYields[$city->id] = $y;
             $totals['gold'] += $y['gold'] + ($city->current_build === 'wealth' ? $y['prod'] : 0);
             $totals['science'] += $y['science'];
@@ -66,7 +67,8 @@ final class Presenter
                 'tile' => $selected,
                 'terrain' => Rules::TERRAIN[$selected->terrain],
                 'resource' => $selected->resource ? Rules::RESOURCES[$selected->resource] : null,
-                'yield' => Rules::tileYield($selected, $player),
+                'yield' => Rules::tileYield($selected, $player, $selected->city_id ? $game->cities->firstWhere('id', $selected->city_id) : null),
+                'campProblem' => $selected->camp ? $this->actions->campProblem($player, $selected, $tiles) : null,
                 'owner' => $owner,
                 'ownerCity' => $selected->city_id ? $game->cities->firstWhere('id', $selected->city_id) : null,
                 'worked' => in_array($selected->id, $worked, true),
@@ -74,9 +76,11 @@ final class Presenter
                 'foundingProblem' => $selectedCity ? null : $this->actions->foundingProblem($game, $player, $selected, $tiles),
             ];
             if ($selectedCity && $selectedCity->empire_id !== $player->id && $owner) {
-                $defense = Rules::cityDefense($selectedCity, $this->actions->garrison($owner));
+                $defense = Rules::cityDefense($selectedCity, $this->actions->garrison($owner), Economy::empireEffects($owner)['defense'] ?? 0);
                 $selectedInfo['defense'] = $defense;
-                $selectedInfo['attackProblem'] = $this->actions->attackProblem($player, $selectedCity, $tiles);
+                $selectedInfo['attackProblem'] = $this->actions->attackProblem($player, $selectedCity, $tiles, $game);
+                $selectedInfo['atWar'] = $game->atWar($player->id, $owner->id);
+                $selectedInfo['warProblem'] = $this->actions->warProblem($game, $player, $owner);
                 $selectedInfo['attackOdds'] = $player->army > $defense ? 'win' : ($player->army > $defense * 0.7 ? 'close' : 'lose');
             }
             if ($selectedCity && $selectedCity->empire_id === $player->id) {
@@ -120,6 +124,10 @@ final class Presenter
         $rivals = $game->empires->map(fn ($e) => [
             'empire' => $e,
             'army' => $e->army,
+            'culture' => Economy::culture($e),
+            'relation' => $e->id === $player->id ? null : $game->relation($player->id, $e->id),
+            'warProblem' => $e->id === $player->id ? null : $this->actions->warProblem($game, $player, $e),
+            'peaceLikely' => $e->id !== $player->id && $game->atWar($player->id, $e->id) && $this->actions->peaceAcceptable($game, $player, $e),
             'cities' => $e->cities->count(),
             'pop' => $e->cities->sum('population'),
             'tiles' => $ownedBy[$e->id] ?? 0,
@@ -142,6 +150,9 @@ final class Presenter
             'happiness' => $happiness,
             'upkeep' => $upkeep,
             'netGold' => $totals['gold'] - $upkeep['total'],
+            'culture' => Economy::culture($player),
+            'cultureGoal' => Rules::CULTURE_VICTORY,
+            'wars' => Economy::warsCount($game, $player),
             'research' => $research,
             'availableTechs' => $player->availableTechs(),
             'idleCities' => $idleCities,

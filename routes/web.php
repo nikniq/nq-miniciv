@@ -36,4 +36,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/games/{game}/cities/{city}/build', [GameActionController::class, 'build'])->name('games.build');
     Route::post('/games/{game}/cities/{city}/buy', [GameActionController::class, 'buy'])->name('games.buy');
     Route::post('/games/{game}/cities/{city}/attack', [GameActionController::class, 'attack'])->name('games.attack');
+    Route::post('/games/{game}/cities/{city}/focus', [GameActionController::class, 'focus'])->name('games.focus');
+    Route::post('/games/{game}/empires/{empire}/war', [GameActionController::class, 'war'])->name('games.war');
+    Route::post('/games/{game}/empires/{empire}/peace', [GameActionController::class, 'peace'])->name('games.peace');
+    Route::post('/games/{game}/clear-camp', [GameActionController::class, 'clearCamp'])->name('games.clear-camp');
 });

@@ -40,18 +40,54 @@ final class AiPlayer
             }
         }
 
-        // War: attack a bordering city when clearly stronger.
-        // Not before turn 30, never against a city it would merely scrape
-        // past, and never while its own people are restless.
-        if ($game->turn >= 30 && ! Economy::happiness($empire)['unhappy']) {
+        // Diplomacy and war. Declare first; attack from the following turn, so
+        // the victim gets one turn of warning. Make peace when a war has gone
+        // on long enough or is going badly.
+        foreach ($game->empires as $other) {
+            if ($other->id === $empire->id || $other->eliminated || ! $game->atWar($empire->id, $other->id)) {
+                continue;
+            }
+            if ($this->actions->peaceAcceptable($game, $empire, $other) && ($other->is_ai || $empire->army < $other->army)) {
+                $game->setDiplomacy($empire->id, $other->id, 'peace');
+                $game->save();
+                if (! $other->is_ai) {
+                    $events[] = "{$empire->name} has sued for peace. The war is over.";
+                }
+            }
+        }
+        if ($game->turn >= 30 && ! Economy::happiness($empire, Economy::warsCount($game, $empire))['unhappy']) {
             foreach ($this->borderingEnemyCities($game, $empire, $tiles) as [$city, $defense]) {
-                if ($empire->army > $defense * 1.8 && $empire->army >= 12) {
-                    $result = $this->actions->attack($game, $empire, $city, $tiles);
-                    $events[] = $result['text'];
-                    if ($result['eliminated']) {
-                        $events[] = "{$result['eliminated']->name} has been wiped from the map.";
+                if ($empire->army <= $defense * 1.8 || $empire->army < 12) {
+                    continue;
+                }
+                $victim = $game->empires->firstWhere('id', $city->empire_id);
+                if (! $game->atWar($empire->id, $victim->id)) {
+                    if ($this->actions->warProblem($game, $empire, $victim) === null && Economy::warsCount($game, $empire) === 0) {
+                        $this->actions->declareWar($game, $empire, $victim);
+                        $events[] = $victim->is_ai
+                            ? "{$empire->name} has declared war on {$victim->name}."
+                            : "⚔ {$empire->name} has declared war on you! Their army is {$empire->army}.";
                     }
-                    break; // one attack per turn
+                    break;
+                }
+                if ($game->turn - $game->relation($empire->id, $victim->id)['since'] < 1) {
+                    break;
+                }
+                $result = $this->actions->attack($game, $empire, $city, $tiles);
+                $events[] = $result['text'];
+                if ($result['eliminated']) {
+                    $events[] = "{$result['eliminated']->name} has been wiped from the map.";
+                }
+                break; // one attack per turn
+            }
+        }
+
+        // Clear barbarian camps near home when the army can spare it.
+        if ($empire->army >= Rules::CAMP_CLEAR_ARMY + 4) {
+            foreach ($tiles->where('camp', true) as $camp) {
+                if ($this->actions->campProblem($empire, $camp, $tiles) === null) {
+                    $this->actions->clearCamp($empire, $camp, $tiles);
+                    break;
                 }
             }
         }
@@ -62,7 +98,8 @@ final class AiPlayer
         $broke = $empire->gold < 10;
         $wantCities = min(6, 2 + intdiv($game->turn, 20));
         $roomToGrow = $this->bestSite($game, $empire, $tiles) !== null;
-        $happiness = Economy::happiness($empire);
+        $happiness = Economy::happiness($empire, Economy::warsCount($game, $empire));
+        $pillaged = $tiles->where('camp', true)->isNotEmpty();
 
         foreach ($empire->cities as $city) {
             $options = Economy::buildOptions($city, $empire, $wondersBuilt);
@@ -74,7 +111,7 @@ final class AiPlayer
             }
 
             if ($happiness['unhappy']) {
-                foreach (['temple', 'monument'] as $fix) {
+                foreach (['colosseum', 'courthouse', 'temple', 'monument'] as $fix) {
                     if (isset($options[$fix])) {
                         $city->current_build = $fix;
                         $city->save();
@@ -99,7 +136,7 @@ final class AiPlayer
                 continue;
             }
 
-            if ($empire->army < $wantArmy && ! $broke) {
+            if (($empire->army < $wantArmy || ($pillaged && $empire->army < Rules::CAMP_CLEAR_ARMY + 4)) && ! $broke) {
                 $units = array_filter($options, fn ($o) => $o['kind'] === 'unit');
                 if ($units) {
                     uasort($units, fn ($a, $b) => $b['cost'] <=> $a['cost']); // best unit available
@@ -168,9 +205,10 @@ final class AiPlayer
                 continue;
             }
             $garrison = $this->actions->garrison($other);
+            $extra = Economy::empireEffects($other)['defense'] ?? 0;
             foreach ($other->cities as $city) {
                 if ($this->actions->bordersTouch($empire, $city, $tiles)) {
-                    $out[] = [$city, Rules::cityDefense($city, $garrison)];
+                    $out[] = [$city, Rules::cityDefense($city, $garrison, $extra)];
                 }
             }
         }

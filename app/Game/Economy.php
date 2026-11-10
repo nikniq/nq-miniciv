@@ -19,15 +19,16 @@ final class Economy
      * @param  bool  $unhappy  empire-wide unrest: no growth, production -25%
      * @return array{food:int,prod:int,gold:int,science:int,culture:int,happy:int,surplus:int,worked:array<int>}
      */
-    public static function cityYields(City $city, Empire $empire, Collection $cityTiles, array $empireEffects = [], bool $unhappy = false): array
+    public static function cityYields(City $city, Empire $empire, Collection $cityTiles, array $empireEffects = [], bool $unhappy = false, int $pillaged = 0): array
     {
+        $focus = Rules::FOCUS[$city->focus ?? 'balanced'] ?? Rules::FOCUS['balanced'];
         $total = ['food' => 0, 'prod' => 0, 'gold' => 0, 'science' => 0, 'culture' => 1, 'happy' => 0];
         $worked = [];
 
         // City centre is always worked and gets a bonus so size-1 cities live.
         $centre = $cityTiles->firstWhere('id', $city->tile_id);
         if ($centre) {
-            $y = Rules::tileYield($centre, $empire);
+            $y = Rules::tileYield($centre, $empire, $city);
             $total['food'] += max(2, $y['food'] + 1);
             $total['prod'] += max(1, $y['prod'] + 1);
             $total['gold'] += $y['gold'] + 1 + intdiv($city->population, 3); // taxes
@@ -38,8 +39,8 @@ final class Economy
         // Citizens work the best remaining tiles, food-weighted.
         $candidates = $cityTiles
             ->reject(fn (Tile $t) => $t->id === $city->tile_id)
-            ->map(fn (Tile $t) => [$t, Rules::tileYield($t, $empire)])
-            ->sortByDesc(fn ($pair) => $pair[1]['food'] * 2 + $pair[1]['prod'] * 1.5 + $pair[1]['gold'] + $pair[1]['science'])
+            ->map(fn (Tile $t) => [$t, Rules::tileYield($t, $empire, $city)])
+            ->sortByDesc(fn ($pair) => $pair[1]['food'] * $focus['food'] + $pair[1]['prod'] * $focus['prod'] + $pair[1]['gold'] * $focus['gold'] + $pair[1]['science'] * $focus['science'])
             ->take($city->population);
 
         foreach ($candidates as [$t, $y]) {
@@ -58,12 +59,17 @@ final class Economy
             }
         }
         foreach ($empireEffects as $k => $v) {
-            $total[$k] += $v;
+            if (isset($total[$k])) { // 'defense' is not a yield
+                $total[$k] += $v;
+            }
         }
 
         if ($unhappy) {
             $total['prod'] = (int) floor($total['prod'] * 0.75);
         }
+        // Barbarian camps nearby pillage the countryside.
+        $total['food'] = max(0, $total['food'] - 2 * $pillaged);
+        $total['pillaged'] = $pillaged;
 
         $total['surplus'] = $total['food'] - 2 * $city->population;
         if ($unhappy && $total['surplus'] > 0) {
@@ -94,11 +100,11 @@ final class Economy
      *
      * @return array{supply:int,demand:int,balance:int,unhappy:bool}
      */
-    public static function happiness(Empire $empire): array
+    public static function happiness(Empire $empire, int $warsCount = 0): array
     {
         $effects = self::empireEffects($empire);
         $supply = Rules::BASE_HAPPINESS;
-        $demand = 0;
+        $demand = $warsCount * Rules::WAR_WEARINESS;
         foreach ($empire->cities as $city) {
             $demand += max(0, $city->population - Rules::FREE_CITIZENS);
             $supply += Rules::CITY_HAPPINESS + ($effects['happy'] ?? 0);
@@ -108,7 +114,7 @@ final class Economy
         }
         $balance = $supply - $demand;
 
-        return ['supply' => $supply, 'demand' => $demand, 'balance' => $balance, 'unhappy' => $balance < 0];
+        return ['supply' => $supply, 'demand' => $demand, 'balance' => $balance, 'unhappy' => $balance < 0, 'war_weariness' => $warsCount * Rules::WAR_WEARINESS];
     }
 
     /** Gold per turn for buildings and the army. */
@@ -177,6 +183,31 @@ final class Economy
         return Rules::BUILDINGS[$key]['name'] ?? Rules::UNITS[$key]['name'] ?? Rules::PROJECTS[$key]['name'] ?? ucfirst($key);
     }
 
+    /** Total culture across the empire's cities. */
+    public static function culture(Empire $empire): int
+    {
+        return (int) $empire->cities->sum('culture');
+    }
+
+    /** Number of empires $empire is at war with (ignoring the eliminated). */
+    public static function warsCount(\App\Models\Game $game, Empire $empire): int
+    {
+        $n = 0;
+        foreach ($game->empires as $other) {
+            if ($other->id !== $empire->id && ! $other->eliminated && $game->atWar($empire->id, $other->id)) {
+                $n++;
+            }
+        }
+
+        return $n;
+    }
+
+    /** Camps within pillaging range (distance 2) of a city centre. */
+    public static function campsNear(Tile $centre, Collection $tiles): int
+    {
+        return $tiles->filter(fn (Tile $t) => $t->camp && $t->distanceTo($centre) <= 2)->count();
+    }
+
     public static function score(Empire $empire, int $tiles): int
     {
         $pop = 0;
@@ -195,6 +226,7 @@ final class Economy
             + $buildings * 2
             + $wonders * 25
             + $tiles
-            + intdiv($empire->army, 2);
+            + intdiv($empire->army, 2)
+            + intdiv(self::culture($empire), 20);
     }
 }

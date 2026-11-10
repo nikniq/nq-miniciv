@@ -8,10 +8,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['game_id', 'x', 'y', 'terrain', 'resource', 'empire_id', 'city_id'])]
+#[Fillable(['game_id', 'x', 'y', 'terrain', 'resource', 'camp', 'empire_id', 'city_id'])]
 class Tile extends Model
 {
     public $timestamps = false;
+
+    protected function casts(): array
+    {
+        return ['camp' => 'boolean'];
+    }
 
     public function game(): BelongsTo
     {

@@ -6,6 +6,7 @@ use App\Game\Actions;
 use App\Game\Rules;
 use App\Game\TurnProcessor;
 use App\Models\City;
+use App\Models\Empire;
 use App\Models\Game;
 use App\Models\Tile;
 use Illuminate\Http\RedirectResponse;
@@ -93,6 +94,70 @@ class GameActionController extends Controller
         }
 
         return $this->back($game, $text, $city->tile_id, $result['captured'] ? 'status' : 'error');
+    }
+
+    public function focus(Request $request, Game $game, City $city): RedirectResponse
+    {
+        $this->own($request, $game);
+        $this->ownCity($game, $city);
+
+        try {
+            $this->actions->setFocus($city, (string) $request->input('focus'));
+        } catch (InvalidArgumentException $e) {
+            return $this->back($game, $e->getMessage(), $city->tile_id);
+        }
+
+        return $this->back($game, null, $city->tile_id);
+    }
+
+    public function war(Request $request, Game $game, Empire $empire): RedirectResponse
+    {
+        $this->own($request, $game);
+        abort_unless($empire->game_id === $game->id, 404);
+        $game->load('empires');
+        $player = $game->playerEmpire();
+
+        try {
+            $this->actions->declareWar($game, $player, $empire);
+        } catch (InvalidArgumentException $e) {
+            return $this->back($game, $e->getMessage(), $request->integer('tile') ?: null);
+        }
+
+        return $this->back($game, "You are now at war with {$empire->name}. War weariness costs ".Rules::WAR_WEARINESS.' happiness.', $request->integer('tile') ?: null, 'status');
+    }
+
+    public function peace(Request $request, Game $game, Empire $empire): RedirectResponse
+    {
+        $this->own($request, $game);
+        abort_unless($empire->game_id === $game->id, 404);
+        $game->load('empires');
+        $player = $game->playerEmpire();
+
+        try {
+            $accepted = $this->actions->proposePeace($game, $player, $empire);
+        } catch (InvalidArgumentException $e) {
+            return $this->back($game, $e->getMessage(), $request->integer('tile') ?: null);
+        }
+
+        return $accepted
+            ? $this->back($game, "{$empire->name} accepts peace.", $request->integer('tile') ?: null, 'status')
+            : $this->back($game, "{$empire->name} refuses: they think they are winning. Try again when the war has dragged on or their army is smaller.", $request->integer('tile') ?: null);
+    }
+
+    public function clearCamp(Request $request, Game $game): RedirectResponse
+    {
+        $this->own($request, $game);
+        $tile = Tile::where('game_id', $game->id)->findOrFail($request->integer('tile'));
+        $game->load(['empires', 'tiles']);
+        $player = $game->playerEmpire();
+
+        try {
+            $loot = $this->actions->clearCamp($player, $tile, $game->tiles);
+        } catch (InvalidArgumentException $e) {
+            return $this->back($game, $e->getMessage(), $tile->id);
+        }
+
+        return $this->back($game, "The camp is destroyed. Your troops loot {$loot} gold.", $tile->id, 'status');
     }
 
     public function research(Request $request, Game $game): RedirectResponse

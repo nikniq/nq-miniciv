@@ -63,6 +63,19 @@
         </div>
 
         @if ($game->isActive())
+            <form method="POST" action="{{ route('games.focus', [$game, $city]) }}" class="mt-3 flex items-center gap-2 text-xs">
+                @csrf
+                <span class="text-stone-400">Focus</span>
+                <select name="focus" onchange="this.form.requestSubmit()" class="min-w-0 flex-1 rounded border border-stone-700 bg-stone-900 px-2 py-1 focus:border-amber-500 focus:outline-none">
+                    @foreach (Rules::FOCUS as $key => $f)
+                        <option value="{{ $key }}" @selected($key === ($city->focus ?? 'balanced'))>{{ $f['name'] }}</option>
+                    @endforeach
+                </select>
+                <noscript><button class="rounded border border-stone-600 px-2 py-1">Set</button></noscript>
+            </form>
+            @if ($y['pillaged'] ?? 0)
+                <div class="mt-2 rounded border border-red-900 bg-red-950/40 px-2 py-1 text-xs text-red-200">☠ Barbarians nearby pillage −{{ 2 * $y['pillaged'] }} food. Clear the camp.</div>
+            @endif
             <form method="POST" action="{{ route('games.build', [$game, $city]) }}" class="mt-3 flex gap-2">
                 @csrf
                 <select name="build" class="min-w-0 flex-1 rounded border border-stone-700 bg-stone-900 px-2 py-1.5 text-xs focus:border-amber-500 focus:outline-none">
@@ -102,7 +115,18 @@
         </dl>
         @if ($game->isActive())
             <div class="mt-3">
-                @if ($selected['attackProblem'] === null)
+                @if (! $selected['atWar'])
+                    @if ($selected['warProblem'] === null)
+                        <form method="POST" action="{{ route('games.war', [$game, $selected['owner']]) }}" onsubmit="return confirm('Declare war on {{ $selected['owner']->name }}? War costs {{ Rules::WAR_WEARINESS }} happiness per turn and they may strike back.')">
+                            @csrf
+                            <input type="hidden" name="tile" value="{{ $tile->id }}">
+                            <button class="w-full rounded border border-red-800 px-3 py-1.5 text-sm text-red-200 hover:bg-red-950">Declare war on {{ $selected['owner']->name }}</button>
+                        </form>
+                        <p class="mt-1 text-xs text-stone-500">At peace. You must declare war before attacking.</p>
+                    @else
+                        <p class="text-xs text-stone-500">{{ $selected['warProblem'] }}</p>
+                    @endif
+                @elseif ($selected['attackProblem'] === null)
                     @php
                         $oddsText = ['win' => 'Likely to fall.', 'close' => 'Too close to call: an attack that fails costs half your army.', 'lose' => 'You would be repelled and lose half your army.'][$selected['attackOdds']];
                         $oddsClass = ['win' => 'bg-red-600 hover:bg-red-500', 'close' => 'bg-amber-700 hover:bg-amber-600', 'lose' => 'bg-stone-700 hover:bg-stone-600'][$selected['attackOdds']];
@@ -114,6 +138,21 @@
                     <p class="mt-1 text-xs text-stone-500">{{ $oddsText }} Capturing takes the city and its land.</p>
                 @else
                     <p class="text-xs text-stone-500">{{ $selected['attackProblem'] }}</p>
+                @endif
+            </div>
+        @endif
+    @elseif ($tile->camp)
+        <p class="mt-2 text-stone-300">☠ A barbarian camp. It pillages 2 food from any city within 2 tiles and blocks borders from growing over it.</p>
+        @if ($game->isActive())
+            <div class="mt-3">
+                @if ($selected['campProblem'] === null)
+                    <form method="POST" action="{{ route('games.clear-camp', $game) }}">
+                        @csrf
+                        <input type="hidden" name="tile" value="{{ $tile->id }}">
+                        <button class="w-full rounded bg-red-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-600">Clear the camp (costs {{ Rules::CAMP_CLEAR_LOSS }} army, loots gold)</button>
+                    </form>
+                @else
+                    <p class="text-xs text-stone-500">{{ $selected['campProblem'] }}</p>
                 @endif
             </div>
         @endif

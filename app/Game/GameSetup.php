@@ -71,6 +71,30 @@ final class GameSetup
                 $this->actions->foundCity($game, $empire, $starts[$i], $tiles, capital: true);
             }
 
+            // Barbarian camps: a few, well away from every capital.
+            mt_srand($seed + 99);
+            $camps = 0;
+            $candidates = $tiles->filter(function (Tile $t) use ($starts) {
+                if (! $t->canSettle() || $t->empire_id) {
+                    return false;
+                }
+                foreach ($starts as $c) {
+                    if ($c->distanceTo($t) < 4) {
+                        return false;
+                    }
+                }
+
+                return true;
+            })->shuffle();
+            foreach ($candidates as $t) {
+                if ($camps >= 3 + $rivals) {
+                    break;
+                }
+                $t->camp = true;
+                $t->save();
+                $camps++;
+            }
+
             return $game->fresh(['empires', 'cities', 'tiles']);
         });
     }

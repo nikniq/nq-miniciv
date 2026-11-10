@@ -148,6 +148,11 @@ class GameFlowTest extends TestCase
         $this->assertSame('You have no army. Build units in a city first.', $actions->attackProblem($player, $enemyCity, $game->tiles));
 
         $player->update(['army' => 50]);
+
+        // Peace forbids it; declare war, then take the city.
+        $this->actingAs($user)->post(route('games.attack', [$game, $enemyCity]))->assertSessionHas('error');
+        $this->actingAs($user)->post(route('games.war', [$game, $enemy]))->assertSessionHas('status');
+        $this->assertTrue($game->fresh()->atWar($player->id, $enemy->id));
         $this->actingAs($user)->post(route('games.attack', [$game, $enemyCity]))->assertSessionHas('status');
 
         $enemyCity->refresh();
@@ -169,5 +174,38 @@ class GameFlowTest extends TestCase
             ->assertSee('id="tile-panel"', false)
             ->assertSee($capital->name)
             ->assertDontSee('End turn');
+    }
+
+    public function test_city_focus_changes_which_tiles_are_worked(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $capital = $game->playerEmpire()->cities->first();
+
+        $this->actingAs($user)->post(route('games.focus', [$game, $capital]), ['focus' => 'gold'])->assertRedirect();
+        $this->assertSame('gold', $capital->fresh()->focus);
+
+        $this->actingAs($user)->post(route('games.focus', [$game, $capital]), ['focus' => 'nonsense'])->assertSessionHas('error');
+    }
+
+    public function test_barbarian_camps_exist_and_can_be_cleared_with_an_army(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        $camp = $game->tiles->firstWhere('camp', true);
+        $this->assertNotNull($camp, 'a new game should have barbarian camps');
+
+        // Put the camp in reach by giving the player a tile next to it.
+        $near = $game->tiles->first(fn ($t) => $t->distanceTo($camp) === 1 && ! $t->camp);
+        $near->update(['empire_id' => $player->id]);
+
+        $this->actingAs($user)->post(route('games.clear-camp', $game), ['tile' => $camp->id])->assertSessionHas('error');
+
+        $player->update(['army' => 10, 'gold' => 0]);
+        $this->actingAs($user)->post(route('games.clear-camp', $game), ['tile' => $camp->id])->assertSessionHas('status');
+        $this->assertFalse($camp->fresh()->camp);
+        $this->assertSame(8, $player->fresh()->army);
+        $this->assertGreaterThan(0, $player->fresh()->gold);
     }
 }

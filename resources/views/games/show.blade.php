@@ -32,6 +32,8 @@
     <div title="Army strength (upkeep {{ $upkeep['army'] }} gold/turn)">⚔ <b>{{ $player->army }}</b></div>
     <div title="Happiness: {{ $happiness['supply'] }} supplied, {{ $happiness['demand'] }} demanded">{{ $happiness['unhappy'] ? '😠' : '🙂' }} <b class="{{ $happiness['unhappy'] ? 'text-red-400' : '' }}">{{ $happiness['balance'] >= 0 ? '+' : '' }}{{ $happiness['balance'] }}</b></div>
     <div title="Share of land">🗺️ <b>{{ $landShare }}%</b> <span class="text-stone-500">of {{ $dominationShare }}%</span></div>
+    <div title="Culture toward a cultural victory">🎭 <b>{{ $culture }}</b> <span class="text-stone-500">of {{ $cultureGoal }}</span></div>
+    @if ($wars)<div class="text-red-300" title="At war">⚔ at war ({{ $wars }})</div>@endif
     <div title="Score">⭐ <b>{{ $rivals->firstWhere('empire.id', $player->id)['score'] ?? 0 }}</b></div>
     <div class="ml-auto">
         @if ($game->isActive())
@@ -114,17 +116,36 @@
         <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
             <h2 class="font-semibold">Empires</h2>
             <table class="mt-2 w-full text-xs">
-                <thead class="text-stone-500"><tr><th class="text-left font-normal">Empire</th><th class="font-normal">Cities</th><th class="font-normal">Pop</th><th class="font-normal">Land</th><th class="font-normal">Tech</th><th class="font-normal">⚔</th><th class="text-right font-normal">Score</th></tr></thead>
+                <thead class="text-stone-500"><tr><th class="text-left font-normal">Empire</th><th class="font-normal">Cities</th><th class="font-normal">Land</th><th class="font-normal">⚔</th><th class="font-normal">🎭</th><th class="text-right font-normal">Score</th><th></th></tr></thead>
                 <tbody>
                 @foreach ($rivals as $r)
                     <tr class="{{ $r['empire']->id === $player->id ? 'text-amber-200' : ($r['empire']->eliminated ? 'text-stone-600 line-through' : '') }}">
                         <td><span class="mr-1 inline-block h-2.5 w-2.5 rounded-sm" style="background: {{ $r['empire']->color }}"></span>{{ $r['empire']->name }}</td>
                         <td class="text-center">{{ $r['cities'] }}</td>
-                        <td class="text-center">{{ $r['pop'] }}</td>
                         <td class="text-center">{{ $r['share'] }}%</td>
-                        <td class="text-center">{{ $r['techs'] }}</td>
                         <td class="text-center">{{ $r['army'] }}</td>
+                        <td class="text-center">{{ $r['culture'] }}</td>
                         <td class="text-right font-medium">{{ $r['empire']->eliminated ? '✝' : $r['score'] }}</td>
+                        <td class="pl-2 text-right">
+                            @if ($r['relation'] && ! $r['empire']->eliminated && $game->isActive())
+                                @if ($r['relation']['state'] === 'war')
+                                    <form method="POST" action="{{ route('games.peace', [$game, $r['empire']]) }}" class="inline">
+                                        @csrf
+                                        <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                                        <button class="rounded border px-1.5 py-0.5 text-[10px] {{ $r['peaceLikely'] ? 'border-emerald-700 text-emerald-200 hover:bg-emerald-950' : 'border-stone-700 text-stone-400 hover:bg-stone-800' }}" title="{{ $r['peaceLikely'] ? 'They would accept' : 'They may refuse' }}">☮ peace</button>
+                                    </form>
+                                    <span class="text-[10px] text-red-400">war</span>
+                                @elseif ($r['warProblem'] === null)
+                                    <form method="POST" action="{{ route('games.war', [$game, $r['empire']]) }}" class="inline" onsubmit="return confirm('Declare war on {{ $r['empire']->name }}?')">
+                                        @csrf
+                                        <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                                        <button class="rounded border border-stone-700 px-1.5 py-0.5 text-[10px] text-stone-400 hover:border-red-800 hover:text-red-200">⚔ war</button>
+                                    </form>
+                                @else
+                                    <span class="text-[10px] text-stone-500" title="{{ $r['warProblem'] }}">treaty</span>
+                                @endif
+                            @endif
+                        </td>
                     </tr>
                 @endforeach
                 </tbody>

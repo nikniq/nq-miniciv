@@ -19,6 +19,29 @@ final class Rules
 
     public const DOMINATION_SHARE = 0.55;
 
+    /** Total culture across all cities for a cultural victory. */
+    public const CULTURE_VICTORY = 3000;
+
+    /** Turns a peace treaty must hold before war can be declared again. */
+    public const PEACE_MIN_TURNS = 10;
+
+    /** Happiness lost per empire you are at war with. */
+    public const WAR_WEARINESS = 2;
+
+    /** Army needed to clear a barbarian camp, and what it costs. */
+    public const CAMP_CLEAR_ARMY = 4;
+
+    public const CAMP_CLEAR_LOSS = 2;
+
+    /** City focus options: weights for choosing worked tiles. */
+    public const FOCUS = [
+        'balanced' => ['name' => 'Balanced', 'food' => 2, 'prod' => 1.5, 'gold' => 1, 'science' => 1],
+        'food' => ['name' => 'Growth', 'food' => 4, 'prod' => 1, 'gold' => 0.5, 'science' => 0.5],
+        'prod' => ['name' => 'Production', 'food' => 1.2, 'prod' => 4, 'gold' => 0.5, 'science' => 0.5],
+        'gold' => ['name' => 'Gold', 'food' => 1.2, 'prod' => 1, 'gold' => 4, 'science' => 1],
+        'science' => ['name' => 'Science', 'food' => 1.2, 'prod' => 1, 'gold' => 1, 'science' => 4],
+    ];
+
     public const MIN_CITY_DISTANCE = 3;
 
     public const SETTLER_COST = 50;
@@ -70,6 +93,12 @@ final class Rules
             'effects' => ['science' => 5], 'blurb' => 'Much faster research.'],
         'walls' => ['name' => 'Walls', 'cost' => 50, 'tech' => 'masonry', 'requires' => null, 'wonder' => false, 'score' => 2,
             'effects' => [], 'defense' => 6, 'blurb' => '+6 defence against attack.'],
+        'harbor' => ['name' => 'Harbor', 'cost' => 70, 'tech' => 'sailing', 'requires' => null, 'wonder' => false, 'score' => 2,
+            'effects' => [], 'terrain_bonus' => ['ocean' => ['food' => 1, 'gold' => 1]], 'blurb' => '+1 food and +1 gold on this city\'s sea tiles.'],
+        'colosseum' => ['name' => 'Colosseum', 'cost' => 90, 'tech' => 'construction', 'requires' => null, 'wonder' => false, 'score' => 3,
+            'effects' => ['happy' => 3], 'blurb' => '+3 happiness.'],
+        'courthouse' => ['name' => 'Courthouse', 'cost' => 90, 'tech' => 'code_of_laws', 'requires' => null, 'wonder' => false, 'score' => 3,
+            'effects' => ['happy' => 2, 'gold' => 2], 'blurb' => '+2 happiness, +2 gold.'],
         'bank' => ['name' => 'Bank', 'cost' => 120, 'tech' => 'banking', 'requires' => 'market', 'wonder' => false, 'score' => 4,
             'effects' => ['gold' => 5], 'blurb' => 'A great deal of gold.'],
 
@@ -79,6 +108,12 @@ final class Rules
             'effects' => ['culture' => 3], 'empire_effects' => ['food' => 2, 'happy' => 1], 'blurb' => 'Wonder: +2 food and +1 happiness in every city.'],
         'great_library' => ['name' => 'Great Library', 'cost' => 220, 'tech' => 'philosophy', 'requires' => null, 'wonder' => true, 'score' => 25,
             'effects' => ['culture' => 3], 'empire_effects' => ['science' => 3], 'blurb' => 'Wonder: +3 science in every city.'],
+        'stonehenge' => ['name' => 'Stonehenge', 'cost' => 150, 'tech' => null, 'requires' => null, 'wonder' => true, 'score' => 20,
+            'effects' => ['culture' => 6], 'empire_effects' => ['culture' => 1], 'blurb' => 'Wonder: +6 culture here, +1 culture in every city.'],
+        'oracle' => ['name' => 'Oracle', 'cost' => 180, 'tech' => 'philosophy', 'requires' => null, 'wonder' => true, 'score' => 25,
+            'effects' => ['culture' => 3, 'science' => 3], 'empire_effects' => ['happy' => 1], 'blurb' => 'Wonder: +1 happiness in every city, +3 science here.'],
+        'great_wall' => ['name' => 'Great Wall', 'cost' => 200, 'tech' => 'construction', 'requires' => null, 'wonder' => true, 'score' => 25,
+            'effects' => ['culture' => 3], 'empire_effects' => ['defense' => 4], 'blurb' => 'Wonder: +4 defence in every city.'],
         'colossus' => ['name' => 'Colossus', 'cost' => 180, 'tech' => 'currency', 'requires' => null, 'wonder' => true, 'score' => 25,
             'effects' => ['culture' => 3], 'empire_effects' => ['gold' => 3], 'blurb' => 'Wonder: +3 gold in every city.'],
     ];
@@ -89,6 +124,7 @@ final class Rules
      */
     public const UNITS = [
         'warriors' => ['name' => 'Warriors', 'cost' => 30, 'tech' => null, 'strength' => 2, 'blurb' => '+2 army strength.'],
+        'horsemen' => ['name' => 'Horsemen', 'cost' => 45, 'tech' => 'horseback_riding', 'strength' => 3, 'blurb' => '+3 army strength.'],
         'swordsmen' => ['name' => 'Swordsmen', 'cost' => 50, 'tech' => 'bronze_working', 'strength' => 4, 'blurb' => '+4 army strength.'],
         'catapults' => ['name' => 'Catapults', 'cost' => 80, 'tech' => 'engineering', 'strength' => 7, 'blurb' => '+7 army strength.'],
     ];
@@ -126,6 +162,10 @@ final class Rules
         'philosophy' => ['name' => 'Philosophy', 'cost' => 100, 'requires' => ['writing'], 'bonus' => [], 'unlocks' => 'Temple, Great Library'],
         'engineering' => ['name' => 'Engineering', 'cost' => 120, 'requires' => ['mathematics'], 'bonus' => ['hills' => ['prod' => 1]], 'unlocks' => '+1 production on hills'],
         'sailing' => ['name' => 'Sailing', 'cost' => 70, 'requires' => ['agriculture'], 'bonus' => ['ocean' => ['food' => 1]], 'unlocks' => '+1 food at sea'],
+        'construction' => ['name' => 'Construction', 'cost' => 95, 'requires' => ['masonry', 'bronze_working'], 'bonus' => [], 'unlocks' => 'Colosseum, Great Wall'],
+        'code_of_laws' => ['name' => 'Code of Laws', 'cost' => 85, 'requires' => ['writing'], 'bonus' => [], 'unlocks' => 'Courthouse'],
+        'horseback_riding' => ['name' => 'Horseback Riding', 'cost' => 60, 'requires' => ['agriculture'], 'bonus' => ['plains' => ['food' => 1]], 'unlocks' => 'Horsemen, +1 food on plains'],
+        'astronomy' => ['name' => 'Astronomy', 'cost' => 130, 'requires' => ['mathematics', 'sailing'], 'bonus' => ['ocean' => ['gold' => 1]], 'unlocks' => '+1 gold at sea'],
         'education' => ['name' => 'Education', 'cost' => 160, 'requires' => ['philosophy', 'mathematics'], 'bonus' => [], 'unlocks' => 'University'],
         'banking' => ['name' => 'Banking', 'cost' => 180, 'requires' => ['currency', 'education'], 'bonus' => [], 'unlocks' => 'Bank'],
     ];
@@ -152,7 +192,7 @@ final class Rules
      * Yield of a single tile for a given empire: terrain + resource + tech
      * bonuses. Returns food, prod, gold, science.
      */
-    public static function tileYield(Tile $tile, ?Empire $empire = null): array
+    public static function tileYield(Tile $tile, ?Empire $empire = null, ?\App\Models\City $city = null): array
     {
         $t = self::TERRAIN[$tile->terrain];
         $y = ['food' => $t['food'], 'prod' => $t['prod'], 'gold' => $t['gold'], 'science' => 0];
@@ -168,6 +208,13 @@ final class Rules
         if ($empire) {
             foreach ($empire->technologies ?? [] as $tech) {
                 foreach (self::TECHS[$tech]['bonus'][$tile->terrain] ?? [] as $k => $v) {
+                    $y[$k] += $v;
+                }
+            }
+        }
+        if ($city) {
+            foreach ($city->buildings ?? [] as $b) {
+                foreach (self::BUILDINGS[$b]['terrain_bonus'][$tile->terrain] ?? [] as $k => $v) {
                     $y[$k] += $v;
                 }
             }
@@ -189,9 +236,9 @@ final class Rules
     }
 
     /** How hard a city is to take. */
-    public static function cityDefense(\App\Models\City $city, int $garrison): int
+    public static function cityDefense(\App\Models\City $city, int $garrison, int $extra = 0): int
     {
-        $d = 5 + $city->population + $garrison;
+        $d = 5 + $city->population + $garrison + $extra;
         if ($city->is_capital) {
             $d += 4;
         }
