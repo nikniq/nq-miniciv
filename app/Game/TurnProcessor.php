@@ -53,6 +53,11 @@ final class TurnProcessor
                         $this->note($empire, "Barbarians are pillaging around {$city->name} (−".(2 * $pillaged).' food). Clear the camp with your army.');
                     }
                     $y = Economy::cityYields($city, $empire, $cityTiles, $effects, $happiness['unhappy'], $pillaged);
+                    if ($empire->is_ai) {
+                        $mult = Rules::DIFFICULTIES[$game->difficulty ?? 'prince']['ai'] ?? 1.0;
+                        $y['prod'] = (int) round($y['prod'] * $mult);
+                        $y['science'] = (int) round($y['science'] * $mult);
+                    }
                     $science += $y['science'];
                     $gold += $y['gold'];
 
@@ -86,6 +91,7 @@ final class TurnProcessor
             $this->spawnCamps($game);
             $game->turn += 1;
             $this->scoresAndVictory($game, $player);
+            $this->recordHistory($game);
 
             $game->events = array_slice($this->events, 0, 12);
             $game->save();
@@ -268,6 +274,18 @@ final class TurnProcessor
                 ? "Time is up. {$best->name} finishes with the greatest empire."
                 : 'Time is up. Your empire stands above all others. Victory!');
         }
+    }
+
+    /** Score per empire, every turn, for the chart. Kept compact: [turn, [id => score]]. */
+    private function recordHistory(Game $game): void
+    {
+        $history = $game->history ?? [];
+        $scores = [];
+        foreach ($game->empires as $e) {
+            $scores[(string) $e->id] = $e->eliminated ? 0 : (int) $e->score;
+        }
+        $history[] = [$game->turn - 1, $scores];
+        $game->history = $history;
     }
 
     /** A new barbarian camp every 12 turns on empty land away from cities. */

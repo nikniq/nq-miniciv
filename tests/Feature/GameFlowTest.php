@@ -21,7 +21,7 @@ class GameFlowTest extends TestCase
     private function startGame(User $user): Game
     {
         $this->actingAs($user)
-            ->post(route('games.store'), ['empire' => 'Rome', 'rivals' => 2])
+            ->post(route('games.store'), ['empire' => 'Rome', 'rivals' => 2, 'size' => 'normal', 'difficulty' => 'prince'])
             ->assertRedirect();
 
         return Game::with(['empires.cities', 'cities', 'tiles'])->firstOrFail();
@@ -207,5 +207,35 @@ class GameFlowTest extends TestCase
         $this->assertFalse($camp->fresh()->camp);
         $this->assertSame(8, $player->fresh()->army);
         $this->assertGreaterThan(0, $player->fresh()->gold);
+    }
+
+    public function test_map_size_and_difficulty_options_apply(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user)
+            ->post(route('games.store'), ['empire' => 'Egypt', 'rivals' => 5, 'size' => 'small', 'difficulty' => 'king'])
+            ->assertRedirect();
+
+        $game = Game::firstOrFail();
+        $this->assertSame(16, $game->width);
+        $this->assertSame('king', $game->difficulty);
+        $this->assertCount(3, $game->empires, 'a small map trims rivals to 2');
+
+        $this->actingAs($user)->post(route('games.end-turn', $game));
+        $this->assertCount(1, $game->fresh()->history);
+    }
+
+    public function test_guide_and_hall_of_fame_are_public(): void
+    {
+        $this->get(route('guide'))->assertOk()->assertSee('Ways to win');
+        $this->get(route('hall'))->assertOk()->assertSee('Hall of Fame');
+
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $game->update(['status' => 'won', 'winner_empire_id' => $game->playerEmpire()->id]);
+        $game->playerEmpire()->update(['score' => 321]);
+
+        $this->get(route('hall'))->assertSee('321')->assertSee($user->name);
+        $this->actingAs($user)->get(route('games.show', $game))->assertSee('Victory')->assertSee('Play again');
     }
 }

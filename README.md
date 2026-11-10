@@ -25,6 +25,15 @@ capital bonus, garrison). Capturing takes the city and its land. Happiness
 (base + per city + monuments/temples) must cover citizens beyond the first
 two in each city or growth stops; buildings and the army cost gold upkeep.
 
+Options when starting a game: map size (small, normal, large), number of
+rivals, and difficulty (Settler to Emperor, which scales AI production and
+science). Diplomacy is war or peace between each pair of empires; AI rivals
+declare war a turn before attacking and sue for peace when losing or tired.
+Barbarian camps pillage nearby cities until cleared by an army. Cities have a
+focus (growth, production, gold, science). Victory by domination, culture or
+score. A public Hall of Fame lists the best finished games, and /how-to-play
+documents every rule, tech and building from the data in `Rules.php`.
+
 Accounts: "Play now" creates a guest account on the fly so visitors start
 immediately; registering later (or linking Google) converts that account
 and keeps every game. Also email and password, plus Google sign-in through Laravel Socialite

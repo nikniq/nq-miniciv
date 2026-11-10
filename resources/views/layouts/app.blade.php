@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', config('app.name'))</title>
+    <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-stone-950 text-stone-100 antialiased">
@@ -13,6 +14,8 @@
                 <span class="text-amber-400">⬢</span> {{ config('app.name') }}
             </a>
             <div class="flex items-center gap-3 text-sm">
+                <a href="{{ route('guide') }}" class="hidden rounded px-2 py-1 text-stone-400 hover:bg-stone-800 hover:text-white sm:inline">How to play</a>
+                <a href="{{ route('hall') }}" class="hidden rounded px-2 py-1 text-stone-400 hover:bg-stone-800 hover:text-white sm:inline">Hall of Fame</a>
                 @auth
                     <a href="{{ route('games.index') }}" class="rounded px-2 py-1 text-stone-300 hover:bg-stone-800 hover:text-white">My games</a>
                     @if (auth()->user()->isGuest())

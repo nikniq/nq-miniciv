@@ -8,6 +8,8 @@ use App\Http\Controllers\PlayController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'portal.home')->name('home');
+Route::view('/how-to-play', 'portal.guide')->name('guide');
+Route::get('/hall-of-fame', [GameController::class, 'hallOfFame'])->name('hall');
 
 // Play without an account: a guest account is created on the fly.
 Route::post('/play', [PlayController::class, 'start'])->middleware('throttle:10,1')->name('play');

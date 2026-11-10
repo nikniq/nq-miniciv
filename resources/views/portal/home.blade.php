@@ -22,6 +22,7 @@
     @guest
         <p class="mt-3 text-xs text-stone-500">No sign-up needed. Register later if you want to keep your progress across devices.</p>
     @endguest
+    <p class="mt-6 text-sm text-stone-400"><a href="{{ route('guide') }}" class="text-amber-400 hover:underline">How to play</a> · <a href="{{ route('hall') }}" class="text-amber-400 hover:underline">Hall of Fame</a></p>
 </section>
 
 <section class="mx-auto grid max-w-5xl gap-4 pb-16 sm:grid-cols-3">

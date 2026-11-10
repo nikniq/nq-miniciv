@@ -11,12 +11,36 @@
 @section('content')
 @if (! $game->isActive())
     <div class="mb-4 rounded-lg border {{ $game->status === 'won' ? 'border-amber-600 bg-amber-950/50' : 'border-stone-700 bg-stone-900' }} px-5 py-4">
-        <div class="text-lg font-semibold">
-            @if ($game->status === 'won') 🏆 Victory! @else Game over. @endif
-            @if ($winner) {{ $winner->name }} {{ $winner->is_ai ? 'wins' : 'prevails' }}. @endif
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+                <div class="text-xl font-semibold">
+                    @if ($game->status === 'won') 🏆 Victory! @elseif ($game->status === 'lost') Defeat. @else The age has ended. @endif
+                    @if ($winner) {{ $winner->name }} {{ $winner->is_ai ? 'wins' : 'prevails' }}. @endif
+                </div>
+                <div class="mt-1 text-sm text-stone-300">{{ $game->events[0] ?? '' }}</div>
+                <ol class="mt-3 space-y-0.5 text-sm">
+                    @foreach ($rivals as $i => $r)
+                        <li class="{{ $r['empire']->id === $player->id ? 'font-semibold text-amber-200' : 'text-stone-300' }}">
+                            {{ $i + 1 }}. <span class="mr-1 inline-block h-2.5 w-2.5 rounded-sm" style="background: {{ $r['empire']->color }}"></span>{{ $r['empire']->name }}
+                            <span class="text-stone-500">· {{ $r['cities'] }} cities · {{ $r['share'] }}% land · {{ $r['culture'] }} culture · score</span> {{ $r['empire']->eliminated ? 'eliminated' : $r['score'] }}
+                        </li>
+                    @endforeach
+                </ol>
+                <div class="mt-3 flex gap-3 text-sm">
+                    <a href="{{ route('games.index') }}" class="rounded bg-amber-500 px-3 py-1.5 font-medium text-stone-950 hover:bg-amber-400">Play again</a>
+                    <a href="{{ route('hall') }}" class="rounded border border-stone-700 px-3 py-1.5 hover:bg-stone-800">Hall of Fame</a>
+                    @if (auth()->user()->isGuest())
+                        <a href="{{ route('register') }}" class="rounded border border-stone-700 px-3 py-1.5 hover:bg-stone-800">Save under your name</a>
+                    @endif
+                </div>
+            </div>
+            @if ($chart)
+                <div class="w-full max-w-sm">
+                    <div class="mb-1 text-xs text-stone-500">Score over {{ $game->turn - 1 }} turns</div>
+                    {!! $chart !!}
+                </div>
+            @endif
         </div>
-        <div class="text-sm text-stone-300">{{ $game->events[0] ?? '' }}</div>
-        <a href="{{ route('games.index') }}" class="mt-2 inline-block text-sm text-amber-300 hover:underline">Back to my games</a>
     </div>
 @endif
 
@@ -35,7 +59,8 @@
     <div title="Culture toward a cultural victory">🎭 <b>{{ $culture }}</b> <span class="text-stone-500">of {{ $cultureGoal }}</span></div>
     @if ($wars)<div class="text-red-300" title="At war">⚔ at war ({{ $wars }})</div>@endif
     <div title="Score">⭐ <b>{{ $rivals->firstWhere('empire.id', $player->id)['score'] ?? 0 }}</b></div>
-    <div class="ml-auto">
+    <div class="ml-auto flex items-center gap-3">
+        <a href="{{ route('guide') }}" target="_blank" class="text-xs text-stone-400 hover:text-white" title="How to play">? help</a>
         @if ($game->isActive())
             <form method="POST" action="{{ route('games.end-turn', $game) }}" id="end-turn-form">
                 @csrf
@@ -151,6 +176,13 @@
                 </tbody>
             </table>
         </section>
+
+        @if ($chart && $game->isActive())
+            <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
+                <div class="flex items-baseline justify-between"><h2 class="font-semibold">Score over time</h2><span class="text-xs text-stone-500">{{ $difficulty['name'] }}</span></div>
+                <div class="mt-2">{!! $chart !!}</div>
+            </section>
+        @endif
 
         {{-- Cities list --}}
         <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">

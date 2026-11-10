@@ -22,6 +22,8 @@ class GameController extends Controller
         return view('games.index', [
             'games' => $games,
             'empireNames' => Rules::EMPIRE_NAMES,
+            'sizes' => Rules::MAP_SIZES,
+            'difficulties' => Rules::DIFFICULTIES,
         ]);
     }
 
@@ -29,10 +31,12 @@ class GameController extends Controller
     {
         $data = $request->validate([
             'empire' => ['required', 'string', 'max:30', 'regex:/^[\pL\pN \'\-]+$/u'],
-            'rivals' => ['required', 'integer', 'min:1', 'max:4'],
+            'rivals' => ['required', 'integer', 'min:1', 'max:5'],
+            'size' => ['required', 'in:'.implode(',', array_keys(Rules::MAP_SIZES))],
+            'difficulty' => ['required', 'in:'.implode(',', array_keys(Rules::DIFFICULTIES))],
         ]);
 
-        $game = $setup->create($request->user(), trim($data['empire']), (int) $data['rivals']);
+        $game = $setup->create($request->user(), trim($data['empire']), (int) $data['rivals'], null, $data['size'], $data['difficulty']);
 
         return redirect()->route('games.show', $game)
             ->with('status', 'Your capital has been founded. You also have a band of settlers ready: pick a tile to found a second city.');
@@ -61,6 +65,31 @@ class GameController extends Controller
         $game->delete();
 
         return redirect()->route('games.index')->with('status', 'Game abandoned.');
+    }
+
+    /** Public: best finished games. */
+    public function hallOfFame(): View
+    {
+        $games = Game::whereIn('status', ['won', 'lost', 'ended'])
+            ->with(['empires', 'user'])
+            ->latest('updated_at')
+            ->limit(200)
+            ->get()
+            ->map(function (Game $g) {
+                $me = $g->playerEmpire();
+
+                return [
+                    'game' => $g,
+                    'empire' => $me,
+                    'score' => $me?->score ?? 0,
+                    'player' => $g->user && ! $g->user->isGuest() ? $g->user->name : 'Guest',
+                ];
+            })
+            ->sortByDesc('score')
+            ->take(50)
+            ->values();
+
+        return view('games.hall', ['rows' => $games]);
     }
 
     private function own(Request $request, Game $game): void

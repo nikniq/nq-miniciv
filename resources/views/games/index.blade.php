@@ -21,6 +21,7 @@
                                 Turn {{ min($game->turn, $game->max_turns) }} / {{ $game->max_turns }}
                                 · score {{ $me?->score ?? 0 }}
                                 · {{ $game->empires->count() - 1 }} {{ Str::plural('rival', $game->empires->count() - 1) }}
+                                · {{ \App\Game\Rules::DIFFICULTIES[$game->difficulty ?? 'prince']['name'] }}
                                 · {{ $game->updated_at->diffForHumans() }}
                             </div>
                         </div>
@@ -58,14 +59,33 @@
                         @foreach ($empireNames as $n)<option value="{{ $n }}">@endforeach
                     </datalist>
                 </label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="block text-sm">
+                        <span class="text-stone-300">Map</span>
+                        <select name="size" class="mt-1 w-full rounded border border-stone-700 bg-stone-900 px-3 py-2 focus:border-amber-500 focus:outline-none">
+                            @foreach ($sizes as $key => $sz)
+                                <option value="{{ $key }}" @selected(old('size', 'normal') === $key)>{{ $sz['name'] }} ({{ $sz['width'] }}×{{ $sz['height'] }})</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="block text-sm">
+                        <span class="text-stone-300">Rivals</span>
+                        <select name="rivals" class="mt-1 w-full rounded border border-stone-700 bg-stone-900 px-3 py-2 focus:border-amber-500 focus:outline-none">
+                            @foreach ([1, 2, 3, 4, 5] as $n)
+                                <option value="{{ $n }}" @selected(old('rivals', 2) == $n)>{{ $n }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                </div>
                 <label class="block text-sm">
-                    <span class="text-stone-300">Rival empires</span>
-                    <select name="rivals" class="mt-1 w-full rounded border border-stone-700 bg-stone-900 px-3 py-2 focus:border-amber-500 focus:outline-none">
-                        @foreach ([1, 2, 3, 4] as $n)
-                            <option value="{{ $n }}" @selected(old('rivals', 2) == $n)>{{ $n }}</option>
+                    <span class="text-stone-300">Difficulty</span>
+                    <select name="difficulty" class="mt-1 w-full rounded border border-stone-700 bg-stone-900 px-3 py-2 focus:border-amber-500 focus:outline-none">
+                        @foreach ($difficulties as $key => $d)
+                            <option value="{{ $key }}" @selected(old('difficulty', 'prince') === $key)>{{ $d['name'] }} — {{ $d['blurb'] }}</option>
                         @endforeach
                     </select>
                 </label>
+                <p class="text-xs text-stone-500">A small map allows up to 2 rivals, normal 4, large 5; extra rivals are trimmed.</p>
                 <button class="w-full rounded bg-amber-500 px-4 py-2 font-medium text-stone-950 hover:bg-amber-400">Found your empire</button>
             </form>
             <p class="mt-4 text-xs text-stone-500">

@@ -16,23 +16,27 @@ final class GameSetup
 {
     public function __construct(private Actions $actions) {}
 
-    public function create(User $user, string $empireName, int $rivals = 2, ?int $seed = null): Game
+    public function create(User $user, string $empireName, int $rivals = 2, ?int $seed = null, string $size = 'normal', string $difficulty = 'prince'): Game
     {
         $seed ??= random_int(1, 2_000_000_000);
-        $rivals = max(1, min(4, $rivals));
+        $map = Rules::MAP_SIZES[$size] ?? Rules::MAP_SIZES['normal'];
+        $difficulty = isset(Rules::DIFFICULTIES[$difficulty]) ? $difficulty : 'prince';
+        $rivals = max(1, min($map['max_rivals'], $rivals));
 
-        return DB::transaction(function () use ($user, $empireName, $rivals, $seed) {
+        return DB::transaction(function () use ($user, $empireName, $rivals, $seed, $map, $difficulty) {
             $game = Game::create([
                 'user_id' => $user->id,
                 'name' => $empireName,
                 'seed' => $seed,
-                'width' => Rules::MAP_WIDTH,
-                'height' => Rules::MAP_HEIGHT,
+                'width' => $map['width'],
+                'height' => $map['height'],
                 'max_turns' => Rules::MAX_TURNS,
+                'difficulty' => $difficulty,
                 'events' => ['Your people have founded their first city. Expand wisely.'],
+                'history' => [],
             ]);
 
-            $rows = (new MapGenerator($seed))->generate();
+            $rows = (new MapGenerator($seed, $map['width'], $map['height']))->generate();
             $now = now();
             Tile::insert(array_map(fn ($t) => $t + ['game_id' => $game->id], $rows));
             $tiles = $game->tiles()->get();

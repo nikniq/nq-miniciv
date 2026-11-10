@@ -13,6 +13,37 @@ final class Presenter
 {
     public function __construct(private Actions $actions, private MapSvg $mapSvg) {}
 
+    /** Inline SVG line chart of score per empire over time. */
+    private function chart(Game $game, $empiresById): ?string
+    {
+        $history = $game->history ?? [];
+        if (count($history) < 2) {
+            return null;
+        }
+        $w = 320;
+        $h = 110;
+        $pad = 4;
+        $maxTurn = max(1, end($history)[0]);
+        $maxScore = 1;
+        foreach ($history as [, $scores]) {
+            $maxScore = max($maxScore, max($scores));
+        }
+        $paths = [];
+        foreach ($empiresById as $id => $e) {
+            $pts = [];
+            foreach ($history as [$turn, $scores]) {
+                $v = $scores[(string) $id] ?? 0;
+                $x = $pad + ($w - 2 * $pad) * $turn / $maxTurn;
+                $y = $h - $pad - ($h - 2 * $pad) * $v / $maxScore;
+                $pts[] = round($x, 1).','.round($y, 1);
+            }
+            $paths[] = sprintf('<polyline points="%s" fill="none" stroke="%s" stroke-width="%s" stroke-linejoin="round"/>', implode(' ', $pts), e($e->color), $e->is_ai ? 1.5 : 2.5);
+        }
+
+        return sprintf('<svg viewBox="0 0 %d %d" class="h-auto w-full" role="img" aria-label="Score over time"><line x1="%d" y1="%d" x2="%d" y2="%d" stroke="#44403c"/>%s<text x="%d" y="%d" font-size="8" fill="#a8a29e">%d</text></svg>',
+            $w, $h, $pad, $h - $pad, $w - $pad, $h - $pad, implode('', $paths), $pad + 2, 10, $maxScore);
+    }
+
     public function present(Game $game, ?int $selectedTileId): array
     {
         $game->load(['empires.cities', 'cities', 'tiles']);
@@ -161,6 +192,8 @@ final class Presenter
             'landShare' => round(100 * ($ownedBy[$player->id] ?? 0) / $landTotal),
             'dominationShare' => (int) (Rules::DOMINATION_SHARE * 100),
             'winner' => $game->winner_empire_id ? $empiresById->get($game->winner_empire_id) : null,
+            'chart' => $this->chart($game, $empiresById),
+            'difficulty' => Rules::DIFFICULTIES[$game->difficulty ?? 'prince'],
         ];
     }
 }

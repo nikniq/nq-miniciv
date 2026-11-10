@@ -17,6 +17,21 @@ final class Rules
 
     public const MAX_TURNS = 120;
 
+    /** Map sizes: width, height, rivals allowed. */
+    public const MAP_SIZES = [
+        'small' => ['name' => 'Small', 'width' => 16, 'height' => 11, 'max_rivals' => 2],
+        'normal' => ['name' => 'Normal', 'width' => 20, 'height' => 14, 'max_rivals' => 4],
+        'large' => ['name' => 'Large', 'width' => 26, 'height' => 18, 'max_rivals' => 5],
+    ];
+
+    /** Difficulty: multipliers applied to AI production and science. */
+    public const DIFFICULTIES = [
+        'settler' => ['name' => 'Settler', 'ai' => 0.75, 'blurb' => 'Rivals build and research slowly.'],
+        'prince' => ['name' => 'Prince', 'ai' => 1.0, 'blurb' => 'Even footing.'],
+        'king' => ['name' => 'King', 'ai' => 1.25, 'blurb' => 'Rivals build and research faster.'],
+        'emperor' => ['name' => 'Emperor', 'ai' => 1.5, 'blurb' => 'Rivals are formidable.'],
+    ];
+
     public const DOMINATION_SHARE = 0.55;
 
     /** Total culture across all cities for a cultural victory. */
@@ -183,7 +198,7 @@ final class Rules
         'Han' => ['Chang\'an', 'Luoyang', 'Chengdu', 'Nanjing', 'Guangzhou'],
     ];
 
-    public const COLORS = ['#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#22c55e'];
+    public const COLORS = ['#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#22c55e', '#f97316'];
 
     /** Border radius (squared Euclidean) unlocked at each culture level. */
     public const BORDER_LEVELS = [0 => 2, 15 => 5, 50 => 10];
