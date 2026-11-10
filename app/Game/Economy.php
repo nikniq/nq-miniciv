@@ -202,6 +202,67 @@ final class Economy
         return $n;
     }
 
+    /**
+     * Peaceful empires whose territory touches ours. Trade income needs
+     * Currency. Uses one pass over the tiles with a coordinate lookup.
+     *
+     * @return array<int> partner empire ids
+     */
+    public static function tradePartners(\App\Models\Game $game, Empire $empire, Collection $tiles): array
+    {
+        if (! $empire->knows('currency')) {
+            return [];
+        }
+        $byCoord = [];
+        foreach ($tiles as $t) {
+            if ($t->empire_id) {
+                $byCoord[$t->x.','.$t->y] = $t->empire_id;
+            }
+        }
+        $partners = [];
+        foreach ($tiles as $t) {
+            if ($t->empire_id !== $empire->id) {
+                continue;
+            }
+            foreach ([[1, 0], [-1, 0], [0, 1], [0, -1]] as [$dx, $dy]) {
+                $o = $byCoord[($t->x + $dx).','.($t->y + $dy)] ?? null;
+                if ($o && $o !== $empire->id && ! $game->atWar($empire->id, $o)) {
+                    $partners[$o] = true;
+                }
+            }
+        }
+        foreach (array_keys($partners) as $id) {
+            $other = $game->empires->firstWhere('id', $id);
+            if (! $other || $other->eliminated) {
+                unset($partners[$id]);
+            }
+        }
+
+        return array_keys($partners);
+    }
+
+    /** Tech tiers for display: depth in the prerequisite graph. */
+    public static function techTiers(): array
+    {
+        $depth = [];
+        $resolve = function (string $key) use (&$resolve, &$depth): int {
+            if (isset($depth[$key])) {
+                return $depth[$key];
+            }
+            $req = Rules::TECHS[$key]['requires'];
+            $depth[$key] = $req ? 1 + max(array_map($resolve, $req)) : 0;
+
+            return $depth[$key];
+        };
+        $tiers = [];
+        foreach (array_keys(Rules::TECHS) as $key) {
+            $tiers[$resolve($key)][] = $key;
+        }
+        ksort($tiers);
+
+        return $tiers;
+    }
+
     /** Camps within pillaging range (distance 2) of a city centre. */
     public static function campsNear(Tile $centre, Collection $tiles): int
     {

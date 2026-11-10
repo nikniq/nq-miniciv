@@ -67,6 +67,11 @@ final class TurnProcessor
                     $city->save();
                 }
 
+                $partners = Economy::tradePartners($game, $empire, $this->tiles);
+                $gold += count($partners) * Rules::TRADE_GOLD_PER_PARTNER;
+
+                $this->randomEvent($game, $empire);
+
                 $upkeep = Economy::upkeep($empire)['total'];
                 $empire->gold += $gold - $upkeep;
                 if ($empire->gold < 0) {
@@ -276,6 +281,58 @@ final class TurnProcessor
         }
     }
 
+    /**
+     * A little fortune and misfortune, seeded so a turn replays identically.
+     * Applies to every empire alike.
+     */
+    private function randomEvent(Game $game, Empire $empire): void
+    {
+        mt_srand($game->seed * 31 + $game->turn * 7 + $empire->id);
+        if (mt_rand(1, 100) > Rules::EVENT_CHANCE || $empire->cities->isEmpty()) {
+            return;
+        }
+        $city = $empire->cities->values()->get(mt_rand(0, $empire->cities->count() - 1));
+        switch (mt_rand(1, 6)) {
+            case 1:
+            case 2:
+                $bonus = 8 + 2 * $city->population;
+                $city->food_stored += $bonus;
+                $city->save();
+                $this->note($empire, "A bumper harvest in {$city->name}: +{$bonus} food stored.");
+                break;
+            case 3:
+                $gold = 15 + 5 * mt_rand(1, 6);
+                $empire->gold += $gold;
+                $this->note($empire, "Prospectors near {$city->name} strike gold: +{$gold} gold.");
+                break;
+            case 4:
+                if ($city->population >= 5 && ! $city->has('aqueduct')) {
+                    $city->population -= 1;
+                    $city->save();
+                    $this->note($empire, "Plague sweeps {$city->name}: it shrinks to size {$city->population}. An Aqueduct would have prevented it.");
+                } else {
+                    $this->note($empire, "A festival in {$city->name} lifts spirits. (+{$city->population} culture)");
+                    $city->culture += $city->population;
+                    $city->save();
+                }
+                break;
+            case 5:
+                $bonus = 10 + 2 * $city->population;
+                $empire->research_progress += $bonus;
+                $this->note($empire, "Scholars in {$city->name} make a breakthrough: +{$bonus} science.");
+                break;
+            default:
+                if ($empire->army > 0) {
+                    $empire->army = max(0, $empire->army - 1);
+                    $this->note($empire, "Deserters leave the army near {$city->name} (−1 strength).");
+                } else {
+                    $city->production_stored += 10;
+                    $city->save();
+                    $this->note($empire, "Volunteers in {$city->name} speed the current build (+10 production).");
+                }
+        }
+    }
+
     /** Score per empire, every turn, for the chart. Kept compact: [turn, [id => score]]. */
     private function recordHistory(Game $game): void
     {
@@ -295,11 +352,17 @@ final class TurnProcessor
             return;
         }
         $centres = $this->tiles->whereIn('id', $game->cities->pluck('tile_id'));
-        $candidates = $this->tiles->filter(function (Tile $t) use ($centres) {
+        $camps = $this->tiles->where('camp', true);
+        $candidates = $this->tiles->filter(function (Tile $t) use ($centres, $camps) {
             if (! $t->canSettle() || $t->empire_id || $t->camp) {
                 return false;
             }
             foreach ($centres as $c) {
+                if ($c->distanceTo($t) < 3) {
+                    return false;
+                }
+            }
+            foreach ($camps as $c) {
                 if ($c->distanceTo($t) < 3) {
                     return false;
                 }

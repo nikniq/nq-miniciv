@@ -66,6 +66,8 @@ final class Presenter
         $cityYields = [];
         $totals = ['food' => 0, 'prod' => 0, 'gold' => 0, 'science' => 0];
         $worked = [];
+        $tradePartners = Economy::tradePartners($game, $player, $tiles);
+        $totals['gold'] += count($tradePartners) * Rules::TRADE_GOLD_PER_PARTNER;
         foreach ($player->cities as $city) {
             $centre = $tiles->firstWhere('id', $city->tile_id);
             $y = Economy::cityYields($city, $player, $tiles->where('city_id', $city->id), $effects, $happiness['unhappy'], $centre ? Economy::campsNear($centre, $tiles) : 0);
@@ -109,7 +111,7 @@ final class Presenter
             if ($selectedCity && $selectedCity->empire_id !== $player->id && $owner) {
                 $defense = Rules::cityDefense($selectedCity, $this->actions->garrison($owner), Economy::empireEffects($owner)['defense'] ?? 0);
                 $selectedInfo['defense'] = $defense;
-                $selectedInfo['attackProblem'] = $this->actions->attackProblem($player, $selectedCity, $tiles, $game);
+                $selectedInfo['attackProblem'] = $this->actions->attackProblem($player, $selectedCity, $tiles, $game, new TileIndex($tiles));
                 $selectedInfo['atWar'] = $game->atWar($player->id, $owner->id);
                 $selectedInfo['warProblem'] = $this->actions->warProblem($game, $player, $owner);
                 $selectedInfo['attackOdds'] = $player->army > $defense ? 'win' : ($player->army > $defense * 0.7 ? 'close' : 'lose');
@@ -182,6 +184,12 @@ final class Presenter
             'upkeep' => $upkeep,
             'netGold' => $totals['gold'] - $upkeep['total'],
             'culture' => Economy::culture($player),
+            'tradePartners' => collect($tradePartners)->map(fn ($id) => $empiresById->get($id))->filter()->values(),
+            'tradeGold' => count($tradePartners) * Rules::TRADE_GOLD_PER_PARTNER,
+            'techTiers' => Economy::techTiers(),
+            'cityYields' => $cityYields,
+            'settlersWaiting' => $player->settlers > 0,
+            'researchUnset' => $player->current_tech === null && (bool) $player->availableTechs(),
             'cultureGoal' => Rules::CULTURE_VICTORY,
             'wars' => Economy::warsCount($game, $player),
             'research' => $research,

@@ -50,7 +50,7 @@
         <span class="inline-block h-3 w-3 rounded-sm" style="background: {{ $player->color }}"></span>{{ $player->name }}
     </div>
     <div>Turn <b>{{ min($game->turn, $game->max_turns) }}</b><span class="text-stone-500">/{{ $game->max_turns }}</span></div>
-    <div title="Treasury (income {{ $totals['gold'] }} − upkeep {{ $upkeep['total'] }} per turn)">💰 <b>{{ $player->gold }}</b> <span class="{{ $netGold < 0 ? 'text-red-400' : 'text-stone-500' }}">{{ $netGold >= 0 ? '+' : '' }}{{ $netGold }}</span></div>
+    <div title="Treasury: income {{ $totals['gold'] }} (incl. trade {{ $tradeGold }} from {{ $tradePartners->count() }} peaceful neighbours{{ $player->knows('currency') ? '' : ', needs Currency' }}) − upkeep {{ $upkeep['total'] }} per turn">💰 <b>{{ $player->gold }}</b> <span class="{{ $netGold < 0 ? 'text-red-400' : 'text-stone-500' }}">{{ $netGold >= 0 ? '+' : '' }}{{ $netGold }}</span></div>
     <div title="Science per turn">🔬 <b>+{{ $totals['science'] }}</b></div>
     <div title="Settlers ready">🏕️ <b>{{ $player->settlers }}</b></div>
     <div title="Army strength (upkeep {{ $upkeep['army'] }} gold/turn)">⚔ <b>{{ $player->army }}</b></div>
@@ -62,7 +62,8 @@
     <div class="ml-auto flex items-center gap-3">
         <a href="{{ route('guide') }}" target="_blank" class="text-xs text-stone-400 hover:text-white" title="How to play">? help</a>
         @if ($game->isActive())
-            <form method="POST" action="{{ route('games.end-turn', $game) }}" id="end-turn-form">
+            <form method="POST" action="{{ route('games.end-turn', $game) }}" id="end-turn-form"
+                  data-warn="{{ collect([$researchUnset ? 'no research is selected' : null, $settlersWaiting ? 'settlers are waiting to found a city' : null, $idleCities->isNotEmpty() ? 'cities are idling on Wealth' : null])->filter()->join('; ') }}">
                 @csrf
                 <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
                 <button class="rounded bg-amber-500 px-5 py-1.5 font-semibold text-stone-950 shadow hover:bg-amber-400" title="Enter">End turn ▶</button>
@@ -132,9 +133,37 @@
                     <button class="rounded border border-stone-600 px-3 py-1.5 text-xs hover:bg-stone-800">{{ $research ? 'Switch' : 'Research' }}</button>
                 </form>
             @endif
-            @if ($player->technologies)
-                <div class="mt-2 text-xs text-stone-500">Known: {{ collect($player->technologies)->map(fn ($t) => Rules::TECHS[$t]['name'])->join(', ') }}</div>
-            @endif
+            <details class="mt-3 text-xs">
+                <summary class="cursor-pointer text-stone-400 hover:text-white">Tech tree ({{ count($player->technologies ?? []) }}/{{ count(Rules::TECHS) }} known)</summary>
+                <div class="mt-2 space-y-2">
+                    @foreach ($techTiers as $tier => $keys)
+                        <div class="grid grid-cols-2 gap-1">
+                            <div class="col-span-2 text-[10px] uppercase tracking-wide text-stone-600">Tier {{ $tier + 1 }}</div>
+                            @foreach ($keys as $key)
+                                @php
+                                    $t = Rules::TECHS[$key];
+                                    $state = $player->knows($key) ? 'known' : (isset($availableTechs[$key]) ? 'available' : 'locked');
+                                    $cls = ['known' => 'border-emerald-800 bg-emerald-950/40 text-emerald-200', 'available' => 'border-sky-700 bg-sky-950/40 text-sky-100', 'locked' => 'border-stone-800 text-stone-500'][$state];
+                                @endphp
+                                @if ($state === 'available' && $game->isActive())
+                                    <form method="POST" action="{{ route('games.research', $game) }}">
+                                        @csrf
+                                        <input type="hidden" name="tech" value="{{ $key }}">
+                                        <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                                        <button class="w-full rounded border px-2 py-1 text-left {{ $cls }} {{ $key === $player->current_tech ? 'ring-1 ring-sky-400' : 'hover:bg-sky-900/40' }}" title="{{ $t['unlocks'] }}">
+                                            <div class="font-medium">{{ $t['name'] }}</div><div class="opacity-70">{{ $t['cost'] }} 🔬 · {{ $t['unlocks'] }}</div>
+                                        </button>
+                                    </form>
+                                @else
+                                    <div class="rounded border px-2 py-1 {{ $cls }}" title="{{ $t['unlocks'] }}@if ($t['requires']) · needs {{ collect($t['requires'])->map(fn ($r) => Rules::TECHS[$r]['name'])->join(', ') }}@endif">
+                                        <div class="font-medium">{{ $t['name'] }}</div><div class="opacity-70 truncate">{{ $t['unlocks'] }}</div>
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+                    @endforeach
+                </div>
+            </details>
         </section>
 
         {{-- Empires --}}
@@ -187,14 +216,21 @@
         {{-- Cities list --}}
         <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
             <h2 class="font-semibold">Your cities</h2>
-            <ul class="mt-2 space-y-1 text-xs">
+            <table class="mt-2 w-full text-xs">
+                <thead class="text-stone-500"><tr><th class="text-left font-normal">City</th><th class="font-normal" title="Food surplus">🌾</th><th class="font-normal" title="Production">⚒</th><th class="font-normal" title="Gold / Science">💰/🔬</th><th class="text-right font-normal">Building</th></tr></thead>
+                <tbody>
                 @foreach ($player->cities as $c)
-                    <li class="flex justify-between gap-2">
-                        <a href="{{ route('games.show', ['game' => $game, 'tile' => $c->tile_id]) }}" class="hover:text-amber-300">{{ $c->name }} <span class="text-stone-500">({{ $c->population }})</span></a>
-                        <span class="truncate text-stone-400">{{ Economy::buildName($c->current_build) }}</span>
-                    </li>
+                    @php $cy = $cityYields[$c->id]; $cost = Economy::buildCost($c->current_build ?? ''); $left = ($cost !== null && $cy['prod'] > 0) ? (int) ceil(max(0, $cost - $c->production_stored) / $cy['prod']) : null; @endphp
+                    <tr class="{{ $selTile && $selTile->id === $c->tile_id ? 'text-amber-200' : '' }}">
+                        <td><a href="{{ route('games.show', ['game' => $game, 'tile' => $c->tile_id]) }}" class="map-tile-link hover:text-amber-300" data-tile="{{ $c->tile_id }}">{{ $c->name }} <span class="text-stone-500">{{ $c->population }}</span></a></td>
+                        <td class="text-center {{ $cy['surplus'] < 0 ? 'text-red-400' : '' }}">{{ $cy['surplus'] >= 0 ? '+' : '' }}{{ $cy['surplus'] }}</td>
+                        <td class="text-center">{{ $cy['prod'] }}</td>
+                        <td class="text-center text-stone-400">{{ $cy['gold'] }}/{{ $cy['science'] }}</td>
+                        <td class="truncate text-right text-stone-400">{{ Economy::buildName($c->current_build) }}@if ($left !== null) <span class="text-stone-600">{{ $left }}t</span>@endif</td>
+                    </tr>
                 @endforeach
-            </ul>
+                </tbody>
+            </table>
         </section>
 
         {{-- Events --}}

@@ -43,6 +43,12 @@ final class Rules
     /** Happiness lost per empire you are at war with. */
     public const WAR_WEARINESS = 2;
 
+    /** Gold per turn from each peaceful neighbour you share a border with (needs Currency). */
+    public const TRADE_GOLD_PER_PARTNER = 3;
+
+    /** Chance per empire per turn of a random event, in percent. */
+    public const EVENT_CHANCE = 7;
+
     /** Army needed to clear a barbarian camp, and what it costs. */
     public const CAMP_CLEAR_ARMY = 4;
 

@@ -154,7 +154,7 @@ final class Actions
      *
      * @param  Collection<int, Tile>  $tiles  every tile in the game
      */
-    public function attackProblem(Empire $attacker, City $target, Collection $tiles, ?Game $game = null): ?string
+    public function attackProblem(Empire $attacker, City $target, Collection $tiles, ?Game $game = null, ?TileIndex $index = null): ?string
     {
         if ($target->empire_id === $attacker->id) {
             return 'That is your own city.';
@@ -165,32 +165,16 @@ final class Actions
         if ($attacker->army < 1) {
             return 'You have no army. Build units in a city first.';
         }
-        if (! $this->bordersTouch($attacker, $target, $tiles)) {
+        if (! $this->bordersTouch($attacker, $target, $tiles, $index)) {
             return 'Your territory does not border this city.';
         }
 
         return null;
     }
 
-    public function bordersTouch(Empire $attacker, City $target, Collection $tiles): bool
+    public function bordersTouch(Empire $attacker, City $target, Collection $tiles, ?TileIndex $index = null): bool
     {
-        $mine = [];
-        foreach ($tiles as $t) {
-            if ($t->empire_id === $attacker->id) {
-                $mine[$t->x.','.$t->y] = true;
-            }
-        }
-        foreach ($tiles->where('city_id', $target->id) as $t) {
-            for ($dx = -1; $dx <= 1; $dx++) {
-                for ($dy = -1; $dy <= 1; $dy++) {
-                    if (isset($mine[($t->x + $dx).','.($t->y + $dy)])) {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        return false;
+        return ($index ?? new TileIndex($tiles))->touches($attacker->id, $target->id);
     }
 
     /** Garrison strength a defender spreads over each of its cities. */

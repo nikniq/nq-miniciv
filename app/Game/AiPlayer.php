@@ -26,6 +26,7 @@ final class AiPlayer
     public function act(Game $game, Empire $empire, Collection $tiles, array $wondersBuilt): array
     {
         $events = [];
+        $index = new TileIndex($tiles);
 
         // Use settlers as soon as there is somewhere to put them.
         while ($empire->settlers > 0) {
@@ -56,7 +57,7 @@ final class AiPlayer
             }
         }
         if ($game->turn >= 30 && ! Economy::happiness($empire, Economy::warsCount($game, $empire))['unhappy']) {
-            foreach ($this->borderingEnemyCities($game, $empire, $tiles) as [$city, $defense]) {
+            foreach ($this->borderingEnemyCities($game, $empire, $index) as [$city, $defense]) {
                 if ($empire->army <= $defense * 1.8 || $empire->army < 12) {
                     continue;
                 }
@@ -82,24 +83,24 @@ final class AiPlayer
             }
         }
 
-        // Clear barbarian camps near home when the army can spare it.
-        if ($empire->army >= Rules::CAMP_CLEAR_ARMY + 4) {
-            foreach ($tiles->where('camp', true) as $camp) {
-                if ($this->actions->campProblem($empire, $camp, $tiles) === null) {
-                    $this->actions->clearCamp($empire, $camp, $tiles);
-                    break;
-                }
+        // Clear barbarian camps near home whenever the army can spare it.
+        foreach ($tiles->where('camp', true) as $camp) {
+            if ($empire->army < Rules::CAMP_CLEAR_ARMY + 1) {
+                break;
+            }
+            if ($this->actions->campProblem($empire, $camp, $tiles) === null) {
+                $this->actions->clearCamp($empire, $camp, $tiles);
             }
         }
 
-        $threat = $this->threatLevel($game, $empire, $tiles);
+        $threat = $this->threatLevel($game, $empire, $index);
         $wantArmy = min(24, 2 + intdiv($game->turn, 12) + $threat);
         // An empty treasury means units would only be dismissed again.
         $broke = $empire->gold < 10;
         $wantCities = min(6, 2 + intdiv($game->turn, 20));
         $roomToGrow = $this->bestSite($game, $empire, $tiles) !== null;
         $happiness = Economy::happiness($empire, Economy::warsCount($game, $empire));
-        $pillaged = $tiles->where('camp', true)->isNotEmpty();
+        $pillaged = $tiles->contains(fn (Tile $t) => $t->camp && $this->actions->campProblem($empire, $t, $tiles) === null);
 
         foreach ($empire->cities as $city) {
             $options = Economy::buildOptions($city, $empire, $wondersBuilt);
@@ -191,13 +192,34 @@ final class AiPlayer
         if (! $available) {
             return null;
         }
-        uasort($available, fn ($a, $b) => $a['cost'] <=> $b['cost']);
+        // Unhappy empires chase happiness buildings; otherwise prefer techs
+        // that unlock something buildable, then the cheapest.
+        $prefer = [];
+        if ($empire->relationLoaded('cities') && Economy::happiness($empire)['unhappy']) {
+            $prefer = ['construction', 'code_of_laws', 'philosophy'];
+        }
+        foreach ($prefer as $p) {
+            if (isset($available[$p])) {
+                return $p;
+            }
+        }
+        $unlocking = array_filter($available, function ($t, $key) {
+            foreach (Rules::BUILDINGS as $b) {
+                if ($b['tech'] === $key && ! $b['wonder']) {
+                    return true;
+                }
+            }
 
-        return array_key_first($available);
+            return false;
+        }, ARRAY_FILTER_USE_BOTH);
+        $pool = $unlocking ?: $available;
+        uasort($pool, fn ($a, $b) => $a['cost'] <=> $b['cost']);
+
+        return array_key_first($pool);
     }
 
     /** @return array<int, array{0: City, 1: int}> enemy cities touching our borders, weakest first */
-    private function borderingEnemyCities(Game $game, Empire $empire, Collection $tiles): array
+    private function borderingEnemyCities(Game $game, Empire $empire, TileIndex $index): array
     {
         $out = [];
         foreach ($game->empires as $other) {
@@ -207,7 +229,7 @@ final class AiPlayer
             $garrison = $this->actions->garrison($other);
             $extra = Economy::empireEffects($other)['defense'] ?? 0;
             foreach ($other->cities as $city) {
-                if ($this->actions->bordersTouch($empire, $city, $tiles)) {
+                if ($index->touches($empire->id, $city->id)) {
                     $out[] = [$city, Rules::cityDefense($city, $garrison, $extra)];
                 }
             }
@@ -218,7 +240,7 @@ final class AiPlayer
     }
 
     /** How much stronger bordering neighbours are than us, in army points. */
-    private function threatLevel(Game $game, Empire $empire, Collection $tiles): int
+    private function threatLevel(Game $game, Empire $empire, TileIndex $index): int
     {
         $threat = 0;
         foreach ($game->empires as $other) {
@@ -226,7 +248,7 @@ final class AiPlayer
                 continue;
             }
             foreach ($empire->cities as $city) {
-                if ($this->actions->bordersTouch($other, $city, $tiles)) {
+                if ($index->touches($other->id, $city->id)) {
                     $threat = max($threat, $other->army - $empire->army);
                     break;
                 }
@@ -247,18 +269,29 @@ final class AiPlayer
         foreach ($tiles as $t) {
             $grid[$t->x.','.$t->y] = $t;
         }
+        $allCentres = $tiles->whereIn('id', $game->cities->pluck('tile_id'))->values();
 
         $best = null;
         $bestScore = -1;
         foreach ($tiles as $t) {
-            if (! $t->canSettle() || $t->empire_id) {
+            if (! $t->canSettle() || $t->empire_id || $t->camp) {
                 continue;
             }
-            $near = $own->min(fn (Tile $c) => $c->distanceTo($t));
+            $near = PHP_INT_MAX;
+            foreach ($own as $c) {
+                $near = min($near, $c->distanceTo($t));
+            }
             if ($near > 6 || $near < Rules::MIN_CITY_DISTANCE) {
                 continue;
             }
-            if ($empire->settlers > 0 && $this->actions->foundingProblem($game, $empire, $t, $tiles) !== null) {
+            $tooClose = false;
+            foreach ($allCentres as $c) {
+                if ($c->distanceTo($t) < Rules::MIN_CITY_DISTANCE) {
+                    $tooClose = true;
+                    break;
+                }
+            }
+            if ($tooClose) {
                 continue;
             }
             $score = 0;

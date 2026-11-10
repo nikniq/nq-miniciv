@@ -71,6 +71,21 @@ if (map) {
         load(a.dataset.tile, true);
     });
 
+    // City names in the sidebar select their tile the same way.
+    document.addEventListener('click', (e) => {
+        const a = e.target.closest('a.map-tile-link');
+        if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
+        e.preventDefault();
+        load(a.dataset.tile, true);
+        map.querySelector(`.map-tile[data-tile="${a.dataset.tile}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+    });
+
+    // Ending a turn with loose ends asks first.
+    document.getElementById('end-turn-form')?.addEventListener('submit', (e) => {
+        const warn = e.target.dataset.warn;
+        if (warn && !confirm(`End turn anyway? Right now ${warn}.`)) e.preventDefault();
+    });
+
     // Enter ends the turn when nothing is focused.
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(document.activeElement?.tagName)) {
