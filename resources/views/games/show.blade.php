@@ -44,10 +44,30 @@
     </div>
 @endif
 
+{{-- Turn toasts: what happened last turn, dismissible, newest first --}}
+@if ($toasts->isNotEmpty() && $game->isActive())
+    <div id="toasts" class="pointer-events-none fixed bottom-4 right-4 z-40 flex w-80 max-w-[90vw] flex-col gap-2">
+        @foreach ($toasts->take(6) as $i => $t)
+            @php
+                $style = ['war' => 'border-red-700 bg-red-950/90 text-red-100', 'bad' => 'border-orange-700 bg-orange-950/90 text-orange-100', 'great' => 'border-amber-600 bg-amber-950/90 text-amber-100', 'attention' => 'border-sky-700 bg-sky-950/90 text-sky-100', 'info' => 'border-stone-700 bg-stone-900/90 text-stone-200'][$t['kind']];
+                $icon = ['war' => '⚔', 'bad' => '⚠', 'great' => '✦', 'attention' => '➜', 'info' => '·'][$t['kind']];
+            @endphp
+            <div class="toast pointer-events-auto flex items-start gap-2 rounded-lg border px-3 py-2 text-sm shadow-lg backdrop-blur {{ $style }}" style="animation-delay: {{ $i * 80 }}ms">
+                <span class="mt-0.5 shrink-0">{{ $icon }}</span>
+                <span class="flex-1">{{ $t['text'] }}</span>
+                <button type="button" class="shrink-0 opacity-60 hover:opacity-100" onclick="this.parentElement.remove()" aria-label="Dismiss">✕</button>
+            </div>
+        @endforeach
+        @if ($toasts->count() > 6)
+            <div class="pointer-events-auto text-right text-xs text-stone-500">+{{ $toasts->count() - 6 }} more in “Last turn” below</div>
+        @endif
+    </div>
+@endif
+
 {{-- Top bar --}}
 <div class="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-stone-800 bg-stone-900/60 px-4 py-3 text-sm">
     <div class="flex items-center gap-2 font-semibold">
-        <span class="inline-block h-3 w-3 rounded-sm" style="background: {{ $player->color }}"></span>{{ $player->name }}
+        <span class="flex h-6 w-6 items-center justify-center rounded-full text-sm ring-2" style="background: {{ $player->color }}22; --tw-ring-color: {{ $player->color }}">{{ Rules::crest($player->name) }}</span>{{ $player->name }}
     </div>
     <div>Turn <b>{{ min($game->turn, $game->max_turns) }}</b><span class="text-stone-500">/{{ $game->max_turns }}</span></div>
     <div title="Treasury: income {{ $totals['gold'] }} (incl. trade {{ $tradeGold }} from {{ $tradePartners->count() }} peaceful neighbours{{ $player->knows('currency') ? '' : ', needs Currency' }}) − upkeep {{ $upkeep['total'] }} per turn">💰 <b>{{ $player->gold }}</b> <span class="{{ $netGold < 0 ? 'text-red-400' : 'text-stone-500' }}">{{ $netGold >= 0 ? '+' : '' }}{{ $netGold }}</span></div>
@@ -185,7 +205,7 @@
                 <tbody>
                 @foreach ($rivals as $r)
                     <tr class="{{ $r['empire']->id === $player->id ? 'text-amber-200' : ($r['empire']->eliminated ? 'text-stone-600 line-through' : '') }}">
-                        <td><span class="mr-1 inline-block h-2.5 w-2.5 rounded-sm" style="background: {{ $r['empire']->color }}"></span>{{ $r['empire']->name }}</td>
+                        <td><span class="mr-1 inline-block h-2.5 w-2.5 rounded-sm" style="background: {{ $r['empire']->color }}"></span>{{ Rules::crest($r['empire']->name) }} {{ $r['empire']->name }}</td>
                         <td class="text-center">{{ $r['cities'] }}</td>
                         <td class="text-center">{{ $r['share'] }}%</td>
                         <td class="text-center">{{ $r['army'] }}</td>

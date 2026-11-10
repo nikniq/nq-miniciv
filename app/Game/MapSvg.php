@@ -89,7 +89,7 @@ final class MapSvg
             $d = implode(' ', $segments);
             $out[] = '<path d="'.$d.'" stroke="#0b2a52" stroke-width="7" opacity="0.9"/>';
             $out[] = '<path d="'.$d.'" stroke="#3b82f6" stroke-width="4"/>';
-            $out[] = '<path d="'.$d.'" stroke="#bfdbfe" stroke-width="1" opacity="0.6"/>';
+            $out[] = '<path d="'.$d.'" stroke="#bfdbfe" stroke-width="1" opacity="0.6" class="river-shimmer" stroke-dasharray="6 10"/>';
         }
         $out[] = '</g>';
 
@@ -243,7 +243,10 @@ final class MapSvg
             }
             // deterministic wave placement
             $k = ($t->x * 7 + $t->y * 13) % 3;
-            $detail = sprintf('<use href="#wave" x="%d" y="%d" opacity="0.5"/>', $x + 6 + $k * 4, $y + 12 + $k * 9);
+            $detail = sprintf('<use href="#wave" x="%d" y="%d" opacity="0.5" class="wave w%d"/>', $x + 6 + $k * 4, $y + 12 + $k * 9, $k);
+            if (! $coast && (($t->x * 3 + $t->y * 5) % 4) === 0) {
+                $detail .= sprintf('<use href="#wave" x="%d" y="%d" opacity="0.3" class="wave w%d"/>', $x + 18, $y + 30, ($k + 1) % 3);
+            }
         } else {
             $detail = match ($terrain) {
                 'forest' => sprintf('<use href="#trees" x="%d" y="%d"/>', $x, $y),
@@ -264,7 +267,9 @@ final class MapSvg
         $color = e($e?->color ?? '#fff');
         $r = min(16, 9 + intdiv($city->population, 1));
         $name = e($city->name);
-        $star = $city->is_capital ? sprintf('<text x="%s" y="%s" font-size="10" text-anchor="middle" fill="#fde68a" style="pointer-events:none">★</text>', $cx + $r - 2, $cy - $r + 4) : '';
+        $star = $city->is_capital
+            ? sprintf('<g style="pointer-events:none"><circle cx="%1$s" cy="%2$s" r="7" fill="#1c1917" stroke="#fde68a" stroke-width="1.2"/><text x="%1$s" y="%3$s" font-size="9" text-anchor="middle" dominant-baseline="central">%4$s</text></g>', $cx + $r - 1, $cy - $r + 1, $cy - $r + 1.5, Rules::crest($e?->name ?? ''))
+            : '';
         $hasWonder = false;
         foreach ($city->buildings ?? [] as $b) {
             $hasWonder = $hasWonder || Rules::isWonder($b);
@@ -293,20 +298,23 @@ final class MapSvg
         return <<<'SVG'
 <defs>
   <symbol id="trees" viewBox="0 0 44 44" width="44" height="44">
-    <g fill="#1f4d1f" stroke="#163816" stroke-width="0.6">
-      <path d="M10 30 l5 -10 l5 10 z"/><path d="M12 24 l3 -7 l3 7 z" fill="#2a6a2a"/>
-      <path d="M24 34 l5 -11 l5 11 z"/><path d="M26 27 l3 -7 l3 7 z" fill="#2a6a2a"/>
-      <path d="M26 18 l4 -8 l4 8 z"/><path d="M27.5 13 l2.5 -5 l2.5 5 z" fill="#2a6a2a"/>
+    <g stroke="#0f2e12" stroke-width="0.6">
+      <rect x="14" y="30" width="2" height="4" fill="#4a3220" stroke="none"/><path d="M9 31 l6 -12 l6 12 z" fill="#1f5a24"/><path d="M11 25 l4 -8 l4 8 z" fill="#2f7d33"/><path d="M12.5 20 l2.5 -5 l2.5 5 z" fill="#3f9a43"/>
+      <rect x="28" y="33" width="2" height="4" fill="#4a3220" stroke="none"/><path d="M23 34 l6 -12 l6 12 z" fill="#1f5a24"/><path d="M25 28 l4 -8 l4 8 z" fill="#2f7d33"/>
+      <rect x="29" y="18" width="1.6" height="3" fill="#4a3220" stroke="none"/><path d="M25 19 l5 -10 l5 10 z" fill="#1f5a24"/><path d="M26.5 14 l3.5 -7 l3.5 7 z" fill="#2f7d33"/>
+      <path d="M6 36 l4 -7 l4 7 z" fill="#1f5a24"/>
     </g>
   </symbol>
   <symbol id="hills" viewBox="0 0 44 44" width="44" height="44">
-    <g fill="none" stroke="#5c4f38" stroke-width="2" stroke-linecap="round" opacity="0.8">
-      <path d="M6 30 q8 -12 16 0"/><path d="M20 34 q8 -12 16 0"/><path d="M14 20 q6 -9 12 0"/>
-    </g>
+    <path d="M4 32 q9 -14 18 0 z" fill="#a8956f" opacity="0.8"/><path d="M4 32 q9 -14 18 0" fill="none" stroke="#5c4f38" stroke-width="1.5"/>
+    <path d="M18 36 q10 -15 20 0 z" fill="#9c8a66" opacity="0.8"/><path d="M18 36 q10 -15 20 0" fill="none" stroke="#5c4f38" stroke-width="1.5"/>
+    <path d="M12 22 q7 -10 14 0 z" fill="#b3a07a" opacity="0.7"/><path d="M12 22 q7 -10 14 0" fill="none" stroke="#5c4f38" stroke-width="1.2"/>
   </symbol>
   <symbol id="peak" viewBox="0 0 44 44" width="44" height="44">
-    <path d="M4 36 L17 12 L24 22 L30 14 L41 36 Z" fill="#5b554f" stroke="#2f2b28" stroke-width="1"/>
-    <path d="M17 12 L21 19 L24 22 L26 18 L30 14 L32 18 L28 18 L26 22 L22 21 L19 18 L15 17 Z" fill="#f4f1ea"/>
+    <path d="M3 37 L17 11 L24 22 L30 13 L41 37 Z" fill="#6b645d" stroke="#2f2b28" stroke-width="1"/>
+    <path d="M17 11 L24 22 L30 13 L41 37 L22 37 Z" fill="#4a443f" opacity="0.7"/>
+    <path d="M17 11 L21 18 L24 22 L26 18 L30 13 L32 18 L28 18 L26 22 L22 21 L19 18 L14 17 Z" fill="#f4f1ea"/>
+    <path d="M24 22 L26 18 L30 13 L32 18 L28 18 L26 22 Z" fill="#d6d3d1"/>
   </symbol>
   <symbol id="dunes" viewBox="0 0 44 44" width="44" height="44">
     <g fill="none" stroke="#b89e52" stroke-width="1.5" stroke-linecap="round" opacity="0.8">

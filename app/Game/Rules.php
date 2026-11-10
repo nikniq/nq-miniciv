@@ -212,6 +212,32 @@ final class Rules
 
     public const EMPIRE_NAMES = ['Rome', 'Egypt', 'Babylon', 'Carthage', 'Persia', 'Athens', 'Maurya', 'Han'];
 
+    /** A crest glyph per empire; unknown names get one from the pool. */
+    public const CRESTS = ['Rome' => '🦅', 'Egypt' => '𓂀', 'Babylon' => '🦁', 'Carthage' => '🐘', 'Persia' => '🪶', 'Athens' => '🦉', 'Maurya' => '☸', 'Han' => '🐉'];
+
+    public const CREST_POOL = ['⚜', '🐺', '🐂', '🦌', '🐎', '🌞', '🌙', '⚡'];
+
+    public static function crest(string $name): string
+    {
+        if (isset(self::CRESTS[$name])) {
+            return self::CRESTS[$name];
+        }
+
+        return self::CREST_POOL[crc32($name) % count(self::CREST_POOL)];
+    }
+
+    /** Event categories for the notification toasts, by keyword. */
+    public static function eventKind(string $text): string
+    {
+        return match (true) {
+            str_contains($text, 'declared war') || str_contains($text, 'captured') || str_contains($text, 'repelled') => 'war',
+            str_contains($text, 'wiped') || str_contains($text, 'fallen') || str_contains($text, 'Famine') || str_contains($text, 'Plague') || str_contains($text, 'Unrest') || str_contains($text, 'treasury') => 'bad',
+            str_contains($text, 'discovered') || str_contains($text, 'completed') || str_contains($text, 'Wonder') => 'great',
+            str_contains($text, 'Settlers') || str_contains($text, 'Barbarian') || str_contains($text, 'pillag') => 'attention',
+            default => 'info',
+        };
+    }
+
     public const CITY_NAMES = [
         'Rome' => ['Roma', 'Antium', 'Cumae', 'Neapolis', 'Ravenna', 'Arretium', 'Mediolanum'],
         'Egypt' => ['Thebes', 'Memphis', 'Heliopolis', 'Elephantine', 'Alexandria', 'Pi-Ramesses'],

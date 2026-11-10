@@ -205,6 +205,7 @@ final class Presenter
             'dominationShare' => (int) (Rules::DOMINATION_SHARE * 100),
             'winner' => $game->winner_empire_id ? $empiresById->get($game->winner_empire_id) : null,
             'chart' => $this->chart($game, $empiresById),
+            'toasts' => collect($game->events ?? [])->map(fn ($e) => ['text' => $e, 'kind' => Rules::eventKind($e)])->values(),
             'difficulty' => Rules::DIFFICULTIES[$game->difficulty ?? 'prince'],
         ];
     }

@@ -140,6 +140,20 @@ if (map) {
         if (id) load(id, false);
     });
 
+    // Toasts fade out on their own; hovering keeps them.
+    const toasts = document.getElementById('toasts');
+    if (toasts) {
+        let hover = false;
+        toasts.addEventListener('mouseenter', () => { hover = true; });
+        toasts.addEventListener('mouseleave', () => { hover = false; });
+        setTimeout(function fade() {
+            if (hover) return setTimeout(fade, 2000);
+            toasts.style.transition = 'opacity 600ms';
+            toasts.style.opacity = '0';
+            setTimeout(() => toasts.remove(), 650);
+        }, 9000);
+    }
+
     document.getElementById('end-turn-form')?.addEventListener('submit', (e) => {
         const warn = e.target.dataset.warn;
         if (warn && !confirm(`End turn anyway? Right now ${warn}.`)) e.preventDefault();
