@@ -2,6 +2,27 @@
 
 Game portal for Mini Civilisation, built on Laravel.
 
+## The game
+
+A turn-based, single-player empire builder against rival AI empires on a
+shared, seeded map. Found cities, grow borders through culture, build
+granaries, libraries, markets and wonders, and research thirteen
+technologies from Agriculture to Banking. Win by controlling 55% of the
+land, or by having the highest score after 120 turns.
+
+Code lives in `app/Game/`:
+
+- `Rules.php` is all static data: terrain, resources, buildings, techs, yields.
+- `MapGenerator.php` and `GameSetup.php` create a game.
+- `Economy.php` computes city yields and build options.
+- `Actions.php` enforces player and AI actions (found, build, buy, research).
+- `TurnProcessor.php` advances a turn; `AiPlayer.php` drives rivals.
+- `Presenter.php` shapes everything the game screen needs.
+
+Accounts: email and password, plus Google sign-in through Laravel Socialite
+when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set in `.env`. The
+authorised redirect URI in Google Cloud must be `APP_URL/auth/google/callback`.
+
 ## Layout
 
 The web root is `public_html/` instead of Laravel's default `public/`, so the
