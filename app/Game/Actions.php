@@ -105,13 +105,36 @@ final class Actions
         return $claimed;
     }
 
-    public function setBuild(City $city, Empire $empire, string $key, array $wondersBuilt): void
+    public function setBuild(City $city, Empire $empire, string $key, array $wondersBuilt, bool $append = false): void
     {
         $options = Economy::buildOptions($city, $empire, $wondersBuilt);
         if (! isset($options[$key])) {
             throw new InvalidArgumentException('That cannot be built here right now.');
         }
-        $city->current_build = $key;
+        if ($append && $city->current_build && $city->current_build !== 'wealth') {
+            $queue = $city->queue ?? [];
+            if (count($queue) >= 6) {
+                throw new InvalidArgumentException('The queue is full (6 items).');
+            }
+            if ($key !== 'settlers' && ! isset(Rules::UNITS[$key]) && (in_array($key, $queue, true) || $key === $city->current_build)) {
+                throw new InvalidArgumentException('That is already planned.');
+            }
+            $queue[] = $key;
+            $city->queue = $queue;
+        } else {
+            $city->current_build = $key;
+        }
+        $city->save();
+    }
+
+    public function removeFromQueue(City $city, int $position): void
+    {
+        $queue = $city->queue ?? [];
+        if (! array_key_exists($position, $queue)) {
+            throw new InvalidArgumentException('Nothing at that position.');
+        }
+        unset($queue[$position]);
+        $city->queue = array_values($queue);
         $city->save();
     }
 

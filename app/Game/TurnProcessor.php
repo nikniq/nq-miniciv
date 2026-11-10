@@ -45,8 +45,9 @@ final class TurnProcessor
                 $science = 0;
                 $gold = 0;
 
+                $index = new TileIndex($this->tiles);
                 foreach ($empire->cities as $city) {
-                    $cityTiles = $this->tiles->where('city_id', $city->id);
+                    $cityTiles = collect($index->cityTiles($city->id));
                     $centre = $this->tiles->firstWhere('id', $city->tile_id);
                     $pillaged = $centre ? Economy::campsNear($centre, $this->tiles) : 0;
                     if ($pillaged) {
@@ -169,9 +170,27 @@ final class TurnProcessor
         }
 
         $city->production_stored -= $cost;
-        $city->current_build = $this->nextBuild($city, $empire, $wondersBuilt);
+        $city->current_build = $this->popQueue($city, $empire, $wondersBuilt) ?? $this->nextBuild($city, $empire, $wondersBuilt);
 
         return 0;
+    }
+
+    /** Next still-valid item from the city's queue, dropping stale ones. */
+    private function popQueue(City $city, Empire $empire, array $wondersBuilt): ?string
+    {
+        $queue = $city->queue ?? [];
+        $options = Economy::buildOptions($city, $empire, $wondersBuilt);
+        while ($queue) {
+            $next = array_shift($queue);
+            if (isset($options[$next])) {
+                $city->queue = array_values($queue);
+
+                return $next;
+            }
+        }
+        $city->queue = [];
+
+        return null;
     }
 
     private function nextBuild(City $city, Empire $empire, array $wondersBuilt): string
@@ -261,7 +280,7 @@ final class TurnProcessor
 
                 return;
             }
-            if (Economy::culture($empire) >= Rules::CULTURE_VICTORY) {
+            if (Economy::culture($empire) >= Rules::cultureGoal($game)) {
                 $game->status = $empire->is_ai ? 'lost' : 'won';
                 $game->winner_empire_id = $empire->id;
                 array_unshift($this->events, $empire->is_ai

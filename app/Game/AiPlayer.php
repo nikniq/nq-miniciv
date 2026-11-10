@@ -97,7 +97,7 @@ final class AiPlayer
         $wantArmy = min(24, 2 + intdiv($game->turn, 12) + $threat);
         // An empty treasury means units would only be dismissed again.
         $broke = $empire->gold < 10;
-        $wantCities = min(6, 2 + intdiv($game->turn, 20));
+        $wantCities = min(Rules::aiCityCap($game), 2 + intdiv($game->turn, 20));
         $roomToGrow = $this->bestSite($game, $empire, $tiles) !== null;
         $happiness = Economy::happiness($empire, Economy::warsCount($game, $empire));
         $pillaged = $tiles->contains(fn (Tile $t) => $t->camp && $this->actions->campProblem($empire, $t, $tiles) === null);

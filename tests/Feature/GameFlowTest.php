@@ -31,7 +31,8 @@ class GameFlowTest extends TestCase
     {
         $game = $this->startGame(User::factory()->create());
 
-        $this->assertCount(Rules::MAP_WIDTH * Rules::MAP_HEIGHT, $game->tiles);
+        $this->assertCount(Rules::MAP_SIZES['normal']['width'] * Rules::MAP_SIZES['normal']['height'], $game->tiles);
+        $this->assertTrue($game->tiles->contains(fn ($t) => $t->river), 'maps have rivers');
         $this->assertCount(3, $game->empires);
         $this->assertCount(3, $game->cities);
         $this->assertTrue($game->playerEmpire()->cities->first()->is_capital);
@@ -217,7 +218,7 @@ class GameFlowTest extends TestCase
             ->assertRedirect();
 
         $game = Game::firstOrFail();
-        $this->assertSame(16, $game->width);
+        $this->assertSame(Rules::MAP_SIZES['small']['width'], $game->width);
         $this->assertSame('king', $game->difficulty);
         $this->assertCount(3, $game->empires, 'a small map trims rivals to 2');
 
@@ -237,5 +238,29 @@ class GameFlowTest extends TestCase
 
         $this->get(route('hall'))->assertSee('321')->assertSee($user->name);
         $this->actingAs($user)->get(route('games.show', $game))->assertSee('Victory')->assertSee('Play again');
+    }
+
+    public function test_production_queue_feeds_the_next_build(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $capital = $game->playerEmpire()->cities->first();
+
+        $this->actingAs($user)->post(route('games.build', [$game, $capital]), ['build' => 'warriors'])->assertRedirect();
+        $this->actingAs($user)->post(route('games.build', [$game, $capital]), ['build' => 'monument', 'queue' => 1])->assertSessionMissing('error');
+        $this->actingAs($user)->post(route('games.build', [$game, $capital]), ['build' => 'monument', 'queue' => 1])->assertSessionHas('error');
+        $this->assertSame(['monument'], $capital->fresh()->queue);
+
+        // Pay for the warriors so they finish this turn; the queue should take over.
+        $game->playerEmpire()->update(['gold' => 999]);
+        $this->actingAs($user)->post(route('games.buy', [$game, $capital]))->assertSessionHas('status');
+        $this->actingAs($user)->post(route('games.end-turn', $game));
+        $capital->refresh();
+        $this->assertSame('monument', $capital->current_build);
+        $this->assertSame([], $capital->queue);
+
+        $this->actingAs($user)->post(route('games.build', [$game, $capital]), ['build' => 'warriors', 'queue' => 1]);
+        $this->actingAs($user)->post(route('games.dequeue', [$game, $capital]), ['position' => 0])->assertRedirect();
+        $this->assertSame([], $capital->fresh()->queue);
     }
 }

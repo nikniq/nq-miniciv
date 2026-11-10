@@ -14,7 +14,7 @@
                 @if ($city)
                     {{ $city->name }} <span class="text-stone-400">· size {{ $city->population }}</span> @if ($city->is_capital) <span title="Capital">★</span> @endif
                 @else
-                    {{ $selected['terrain']['name'] }}@if ($selected['resource']) · {{ $selected['resource']['icon'] }} {{ $selected['resource']['name'] }}@endif
+                    {{ $selected['terrain']['name'] }}@if ($selected['river']) · 🏞️ River @endif @if ($selected['resource']) · {{ $selected['resource']['icon'] }} {{ $selected['resource']['name'] }}@endif
                 @endif
             </h2>
             <div class="text-xs text-stone-500">
@@ -32,6 +32,15 @@
 
     @if ($city && $city->empire_id === $player->id)
         @php $y = $selected['cityYields']; @endphp
+        <div class="mt-3">{!! $selected['skyline'] !!}</div>
+        @if ($city->buildings)
+            <div class="mt-2 flex flex-wrap gap-1">
+                @foreach ($city->buildings as $b)
+                    @php $bd = Rules::BUILDINGS[$b]; @endphp
+                    <span class="inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] {{ $bd['wonder'] ? 'border-amber-700/70 bg-amber-950/40 text-amber-200' : 'border-stone-700 bg-stone-800/60 text-stone-200' }}" title="{{ $bd['name'] }}: {{ $bd['blurb'] }}">{{ $bd['icon'] ?? '🏛️' }} {{ $bd['name'] }}</span>
+                @endforeach
+            </div>
+        @endif
         <dl class="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
             <dt class="text-stone-400">Food</dt><dd>{{ $y['food'] }} <span class="text-stone-500">({{ $y['surplus'] >= 0 ? '+' : '' }}{{ $y['surplus'] }} surplus)</span></dd>
             <dt class="text-stone-400">Production</dt><dd>{{ $y['prod'] }}@if ($happiness['unhappy']) <span class="text-red-400">(unrest)</span>@endif</dd>
@@ -84,14 +93,29 @@
                         @if ($opts)
                             <optgroup label="{{ $label }}">
                                 @foreach ($opts as $key => $o)
-                                    <option value="{{ $key }}" @selected($key === $city->current_build) title="{{ $o['blurb'] }}">{{ $o['name'] }}@if ($o['cost']) ({{ $o['cost'] }})@endif — {{ $o['blurb'] }}</option>
+                                    <option value="{{ $key }}" @selected($key === $city->current_build) title="{{ $o['blurb'] }}">{{ Rules::BUILDINGS[$key]['icon'] ?? ($kind === 'unit' ? '⚔' : ($key === 'settlers' ? '🏕️' : '💰')) }} {{ $o['name'] }}@if ($o['cost']) ({{ $o['cost'] }})@endif — {{ $o['blurb'] }}</option>
                                 @endforeach
                             </optgroup>
                         @endif
                     @endforeach
                 </select>
-                <button class="rounded border border-stone-600 px-3 py-1.5 text-xs hover:bg-stone-800">Set</button>
+                <button class="rounded border border-stone-600 px-3 py-1.5 text-xs hover:bg-stone-800" title="Build this now">Set</button>
+                <button name="queue" value="1" class="rounded border border-stone-700 px-2 py-1.5 text-xs text-stone-300 hover:bg-stone-800" title="Add to the queue">+Q</button>
             </form>
+            @if ($city->queue)
+                <ol class="mt-2 space-y-0.5 text-xs text-stone-400">
+                    @foreach ($city->queue as $i => $q)
+                        <li class="flex items-center justify-between gap-2">
+                            <span>then {{ Economy::buildName($q) }} <span class="text-stone-600">({{ Economy::buildCost($q) ?? '—' }})</span></span>
+                            <form method="POST" action="{{ route('games.dequeue', [$game, $city]) }}">
+                                @csrf
+                                <input type="hidden" name="position" value="{{ $i }}">
+                                <button class="rounded px-1 text-stone-500 hover:bg-stone-800 hover:text-red-300" title="Remove">✕</button>
+                            </form>
+                        </li>
+                    @endforeach
+                </ol>
+            @endif
             @if ($selected['buyPrice'])
                 <form method="POST" action="{{ route('games.buy', [$game, $city]) }}" class="mt-2">
                     @csrf
@@ -102,13 +126,17 @@
             @endif
         @endif
 
+    @elseif ($city)
+        <div class="mt-3">{!! $selected['skyline'] !!}</div>
+        <p class="mt-2 text-stone-400">A city of <span style="color: {{ $selected['owner']->color }}">{{ $selected['owner']->name }}</span>.</p>
         @if ($city->buildings)
-            <div class="mt-3 text-xs text-stone-400">
-                Built: {{ collect($city->buildings)->map(fn ($b) => Rules::BUILDINGS[$b]['name'])->join(', ') }}
+            <div class="mt-1 flex flex-wrap gap-1">
+                @foreach ($city->buildings as $b)
+                    @php $bd = Rules::BUILDINGS[$b]; @endphp
+                    <span class="inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] {{ $bd['wonder'] ? 'border-amber-700/70 bg-amber-950/40 text-amber-200' : 'border-stone-700 bg-stone-800/60 text-stone-300' }}" title="{{ $bd['name'] }}: {{ $bd['blurb'] }}">{{ $bd['icon'] ?? '🏛️' }} {{ $bd['name'] }}</span>
+                @endforeach
             </div>
         @endif
-    @elseif ($city)
-        <p class="mt-2 text-stone-400">A city of <span style="color: {{ $selected['owner']->color }}">{{ $selected['owner']->name }}</span>. Built: {{ collect($city->buildings)->map(fn ($b) => Rules::BUILDINGS[$b]['name'])->join(', ') ?: 'nothing yet' }}.</p>
         <dl class="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
             <dt class="text-stone-400">Its defence</dt><dd>{{ $selected['defense'] }}</dd>
             <dt class="text-stone-400">Your army</dt><dd>{{ $player->army }}</dd>

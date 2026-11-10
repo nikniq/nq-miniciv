@@ -19,10 +19,16 @@ final class Rules
 
     /** Map sizes: width, height, rivals allowed. */
     public const MAP_SIZES = [
-        'small' => ['name' => 'Small', 'width' => 16, 'height' => 11, 'max_rivals' => 2],
-        'normal' => ['name' => 'Normal', 'width' => 20, 'height' => 14, 'max_rivals' => 4],
-        'large' => ['name' => 'Large', 'width' => 26, 'height' => 18, 'max_rivals' => 5],
+        'small' => ['name' => 'Small', 'width' => 18, 'height' => 12, 'max_rivals' => 2],
+        'normal' => ['name' => 'Normal', 'width' => 26, 'height' => 17, 'max_rivals' => 4],
+        'large' => ['name' => 'Large', 'width' => 34, 'height' => 22, 'max_rivals' => 6],
+        'huge' => ['name' => 'Huge', 'width' => 44, 'height' => 28, 'max_rivals' => 7],
     ];
+
+    /** River bonus on land tiles; deserts by a river become flood plains. */
+    public const RIVER_BONUS = ['food' => 1, 'gold' => 1];
+
+    public const FLOOD_PLAIN_FOOD = 2;
 
     /** Difficulty: multipliers applied to AI production and science. */
     public const DIFFICULTIES = [
@@ -34,8 +40,21 @@ final class Rules
 
     public const DOMINATION_SHARE = 0.55;
 
-    /** Total culture across all cities for a cultural victory. */
+    /** Total culture for a cultural victory on a normal map; scales with area. */
     public const CULTURE_VICTORY = 3000;
+
+    public static function cultureGoal(\App\Models\Game $game): int
+    {
+        $normal = self::MAP_SIZES['normal']['width'] * self::MAP_SIZES['normal']['height'];
+
+        return (int) round(self::CULTURE_VICTORY * max(1, ($game->width * $game->height) / $normal) / 100) * 100;
+    }
+
+    /** How many cities a rival aims for, by map area. */
+    public static function aiCityCap(\App\Models\Game $game): int
+    {
+        return max(6, intdiv($game->width * $game->height, 70));
+    }
 
     /** Turns a peace treaty must hold before war can be declared again. */
     public const PEACE_MIN_TURNS = 10;
@@ -96,46 +115,46 @@ final class Rules
      * Each wonder can be built once per game.
      */
     public const BUILDINGS = [
-        'monument' => ['name' => 'Monument', 'cost' => 30, 'tech' => null, 'requires' => null, 'wonder' => false, 'score' => 2,
+        'monument' => ['name' => 'Monument', 'icon' => '🗿', 'cost' => 30, 'tech' => null, 'requires' => null, 'wonder' => false, 'score' => 2,
             'effects' => ['culture' => 2, 'happy' => 1], 'blurb' => 'Expands borders faster, +1 happiness.'],
-        'granary' => ['name' => 'Granary', 'cost' => 40, 'tech' => 'agriculture', 'requires' => null, 'wonder' => false, 'score' => 2,
+        'granary' => ['name' => 'Granary', 'icon' => '🌾', 'cost' => 40, 'tech' => 'agriculture', 'requires' => null, 'wonder' => false, 'score' => 2,
             'effects' => ['food' => 2], 'blurb' => 'Faster growth.'],
-        'workshop' => ['name' => 'Workshop', 'cost' => 60, 'tech' => 'mining', 'requires' => null, 'wonder' => false, 'score' => 2,
+        'workshop' => ['name' => 'Workshop', 'icon' => '⚒️', 'cost' => 60, 'tech' => 'mining', 'requires' => null, 'wonder' => false, 'score' => 2,
             'effects' => ['prod' => 2], 'blurb' => 'More production.'],
-        'library' => ['name' => 'Library', 'cost' => 60, 'tech' => 'writing', 'requires' => null, 'wonder' => false, 'score' => 2,
+        'library' => ['name' => 'Library', 'icon' => '📚', 'cost' => 60, 'tech' => 'writing', 'requires' => null, 'wonder' => false, 'score' => 2,
             'effects' => ['science' => 3], 'blurb' => 'Research faster.'],
-        'market' => ['name' => 'Market', 'cost' => 60, 'tech' => 'currency', 'requires' => null, 'wonder' => false, 'score' => 2,
+        'market' => ['name' => 'Market', 'icon' => '🏪', 'cost' => 60, 'tech' => 'currency', 'requires' => null, 'wonder' => false, 'score' => 2,
             'effects' => ['gold' => 3], 'blurb' => 'Earn gold.'],
-        'aqueduct' => ['name' => 'Aqueduct', 'cost' => 80, 'tech' => 'mathematics', 'requires' => null, 'wonder' => false, 'score' => 3,
+        'aqueduct' => ['name' => 'Aqueduct', 'icon' => '🚰', 'cost' => 80, 'tech' => 'mathematics', 'requires' => null, 'wonder' => false, 'score' => 3,
             'effects' => ['food' => 3], 'blurb' => 'Large cities.'],
-        'temple' => ['name' => 'Temple', 'cost' => 70, 'tech' => 'philosophy', 'requires' => 'monument', 'wonder' => false, 'score' => 3,
+        'temple' => ['name' => 'Temple', 'icon' => '⛩️', 'cost' => 70, 'tech' => 'philosophy', 'requires' => 'monument', 'wonder' => false, 'score' => 3,
             'effects' => ['culture' => 3, 'science' => 1, 'happy' => 2], 'blurb' => 'Culture, +2 happiness, a little science.'],
-        'university' => ['name' => 'University', 'cost' => 120, 'tech' => 'education', 'requires' => 'library', 'wonder' => false, 'score' => 4,
+        'university' => ['name' => 'University', 'icon' => '🎓', 'cost' => 120, 'tech' => 'education', 'requires' => 'library', 'wonder' => false, 'score' => 4,
             'effects' => ['science' => 5], 'blurb' => 'Much faster research.'],
-        'walls' => ['name' => 'Walls', 'cost' => 50, 'tech' => 'masonry', 'requires' => null, 'wonder' => false, 'score' => 2,
+        'walls' => ['name' => 'Walls', 'icon' => '🧱', 'cost' => 50, 'tech' => 'masonry', 'requires' => null, 'wonder' => false, 'score' => 2,
             'effects' => [], 'defense' => 6, 'blurb' => '+6 defence against attack.'],
-        'harbor' => ['name' => 'Harbor', 'cost' => 70, 'tech' => 'sailing', 'requires' => null, 'wonder' => false, 'score' => 2,
+        'harbor' => ['name' => 'Harbor', 'icon' => '⚓', 'cost' => 70, 'tech' => 'sailing', 'requires' => null, 'wonder' => false, 'score' => 2,
             'effects' => [], 'terrain_bonus' => ['ocean' => ['food' => 1, 'gold' => 1]], 'blurb' => '+1 food and +1 gold on this city\'s sea tiles.'],
-        'colosseum' => ['name' => 'Colosseum', 'cost' => 90, 'tech' => 'construction', 'requires' => null, 'wonder' => false, 'score' => 3,
+        'colosseum' => ['name' => 'Colosseum', 'icon' => '🏟️', 'cost' => 90, 'tech' => 'construction', 'requires' => null, 'wonder' => false, 'score' => 3,
             'effects' => ['happy' => 3], 'blurb' => '+3 happiness.'],
-        'courthouse' => ['name' => 'Courthouse', 'cost' => 90, 'tech' => 'code_of_laws', 'requires' => null, 'wonder' => false, 'score' => 3,
+        'courthouse' => ['name' => 'Courthouse', 'icon' => '⚖️', 'cost' => 90, 'tech' => 'code_of_laws', 'requires' => null, 'wonder' => false, 'score' => 3,
             'effects' => ['happy' => 2, 'gold' => 2], 'blurb' => '+2 happiness, +2 gold.'],
-        'bank' => ['name' => 'Bank', 'cost' => 120, 'tech' => 'banking', 'requires' => 'market', 'wonder' => false, 'score' => 4,
+        'bank' => ['name' => 'Bank', 'icon' => '🏦', 'cost' => 120, 'tech' => 'banking', 'requires' => 'market', 'wonder' => false, 'score' => 4,
             'effects' => ['gold' => 5], 'blurb' => 'A great deal of gold.'],
 
-        'pyramids' => ['name' => 'Pyramids', 'cost' => 200, 'tech' => 'masonry', 'requires' => null, 'wonder' => true, 'score' => 25,
+        'pyramids' => ['name' => 'Pyramids', 'icon' => '🔺', 'cost' => 200, 'tech' => 'masonry', 'requires' => null, 'wonder' => true, 'score' => 25,
             'effects' => ['culture' => 3], 'empire_effects' => ['prod' => 2], 'blurb' => 'Wonder: +2 production in every city.'],
-        'hanging_gardens' => ['name' => 'Hanging Gardens', 'cost' => 220, 'tech' => 'mathematics', 'requires' => null, 'wonder' => true, 'score' => 25,
+        'hanging_gardens' => ['name' => 'Hanging Gardens', 'icon' => '🌿', 'cost' => 220, 'tech' => 'mathematics', 'requires' => null, 'wonder' => true, 'score' => 25,
             'effects' => ['culture' => 3], 'empire_effects' => ['food' => 2, 'happy' => 1], 'blurb' => 'Wonder: +2 food and +1 happiness in every city.'],
-        'great_library' => ['name' => 'Great Library', 'cost' => 220, 'tech' => 'philosophy', 'requires' => null, 'wonder' => true, 'score' => 25,
+        'great_library' => ['name' => 'Great Library', 'icon' => '📜', 'cost' => 220, 'tech' => 'philosophy', 'requires' => null, 'wonder' => true, 'score' => 25,
             'effects' => ['culture' => 3], 'empire_effects' => ['science' => 3], 'blurb' => 'Wonder: +3 science in every city.'],
-        'stonehenge' => ['name' => 'Stonehenge', 'cost' => 150, 'tech' => null, 'requires' => null, 'wonder' => true, 'score' => 20,
+        'stonehenge' => ['name' => 'Stonehenge', 'icon' => '🪨', 'cost' => 150, 'tech' => null, 'requires' => null, 'wonder' => true, 'score' => 20,
             'effects' => ['culture' => 6], 'empire_effects' => ['culture' => 1], 'blurb' => 'Wonder: +6 culture here, +1 culture in every city.'],
-        'oracle' => ['name' => 'Oracle', 'cost' => 180, 'tech' => 'philosophy', 'requires' => null, 'wonder' => true, 'score' => 25,
+        'oracle' => ['name' => 'Oracle', 'icon' => '🔮', 'cost' => 180, 'tech' => 'philosophy', 'requires' => null, 'wonder' => true, 'score' => 25,
             'effects' => ['culture' => 3, 'science' => 3], 'empire_effects' => ['happy' => 1], 'blurb' => 'Wonder: +1 happiness in every city, +3 science here.'],
-        'great_wall' => ['name' => 'Great Wall', 'cost' => 200, 'tech' => 'construction', 'requires' => null, 'wonder' => true, 'score' => 25,
+        'great_wall' => ['name' => 'Great Wall', 'icon' => '🏯', 'cost' => 200, 'tech' => 'construction', 'requires' => null, 'wonder' => true, 'score' => 25,
             'effects' => ['culture' => 3], 'empire_effects' => ['defense' => 4], 'blurb' => 'Wonder: +4 defence in every city.'],
-        'colossus' => ['name' => 'Colossus', 'cost' => 180, 'tech' => 'currency', 'requires' => null, 'wonder' => true, 'score' => 25,
+        'colossus' => ['name' => 'Colossus', 'icon' => '🗽', 'cost' => 180, 'tech' => 'currency', 'requires' => null, 'wonder' => true, 'score' => 25,
             'effects' => ['culture' => 3], 'empire_effects' => ['gold' => 3], 'blurb' => 'Wonder: +3 gold in every city.'],
     ];
 
@@ -204,7 +223,7 @@ final class Rules
         'Han' => ['Chang\'an', 'Luoyang', 'Chengdu', 'Nanjing', 'Guangzhou'],
     ];
 
-    public const COLORS = ['#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#22c55e', '#f97316'];
+    public const COLORS = ['#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#22c55e', '#f97316', '#a3e635'];
 
     /** Border radius (squared Euclidean) unlocked at each culture level. */
     public const BORDER_LEVELS = [0 => 2, 15 => 5, 50 => 10];
@@ -217,6 +236,15 @@ final class Rules
     {
         $t = self::TERRAIN[$tile->terrain];
         $y = ['food' => $t['food'], 'prod' => $t['prod'], 'gold' => $t['gold'], 'science' => 0];
+
+        if ($tile->river && $t['land']) {
+            foreach (self::RIVER_BONUS as $k => $v) {
+                $y[$k] += $v;
+            }
+            if ($tile->terrain === 'desert') {
+                $y['food'] += self::FLOOD_PLAIN_FOOD;
+            }
+        }
 
         if ($tile->resource) {
             foreach (self::RESOURCES[$tile->resource] as $k => $v) {

@@ -93,15 +93,26 @@
 
 <div class="grid gap-4 lg:grid-cols-[1fr_22rem]">
     {{-- Map --}}
-    <div class="overflow-x-auto rounded-lg border border-stone-800 bg-stone-950 p-2 shadow-inner">
-        <div id="map" data-panel-url="{{ route('games.panel', $game) }}">
-            {!! $mapSvg !!}
+    <div class="rounded-lg border border-stone-800 bg-stone-950 p-2 shadow-inner">
+        <div class="relative">
+            <div id="map" data-panel-url="{{ route('games.panel', $game) }}" data-game="{{ $game->id }}" class="overflow-hidden rounded cursor-grab touch-none" style="aspect-ratio: {{ $game->width }} / {{ $game->height }}; max-height: 78vh;">
+                {!! $mapSvg !!}
+            </div>
+            <div class="absolute left-2 top-2 flex flex-col gap-1 text-sm">
+                <button type="button" data-zoom="in" class="h-7 w-7 rounded bg-stone-900/90 text-stone-200 shadow hover:bg-stone-800" title="Zoom in (scroll)">+</button>
+                <button type="button" data-zoom="out" class="h-7 w-7 rounded bg-stone-900/90 text-stone-200 shadow hover:bg-stone-800" title="Zoom out">−</button>
+                <button type="button" data-zoom="reset" class="h-7 w-7 rounded bg-stone-900/90 text-xs text-stone-200 shadow hover:bg-stone-800" title="Fit whole map">⤢</button>
+                <button type="button" data-zoom="home" class="h-7 w-7 rounded bg-stone-900/90 text-xs text-stone-200 shadow hover:bg-stone-800" title="Centre on capital" data-tile="{{ $player->cities->firstWhere('is_capital', true)?->tile_id ?? $player->cities->first()?->tile_id }}">⌂</button>
+            </div>
+            <div id="minimap" class="absolute bottom-2 right-2 w-24 cursor-crosshair opacity-70 transition hover:opacity-100 sm:w-32" title="Click to pan">
+                {!! $minimap !!}
+            </div>
         </div>
         <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-xs text-stone-400">
             @foreach ($rivals as $r)
                 <span class="{{ $r['empire']->eliminated ? 'line-through opacity-50' : '' }}"><span class="mr-1 inline-block h-2.5 w-2.5 rounded-sm" style="background: {{ $r['empire']->color }}"></span>{{ $r['empire']->name }}</span>
             @endforeach
-            <span class="ml-auto hidden sm:inline">circle = city with population · ★ capital · white dot = worked by your citizens</span>
+            <span class="ml-auto hidden sm:inline">drag to pan · scroll to zoom · circle = city (population) · ★ capital · dashed ring = walls · gold ring = wonder</span>
         </div>
     </div>
 

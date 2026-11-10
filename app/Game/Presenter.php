@@ -100,6 +100,7 @@ final class Presenter
                 'tile' => $selected,
                 'terrain' => Rules::TERRAIN[$selected->terrain],
                 'resource' => $selected->resource ? Rules::RESOURCES[$selected->resource] : null,
+                'river' => $selected->river && $selected->isLand(),
                 'yield' => Rules::tileYield($selected, $player, $selected->city_id ? $game->cities->firstWhere('id', $selected->city_id) : null),
                 'campProblem' => $selected->camp ? $this->actions->campProblem($player, $selected, $tiles) : null,
                 'owner' => $owner,
@@ -109,6 +110,7 @@ final class Presenter
                 'foundingProblem' => $selectedCity ? null : $this->actions->foundingProblem($game, $player, $selected, $tiles),
             ];
             if ($selectedCity && $selectedCity->empire_id !== $player->id && $owner) {
+                $selectedInfo['skyline'] = CitySvg::render($selectedCity, $owner);
                 $defense = Rules::cityDefense($selectedCity, $this->actions->garrison($owner), Economy::empireEffects($owner)['defense'] ?? 0);
                 $selectedInfo['defense'] = $defense;
                 $selectedInfo['attackProblem'] = $this->actions->attackProblem($player, $selectedCity, $tiles, $game, new TileIndex($tiles));
@@ -121,6 +123,7 @@ final class Presenter
                 $cost = Economy::buildCost($selectedCity->current_build ?? '');
                 $remaining = $cost !== null ? max(0, $cost - $selectedCity->production_stored) : null;
                 $selectedInfo['cityYields'] = $y;
+                $selectedInfo['skyline'] = CitySvg::render($selectedCity, $player);
                 $selectedInfo['buildOptions'] = Economy::buildOptions($selectedCity, $player, $wondersBuilt);
                 $selectedInfo['buildCost'] = $cost;
                 $selectedInfo['turnsToBuild'] = ($remaining !== null && $y['prod'] > 0) ? (int) ceil($remaining / $y['prod']) : null;
@@ -176,6 +179,7 @@ final class Presenter
             'player' => $player,
             'grid' => $grid,
             'mapSvg' => $mapSvg,
+            'minimap' => $this->mapSvg->minimap($game, $tiles, $empiresById, $citiesByTile),
             'empiresById' => $empiresById,
             'citiesByTile' => $citiesByTile,
             'worked' => array_flip($worked),
@@ -190,7 +194,7 @@ final class Presenter
             'cityYields' => $cityYields,
             'settlersWaiting' => $player->settlers > 0,
             'researchUnset' => $player->current_tech === null && (bool) $player->availableTechs(),
-            'cultureGoal' => Rules::CULTURE_VICTORY,
+            'cultureGoal' => Rules::cultureGoal($game),
             'wars' => Economy::warsCount($game, $player),
             'research' => $research,
             'availableTechs' => $player->availableTechs(),

@@ -57,6 +57,42 @@ final class MapSvg
         }
         $out[] = '</g>';
 
+        // Layer 1b: rivers, joining adjacent river tiles centre to centre
+        $out[] = '<g id="rivers" fill="none" stroke-linecap="round" stroke-linejoin="round">';
+        $segments = [];
+        foreach ($tiles as $t) {
+            if (! $t->river) {
+                continue;
+            }
+            $cx = $t->x * $s + $s / 2;
+            $cy = $t->y * $s + $s / 2;
+            $joined = false;
+            foreach ([[1, 0], [0, 1], [-1, 0], [0, -1]] as [$dx, $dy]) {
+                $n = $this->grid[$t->y + $dy][$t->x + $dx] ?? null;
+                if (! $n) {
+                    continue;
+                }
+                if ($n->river && ($dx > 0 || $dy > 0)) {
+                    $segments[] = sprintf('M%s %s L%s %s', $cx, $cy, $n->x * $s + $s / 2, $n->y * $s + $s / 2);
+                    $joined = true;
+                } elseif (! $n->isLand()) {
+                    // river mouth: run to the edge facing the sea
+                    $segments[] = sprintf('M%s %s L%s %s', $cx, $cy, $cx + $dx * $s / 2, $cy + $dy * $s / 2);
+                    $joined = true;
+                }
+            }
+            if (! $joined) {
+                $segments[] = sprintf('M%s %s l0.1 0', $cx, $cy);
+            }
+        }
+        if ($segments) {
+            $d = implode(' ', $segments);
+            $out[] = '<path d="'.$d.'" stroke="#0b2a52" stroke-width="7" opacity="0.9"/>';
+            $out[] = '<path d="'.$d.'" stroke="#3b82f6" stroke-width="4"/>';
+            $out[] = '<path d="'.$d.'" stroke="#bfdbfe" stroke-width="1" opacity="0.6"/>';
+        }
+        $out[] = '</g>';
+
         // Layer 2: territory tint
         $out[] = '<g id="territory" opacity="0.22">';
         foreach ($tiles as $t) {
@@ -126,6 +162,7 @@ final class MapSvg
             $title = Rules::TERRAIN[$t->terrain]['name']
                 .($t->resource ? ', '.Rules::RESOURCES[$t->resource]['name'] : '')
                 .($t->camp ? ' · Barbarian camp' : '')
+                .($t->river && $t->isLand() ? ' · River' : '')
                 .($e ? ' · '.$e->name : '')
                 .($city ? ' · '.$city->name.' ('.$city->population.')' : '');
             $sel = $selectedId === $t->id ? ' is-selected' : '';
@@ -146,6 +183,38 @@ final class MapSvg
         return implode("\n", $out);
     }
 
+    private function adjust(string $hex, int $delta): string
+    {
+        $r = max(0, min(255, hexdec(substr($hex, 1, 2)) + $delta));
+        $g = max(0, min(255, hexdec(substr($hex, 3, 2)) + $delta));
+        $b = max(0, min(255, hexdec(substr($hex, 5, 2)) + $delta));
+
+        return sprintf('#%02x%02x%02x', $r, $g, $b);
+    }
+
+    /** A tiny overview: one rect per tile with owner or terrain colour. */
+    public function minimap(Game $game, Collection $tiles, Collection $empiresById, Collection $citiesByTile): string
+    {
+        $out = ['<svg id="minimap-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '.$game->width.' '.$game->height.'" shape-rendering="crispEdges" class="block h-auto w-full rounded border border-stone-700 bg-stone-950">'];
+        foreach ($tiles as $t) {
+            $fill = $t->isLand() ? ($t->terrain === 'mountain' ? '#57534e' : '#6b8f3a') : '#1e3a8a';
+            if ($t->empire_id && ($e = $empiresById->get($t->empire_id))) {
+                $fill = $e->color;
+            }
+            $out[] = sprintf('<rect x="%d" y="%d" width="1" height="1" fill="%s"/>', $t->x, $t->y, e($fill));
+        }
+        foreach ($citiesByTile as $city) {
+            $t = $tiles->firstWhere('id', $city->tile_id);
+            if ($t) {
+                $out[] = sprintf('<rect x="%s" y="%s" width="0.6" height="0.6" fill="#fff"/>', $t->x + 0.2, $t->y + 0.2);
+            }
+        }
+        $out[] = '<rect id="minimap-view" x="0" y="0" width="'.$game->width.'" height="'.$game->height.'" fill="none" stroke="#fff" stroke-width="0.35" style="pointer-events:none"/>';
+        $out[] = '</svg>';
+
+        return implode('', $out);
+    }
+
     private function ownerAt(int $x, int $y): ?int
     {
         return isset($this->grid[$y][$x]) ? $this->grid[$y][$x]->empire_id : null;
@@ -163,6 +232,9 @@ final class MapSvg
         $terrain = $t->terrain;
         $fill = self::PALETTE[$terrain];
         $detail = '';
+        // Subtle per-tile shade so large plains do not read as flat colour.
+        $shade = (($t->x * 37 + $t->y * 61) % 7) - 3; // -3..3
+        $fill = $this->adjust($fill, $shade * 3);
 
         if ($terrain === 'ocean') {
             $coast = $this->isLandAt($t->x - 1, $t->y) || $this->isLandAt($t->x + 1, $t->y) || $this->isLandAt($t->x, $t->y - 1) || $this->isLandAt($t->x, $t->y + 1);
@@ -190,11 +262,21 @@ final class MapSvg
     private function city(City $city, ?Empire $e, float $cx, float $cy, int $s): string
     {
         $color = e($e?->color ?? '#fff');
-        $r = min(16, 9 + $city->population);
+        $r = min(16, 9 + intdiv($city->population, 1));
         $name = e($city->name);
         $star = $city->is_capital ? sprintf('<text x="%s" y="%s" font-size="10" text-anchor="middle" fill="#fde68a" style="pointer-events:none">★</text>', $cx + $r - 2, $cy - $r + 4) : '';
+        $hasWonder = false;
+        foreach ($city->buildings ?? [] as $b) {
+            $hasWonder = $hasWonder || Rules::isWonder($b);
+        }
+        $walls = $city->has('walls')
+            ? sprintf('<circle cx="%s" cy="%s" r="%s" fill="none" stroke="#e7e5e4" stroke-width="2" stroke-dasharray="3 2"/>', $cx, $cy, $r + 3)
+            : '';
+        $glow = $hasWonder
+            ? sprintf('<circle cx="%s" cy="%s" r="%s" fill="none" stroke="#fbbf24" stroke-width="1.5" opacity="0.9"/>', $cx, $cy, $r + 6)
+            : '';
 
-        return sprintf(
+        return $walls.$glow.sprintf(
             '<g class="city" style="pointer-events:none">'
             .'<circle cx="%1$s" cy="%2$s" r="%3$s" fill="%4$s" stroke="#111" stroke-width="2"/>'
             .'<circle cx="%1$s" cy="%2$s" r="%5$s" fill="none" stroke="#fff" stroke-opacity="0.6" stroke-width="1"/>'

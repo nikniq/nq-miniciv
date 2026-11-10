@@ -13,7 +13,7 @@
             <h2 class="font-semibold text-amber-300">🏆 Ways to win</h2>
             <ul class="mt-2 space-y-1 text-sm text-stone-300">
                 <li><b>Domination</b>: own {{ (int) (Rules::DOMINATION_SHARE * 100) }}% of all land.</li>
-                <li><b>Culture</b>: reach {{ Rules::CULTURE_VICTORY }} total culture across your cities.</li>
+                <li><b>Culture</b>: reach {{ Rules::CULTURE_VICTORY }} total culture across your cities on a normal map (more on larger maps).</li>
                 <li><b>Score</b>: highest score when turn {{ Rules::MAX_TURNS }} ends.</li>
             </ul>
             <p class="mt-2 text-xs text-stone-500">Score counts population, cities, techs, buildings, wonders, land, army and culture.</p>
@@ -71,7 +71,7 @@
         <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             @foreach (Rules::BUILDINGS as $key => $b)
                 <div class="rounded border {{ $b['wonder'] ? 'border-amber-900/60 bg-amber-950/20' : 'border-stone-800 bg-stone-900/40' }} px-3 py-2 text-sm">
-                    <div class="flex justify-between"><b>{{ $b['name'] }}</b><span class="text-stone-500">{{ $b['cost'] }} ⚒</span></div>
+                    <div class="flex justify-between"><b>{{ $b['icon'] ?? '' }} {{ $b['name'] }}</b><span class="text-stone-500">{{ $b['cost'] }} ⚒</span></div>
                     <div class="text-xs text-stone-400">{{ $b['blurb'] }}</div>
                     <div class="text-xs text-stone-600">
                         @if ($b['tech']) {{ Rules::TECHS[$b['tech']]['name'] }} @else no tech @endif

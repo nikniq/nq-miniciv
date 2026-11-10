@@ -52,7 +52,7 @@ class GameActionController extends Controller
         $key = (string) $request->input('build');
 
         try {
-            $this->actions->setBuild($city, $empire, $key, $this->wondersBuilt($game));
+            $this->actions->setBuild($city, $empire, $key, $this->wondersBuilt($game), $request->boolean('queue'));
         } catch (InvalidArgumentException $e) {
             return $this->back($game, $e->getMessage(), $city->tile_id);
         }
@@ -94,6 +94,20 @@ class GameActionController extends Controller
         }
 
         return $this->back($game, $text, $city->tile_id, $result['captured'] ? 'status' : 'error');
+    }
+
+    public function dequeue(Request $request, Game $game, City $city): RedirectResponse
+    {
+        $this->own($request, $game);
+        $this->ownCity($game, $city);
+
+        try {
+            $this->actions->removeFromQueue($city, $request->integer('position'));
+        } catch (InvalidArgumentException $e) {
+            return $this->back($game, $e->getMessage(), $city->tile_id);
+        }
+
+        return $this->back($game, null, $city->tile_id);
     }
 
     public function focus(Request $request, Game $game, City $city): RedirectResponse

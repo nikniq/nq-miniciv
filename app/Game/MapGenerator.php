@@ -64,14 +64,16 @@ final class MapGenerator
             for ($x = 0; $x < $this->w; $x++) {
                 $i = $y * $this->w + $x;
                 if (! $land[$i]) {
-                    $tiles[] = ['x' => $x, 'y' => $y, 'terrain' => 'ocean', 'resource' => mt_rand(1, 100) <= 10 ? 'fish' : null];
+                    $tiles[] = ['x' => $x, 'y' => $y, 'terrain' => 'ocean', 'resource' => mt_rand(1, 100) <= 10 ? 'fish' : null, 'river' => false];
 
                     continue;
                 }
                 $terrain = $this->pickTerrain($y);
-                $tiles[] = ['x' => $x, 'y' => $y, 'terrain' => $terrain, 'resource' => $this->pickResource($terrain)];
+                $tiles[] = ['x' => $x, 'y' => $y, 'terrain' => $terrain, 'resource' => $this->pickResource($terrain), 'river' => false];
             }
         }
+
+        $this->carveRivers($tiles, $land);
 
         // Smooth lonely mountains next to the coast into hills so start sites
         // are not boxed in.
@@ -92,6 +94,112 @@ final class MapGenerator
         }
 
         return $tiles;
+    }
+
+    /**
+     * Rivers start in hills or mountains and flow toward the nearest ocean,
+     * following a breadth-first distance field so they never wander uphill
+     * forever. Marked on tiles; the renderer joins adjacent river tiles.
+     */
+    private function carveRivers(array &$tiles, array $land): void
+    {
+        $w = $this->w;
+        $h = $this->h;
+        // Distance to ocean.
+        $dist = array_fill(0, $w * $h, PHP_INT_MAX);
+        $queue = [];
+        foreach ($land as $i => $isLand) {
+            if (! $isLand) {
+                $dist[$i] = 0;
+                $queue[] = $i;
+            }
+        }
+        $head = 0;
+        while ($head < count($queue)) {
+            $i = $queue[$head++];
+            $x = $i % $w;
+            $y = intdiv($i, $w);
+            foreach ([[1, 0], [-1, 0], [0, 1], [0, -1]] as [$dx, $dy]) {
+                $nx = $x + $dx;
+                $ny = $y + $dy;
+                if ($nx < 0 || $ny < 0 || $nx >= $w || $ny >= $h) {
+                    continue;
+                }
+                $j = $ny * $w + $nx;
+                if ($dist[$j] > $dist[$i] + 1) {
+                    $dist[$j] = $dist[$i] + 1;
+                    $queue[] = $j;
+                }
+            }
+        }
+
+        $sources = [];
+        foreach ($tiles as $k => $t) {
+            if (in_array($t['terrain'], ['hills', 'mountain'], true) && $dist[$k] >= 3) {
+                $sources[] = $k;
+            }
+        }
+        shuffle($sources);
+        $want = max(2, intdiv($w * $h, 90));
+        $isRiver = [];
+        foreach (array_slice($sources, 0, $want * 3) as $start) {
+            if (count($isRiver) >= $want * 9) {
+                break;
+            }
+            // Keep sources apart.
+            $sx = $start % $w;
+            $sy = intdiv($start, $w);
+            $tooClose = false;
+            foreach ($isRiver as $r => $_) {
+                if (abs($r % $w - $sx) <= 2 && abs(intdiv($r, $w) - $sy) <= 2) {
+                    $tooClose = true;
+                    break;
+                }
+            }
+            if ($tooClose) {
+                continue;
+            }
+            $i = $start;
+            for ($step = 0; $step < 14; $step++) {
+                $isRiver[$i] = true;
+                $x = $i % $w;
+                $y = intdiv($i, $w);
+                $best = null;
+                $bestD = $dist[$i];
+                $options = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+                shuffle($options);
+                foreach ($options as [$dx, $dy]) {
+                    $nx = $x + $dx;
+                    $ny = $y + $dy;
+                    if ($nx < 0 || $ny < 0 || $nx >= $w || $ny >= $h) {
+                        continue;
+                    }
+                    $j = $ny * $w + $nx;
+                    if (! $land[$j]) {
+                        $best = null; // reached the sea
+                        $bestD = -1;
+                        break;
+                    }
+                    if ($dist[$j] <= $bestD && ! isset($isRiver[$j])) {
+                        // Allow sideways meanders (equal distance) sometimes.
+                        if ($dist[$j] < $bestD || mt_rand(0, 2) === 0) {
+                            $best = $j;
+                            $bestD = $dist[$j];
+                        }
+                    }
+                }
+                if ($best === null) {
+                    break;
+                }
+                $i = $best;
+            }
+        }
+        foreach ($isRiver as $k => $_) {
+            $tiles[$k]['river'] = true;
+            if ($tiles[$k]['terrain'] === 'mountain') {
+                $tiles[$k]['terrain'] = 'hills'; // a river valley
+            }
+        }
     }
 
     private function pickTerrain(int $y): string
