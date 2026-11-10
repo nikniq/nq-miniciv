@@ -235,8 +235,8 @@ final class Actions
         $eliminated = null;
 
         if ($attacker->army > $defense) {
-            $attacker->army -= (int) ceil($defense * 0.8);
-            $defender->army = max(0, $defender->army - $garrison);
+            $attacker->loseStrength((int) ceil($defense * 0.8));
+            $defender->loseStrength($garrison);
 
             $target->empire_id = $attacker->id;
             $target->is_capital = false;
@@ -255,6 +255,7 @@ final class Actions
                 $defender->eliminated = true;
                 $eliminated = $defender;
             }
+            $attacker->captures += 1;
             $defender->save();
             $attacker->save();
             $game->adjustAttitude($attacker->id, $defender->id, -30);
@@ -264,8 +265,8 @@ final class Actions
                 'text' => "{$attacker->name} captured {$target->name} from {$defender->name}."];
         }
 
-        $attacker->army -= (int) ceil($attacker->army / 2);
-        $defender->army = max(0, $defender->army - min($garrison, intdiv($attacker->army, 3)));
+        $attacker->loseStrength((int) ceil($attacker->army / 2));
+        $defender->loseStrength(min($garrison, intdiv($attacker->army, 3)));
         $attacker->save();
         $defender->save();
 
@@ -400,7 +401,7 @@ final class Actions
         $defender->gold -= $gold;
         $defender->save();
         $attacker->gold += $gold;
-        $attacker->army = max(0, $attacker->army - 1);
+        $attacker->loseStrength(1);
         $attacker->save();
         $target->food_stored = 0;
         $target->production_stored = (int) floor($target->production_stored / 2);
@@ -462,7 +463,7 @@ final class Actions
         if ($problem) {
             throw new InvalidArgumentException($problem);
         }
-        $empire->army -= Rules::CAMP_CLEAR_LOSS;
+        $empire->loseStrength(Rules::CAMP_CLEAR_LOSS);
         $loot = 20 + 5 * (($tile->x + $tile->y) % 7);
         $empire->gold += $loot;
         $empire->save();
@@ -470,6 +471,20 @@ final class Actions
         $tile->save();
 
         return $loot;
+    }
+
+    /** Adopt a government. Costs a short anarchy. */
+    public function setGovernment(Game $game, Empire $empire, string $key): void
+    {
+        if (! isset(Economy::availableGovernments($empire)[$key])) {
+            throw new InvalidArgumentException('That government is not available.');
+        }
+        if ($empire->inAnarchy($game->turn)) {
+            throw new InvalidArgumentException('Your empire is already in anarchy. Wait for it to settle.');
+        }
+        $empire->government = $key;
+        $empire->anarchy_until = $game->turn + Rules::ANARCHY_TURNS - 1;
+        $empire->save();
     }
 
     public function setFocus(City $city, string $focus): void

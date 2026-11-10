@@ -19,7 +19,9 @@ Code lives in `app/Game/`:
 - `TurnProcessor.php` advances a turn; `AiPlayer.php` drives rivals.
 - `Presenter.php` shapes everything the game screen needs.
 
-Military is abstract: units add to an empire-wide army, and a bordering
+Military is abstract: units are not placed on the map. Each one joins an
+empire-wide army whose composition is listed in the Army panel; the army
+garrisons every city equally (shield badge on each city marker), and a bordering
 enemy city can be attacked when the army beats its defence (size, walls,
 capital bonus, garrison). Capturing takes the city and its land. Happiness
 (base + per city + monuments/temples) must cover citizens beyond the first
@@ -33,7 +35,10 @@ Barbarian camps pillage nearby cities until cleared by an army. Rivers flow
 from highlands to the sea and add food and gold (deserts become flood
 plains). Cities keep a production queue and show a skyline drawn from their
 buildings. The map pans and zooms, with a minimap. Cities have a
-focus (growth, production, gold, science). Culture also exerts pressure: a very cultured city wins over border tiles
+focus (growth, production, gold, science). Governments (Despotism, Monarchy, Republic, Theocracy, Merchant Republic)
+unlock with techs and trade bonuses for war weariness; switching costs two
+turns of anarchy. Cities cap at size 8 without an Aqueduct. Achievements are
+awarded to the account and shown on /profile. Culture also exerts pressure: a very cultured city wins over border tiles
 from weak neighbours. The tech tree runs to 25 techs through an Age of
 Discovery. Victory by domination, culture or score. A public Hall of Fame lists the best finished games, and /how-to-play
 documents every rule, tech and building from the data in `Rules.php`.

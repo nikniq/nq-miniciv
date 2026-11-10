@@ -351,4 +351,64 @@ class GameFlowTest extends TestCase
         $this->assertFalse($wonder->canSettle());
         $this->assertGreaterThan(0, Rules::tileYield($wonder)['culture']);
     }
+
+    public function test_governments_require_tech_and_cause_anarchy(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+
+        $this->actingAs($user)->post(route('games.government', $game), ['government' => 'monarchy'])->assertSessionHas('error');
+        $player->update(['technologies' => ['agriculture', 'writing', 'code_of_laws']]);
+        $this->actingAs($user)->post(route('games.government', $game), ['government' => 'monarchy'])->assertSessionHas('status');
+        $player->refresh();
+        $this->assertSame('monarchy', $player->government);
+        $this->assertTrue($player->inAnarchy($game->turn));
+        $this->actingAs($user)->post(route('games.government', $game), ['government' => 'despotism'])->assertSessionHas('error');
+    }
+
+    public function test_units_are_tracked_and_lost_weakest_first(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+
+        $player->addUnit('warriors');
+        $player->addUnit('swordsmen');
+        $player->save();
+        $this->assertSame(6, $player->army);
+        $player->loseStrength(1);
+        $this->assertSame(['swordsmen' => 1], $player->units);
+        $this->assertSame(4, $player->army);
+
+        $this->actingAs($user)->get(route('games.show', $game))->assertSee('Swordsmen × 1');
+    }
+
+    public function test_cities_stop_growing_at_the_size_cap_without_an_aqueduct(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $capital = $game->playerEmpire()->cities->first();
+        $capital->update(['population' => Rules::SIZE_CAP, 'food_stored' => 999, 'focus' => 'food']);
+
+        $this->actingAs($user)->post(route('games.end-turn', $game));
+        $this->assertSame(Rules::SIZE_CAP, $capital->fresh()->population);
+        $this->assertStringContainsString('Aqueduct', implode(' ', $game->fresh()->events));
+    }
+
+    public function test_profile_shows_achievements_once_earned(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $this->actingAs($user)->get(route('profile'))->assertOk()->assertSee('Achievements');
+
+        // Founding the second city earns Settler.
+        $player = $game->playerEmpire();
+        $actions = app(\App\Game\Actions::class);
+        $site = $game->tiles->first(fn ($t) => $actions->foundingProblem($game, $player, $t, $game->tiles) === null);
+        $this->actingAs($user)->post(route('games.found', $game), ['tile' => $site->id]);
+        $this->actingAs($user)->post(route('games.end-turn', $game));
+        $this->assertArrayHasKey('second_city', $user->fresh()->achievements ?? []);
+        $this->assertStringContainsString('Achievement unlocked', implode(' ', $game->fresh()->events));
+    }
 }

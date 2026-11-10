@@ -111,6 +111,30 @@ final class AiPlayer
             }
         }
 
+        // Government: adopt something better than despotism when it unlocks.
+        if (! $empire->inAnarchy($game->turn)) {
+            $avail = Economy::availableGovernments($empire);
+            $want = null;
+            $unhappy = Economy::happiness($empire, Economy::warsCount($game, $empire))['unhappy'];
+            $prefs = match ($mind['trait']) {
+                'Cultured' => ['theocracy', 'republic', 'monarchy'],
+                'Merchant' => ['merchant_republic', 'republic', 'monarchy'],
+                'Conqueror' => ['monarchy', 'theocracy'],
+                'Scholar' => ['republic', 'merchant_republic', 'monarchy'],
+                default => $unhappy ? ['monarchy', 'theocracy', 'republic'] : ['republic', 'monarchy', 'merchant_republic'],
+            };
+            $rank = array_flip(array_keys(Rules::GOVERNMENTS));
+            foreach ($prefs as $g) {
+                if (isset($avail[$g]) && $rank[$g] > $rank[$empire->government ?? 'despotism']) {
+                    $want = $g;
+                    break;
+                }
+            }
+            if ($want && $game->turn >= 10) {
+                $this->actions->setGovernment($game, $empire, $want);
+            }
+        }
+
         $threat = $this->threatLevel($game, $empire, $index);
         $wantArmy = max(0, min(28, 2 + intdiv($game->turn, 12) + $threat + $mind['army']));
         // An empty treasury means units would only be dismissed again.

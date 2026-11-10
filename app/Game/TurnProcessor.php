@@ -45,7 +45,12 @@ final class TurnProcessor
                     continue;
                 }
                 $effects = Economy::empireEffects($empire);
-                $happiness = Economy::happiness($empire, Economy::warsCount($game, $empire));
+                $diff = Rules::DIFFICULTIES[$game->difficulty ?? 'prince'];
+                $happiness = Economy::happiness($empire, Economy::warsCount($game, $empire), $empire->is_ai ? 0 : $diff['player_happy']);
+                $anarchy = $empire->inAnarchy($game->turn);
+                if ($anarchy) {
+                    $this->note($empire, 'Anarchy: production and science are halved while the new government takes hold.');
+                }
                 if ($happiness['unhappy']) {
                     $this->note($empire, 'Unrest across your empire: no growth and production is down.'.($happiness['war_weariness'] ? ' War weariness is part of it.' : ' Build monuments and temples.'));
                 }
@@ -85,9 +90,15 @@ final class TurnProcessor
                     }
                     $y = Economy::cityYields($city, $empire, $cityTiles, $effects, $happiness['unhappy'], $pillaged, $golden);
                     if ($empire->is_ai) {
-                        $mult = Rules::DIFFICULTIES[$game->difficulty ?? 'prince']['ai'] ?? 1.0;
+                        $mult = $diff['ai'] ?? 1.0;
                         $y['prod'] = (int) round($y['prod'] * $mult);
                         $y['science'] = (int) round($y['science'] * $mult);
+                    } else {
+                        $y['gold'] = (int) round($y['gold'] * $diff['player_gold']);
+                    }
+                    if ($anarchy) {
+                        $y['prod'] = intdiv($y['prod'], 2);
+                        $y['science'] = intdiv($y['science'], 2);
                     }
                     $science += $y['science'];
                     $gold += $y['gold'];
@@ -98,8 +109,7 @@ final class TurnProcessor
                     $city->save();
                 }
 
-                $partners = Economy::tradePartners($game, $empire, $this->tiles);
-                $gold += count($partners) * Rules::TRADE_GOLD_PER_PARTNER;
+                $gold += Economy::tradeGold($game, $empire, $this->tiles);
 
                 $this->randomEvent($game, $empire);
 
@@ -109,7 +119,7 @@ final class TurnProcessor
                     // Bankrupt: the shortfall is covered by dismissing troops,
                     // then by halting research for the turn.
                     $this->note($empire, 'The treasury is empty. Upkeep is outstripping income.');
-                    $empire->army = max(0, $empire->army - 2);
+                    $empire->loseStrength(2);
                     $empire->gold = 0;
                     $science = intdiv($science, 2);
                 }
@@ -131,6 +141,9 @@ final class TurnProcessor
             $this->scoresAndVictory($game, $player);
             $this->recordHistory($game);
 
+            foreach (Achievements::check($game) as $a) {
+                array_unshift($this->events, "🏅 Achievement unlocked: {$a['name']} — {$a['blurb']}");
+            }
             $game->events = array_slice($this->events, 0, 12);
             // Chronicle: the last 8 turns' events, oldest first.
             $log = $game->log ?? [];
@@ -146,8 +159,17 @@ final class TurnProcessor
 
     private function growth(City $city, array $y, Empire $empire): void
     {
+        $cap = Economy::sizeCap($city);
         $city->food_stored += $y['surplus'];
         if ($city->food_stored >= $city->foodToGrow()) {
+            if ($city->population >= $cap) {
+                $city->food_stored = $city->foodToGrow() - 1;
+                if (! $city->has('aqueduct')) {
+                    $this->note($empire, "{$city->name} has reached size {$cap} and cannot grow without an Aqueduct.");
+                }
+
+                return;
+            }
             $city->food_stored -= $city->foodToGrow();
             $city->population += 1;
             $this->note($empire, "{$city->name} has grown to size {$city->population}.");
@@ -192,8 +214,8 @@ final class TurnProcessor
         }
 
         if (isset(Rules::UNITS[$key])) {
-            $empire->army += Rules::UNITS[$key]['strength'];
-            $this->note($empire, Rules::UNITS[$key]['name']." mustered in {$city->name} (army {$empire->army}).");
+            $empire->addUnit($key);
+            $this->note($empire, Rules::UNITS[$key]['name']." mustered in {$city->name} and joined the army (strength {$empire->army}).");
         } elseif ($key === 'settlers') {
             if ($city->population < 2) {
                 return 0; // wait until the city can spare the people
@@ -384,7 +406,7 @@ final class TurnProcessor
                 break;
             default:
                 if ($empire->army > 0) {
-                    $empire->army = max(0, $empire->army - 1);
+                    $empire->loseStrength(1);
                     $this->note($empire, "Deserters leave the army near {$city->name} (−1 strength).");
                 } else {
                     $city->production_stored += 10;

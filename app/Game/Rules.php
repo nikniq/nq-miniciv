@@ -32,10 +32,10 @@ final class Rules
 
     /** Difficulty: multipliers applied to AI production and science. */
     public const DIFFICULTIES = [
-        'settler' => ['name' => 'Settler', 'ai' => 0.75, 'blurb' => 'Rivals build and research slowly.'],
-        'prince' => ['name' => 'Prince', 'ai' => 1.0, 'blurb' => 'Even footing.'],
-        'king' => ['name' => 'King', 'ai' => 1.25, 'blurb' => 'Rivals build and research faster.'],
-        'emperor' => ['name' => 'Emperor', 'ai' => 1.5, 'blurb' => 'Rivals are formidable.'],
+        'settler' => ['name' => 'Settler', 'ai' => 0.75, 'player_happy' => 3, 'player_gold' => 1.25, 'blurb' => 'Rivals are slow; you get +3 happiness and +25% gold.'],
+        'prince' => ['name' => 'Prince', 'ai' => 1.0, 'player_happy' => 1, 'player_gold' => 1.0, 'blurb' => 'Nearly even footing (+1 happiness).'],
+        'king' => ['name' => 'King', 'ai' => 1.25, 'player_happy' => 0, 'player_gold' => 1.0, 'blurb' => 'Rivals build and research faster.'],
+        'emperor' => ['name' => 'Emperor', 'ai' => 1.5, 'player_happy' => -1, 'player_gold' => 1.0, 'blurb' => 'Rivals are formidable; you get −1 happiness.'],
     ];
 
     public const DOMINATION_SHARE = 0.55;
@@ -315,6 +315,47 @@ final class Rules
         'sacred_grove' => ['name' => 'Sacred Grove', 'glyph' => '🌳', 'food' => 2, 'prod' => 1, 'gold' => 0, 'science' => 1, 'culture' => 3, 'on' => ['forest', 'grassland'], 'color' => '#4ade80'],
         'crystal_caves' => ['name' => 'Crystal Caves', 'glyph' => '✨', 'food' => 0, 'prod' => 2, 'gold' => 3, 'science' => 1, 'culture' => 2, 'on' => ['hills', 'mountain', 'desert'], 'color' => '#c084fc'],
         'great_oasis' => ['name' => 'Great Oasis', 'glyph' => '🏝️', 'food' => 4, 'prod' => 0, 'gold' => 1, 'science' => 0, 'culture' => 2, 'on' => ['desert', 'plains'], 'color' => '#fbbf24'],
+    ];
+
+    /**
+     * Governments. Effects per city are added to every city's yields;
+     * `happy` is per city; `war_weariness` scales the happiness cost of war;
+     * `defense` is added to every city. Switching causes anarchy.
+     */
+    public const GOVERNMENTS = [
+        'despotism' => ['name' => 'Despotism', 'icon' => '👑', 'tech' => null, 'per_city' => ['prod' => 0], 'happy' => 0, 'war_weariness' => 1.0, 'defense' => 0,
+            'blurb' => 'The starting government. No bonuses, no penalties.'],
+        'monarchy' => ['name' => 'Monarchy', 'icon' => '🏰', 'tech' => 'code_of_laws', 'per_city' => [], 'happy' => 1, 'war_weariness' => 0.5, 'defense' => 2,
+            'blurb' => '+1 happiness and +2 defence in every city; half war weariness.'],
+        'republic' => ['name' => 'Republic', 'icon' => '🏛️', 'tech' => 'philosophy', 'per_city' => ['gold' => 1, 'science' => 1], 'happy' => 0, 'war_weariness' => 2.0, 'defense' => 0,
+            'blurb' => '+1 gold and +1 science in every city; double war weariness.'],
+        'theocracy' => ['name' => 'Theocracy', 'icon' => '⛪', 'tech' => 'theology', 'per_city' => ['culture' => 2], 'happy' => 1, 'war_weariness' => 1.0, 'defense' => 0,
+            'blurb' => '+2 culture and +1 happiness in every city.'],
+        'merchant_republic' => ['name' => 'Merchant Republic', 'icon' => '⚖️', 'tech' => 'economics', 'per_city' => ['gold' => 2, 'science' => 1], 'happy' => 0, 'war_weariness' => 1.5, 'defense' => 0,
+            'blurb' => '+2 gold and +1 science in every city; trade partners pay double.'],
+    ];
+
+    public const ANARCHY_TURNS = 2;
+
+    /** City size caps: growth halts here until an Aqueduct is built. */
+    public const SIZE_CAP = 8;
+
+    public const SIZE_CAP_AQUEDUCT = 16;
+
+    /** Achievements: id => [name, icon, blurb]. Awarded to the player's account. */
+    public const ACHIEVEMENTS = [
+        'second_city' => ['name' => 'Settler', 'icon' => '🏕️', 'blurb' => 'Found a second city.'],
+        'five_cities' => ['name' => 'Empire Builder', 'icon' => '🏙️', 'blurb' => 'Rule five cities at once.'],
+        'first_wonder' => ['name' => 'Wonder of the World', 'icon' => '🔺', 'blurb' => 'Complete a wonder.'],
+        'golden_age' => ['name' => 'Golden Age', 'icon' => '✦', 'blurb' => 'Enter a Golden Age.'],
+        'conqueror' => ['name' => 'Conqueror', 'icon' => '⚔', 'blurb' => 'Capture a city.'],
+        'peacemaker' => ['name' => 'Peacemaker', 'icon' => '☮', 'blurb' => 'Sign a peace treaty.'],
+        'scholar' => ['name' => 'Enlightened', 'icon' => '📚', 'blurb' => 'Know every technology.'],
+        'win_score' => ['name' => 'Greatest Empire', 'icon' => '⭐', 'blurb' => 'Win on score.'],
+        'win_domination' => ['name' => 'World Ruler', 'icon' => '🗺️', 'blurb' => 'Win by domination.'],
+        'win_culture' => ['name' => 'Beacon of Culture', 'icon' => '🎭', 'blurb' => 'Win by culture.'],
+        'win_king' => ['name' => 'Kingslayer', 'icon' => '👑', 'blurb' => 'Win at King difficulty or above.'],
+        'win_huge' => ['name' => 'Wide World', 'icon' => '🌍', 'blurb' => 'Win on a huge map.'],
     ];
 
     /** Raids: a lighter act of war than a siege. */

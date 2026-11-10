@@ -78,7 +78,8 @@
     <div title="Treasury: income {{ $totals['gold'] }} (incl. trade {{ $tradeGold }} from {{ $tradePartners->count() }} peaceful neighbours{{ $player->knows('currency') ? '' : ', needs Currency' }}) − upkeep {{ $upkeep['total'] }} per turn">💰 <b>{{ $player->gold }}</b> <span class="{{ $netGold < 0 ? 'text-red-400' : 'text-stone-500' }}">{{ $netGold >= 0 ? '+' : '' }}{{ $netGold }}</span></div>
     <div title="Science per turn">🔬 <b>+{{ $totals['science'] }}</b></div>
     <div title="Settlers ready">🏕️ <b>{{ $player->settlers }}</b></div>
-    <div title="Army strength (upkeep {{ $upkeep['army'] }} gold/turn)">⚔ <b>{{ $player->army }}</b></div>
+    <a href="#army" title="Army strength (upkeep {{ $upkeep['army'] }} gold/turn). Click for the army panel.">⚔ <b>{{ $player->army }}</b></a>
+    <div title="{{ $government['blurb'] }}" class="hidden xl:block">{{ $government['icon'] }} {{ $government['name'] }}@if ($anarchy) <span class="text-red-300">(anarchy {{ $anarchy }}t)</span>@endif</div>
     <div title="Happiness: {{ $happiness['supply'] }} supplied, {{ $happiness['demand'] }} demanded">{{ $happiness['unhappy'] ? '😠' : '🙂' }} <b class="{{ $happiness['unhappy'] ? 'text-red-400' : '' }}">{{ $happiness['balance'] >= 0 ? '+' : '' }}{{ $happiness['balance'] }}</b></div>
     <div title="Share of land">🗺️ <b>{{ $landShare }}%</b> <span class="text-stone-500">of {{ $dominationShare }}%</span></div>
     <div title="Culture toward a cultural victory">🎭 <b>{{ $culture }}</b> <span class="text-stone-500">of {{ $cultureGoal }}</span></div>
@@ -169,6 +170,45 @@
     <aside class="space-y-4">
         {{-- Selected tile / city (also served alone by games.panel) --}}
         @include('games._panel')
+
+        {{-- Army --}}
+        <section id="army" class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
+            <div class="flex items-baseline justify-between"><h2 class="font-semibold">Army · strength {{ $army['strength'] }}</h2><span class="text-xs text-stone-500">upkeep {{ $army['upkeep'] }} gold/turn</span></div>
+            <p class="mt-1 text-xs text-stone-400">Your units form one field army. It garrisons every city equally (<b class="text-stone-200">{{ $army['garrison'] }}</b> per city, the shield on each city marker) and can strike any enemy city that borders your land.</p>
+            @if ($army['units']->isNotEmpty() || $army['untracked'])
+                <ul class="mt-2 grid grid-cols-2 gap-1 text-xs">
+                    @foreach ($army['units'] as $u)
+                        <li class="flex items-center justify-between rounded border border-stone-800 bg-stone-900 px-2 py-1"><span>⚔ {{ $u['name'] }} × {{ $u['n'] }}</span><span class="text-stone-500">{{ $u['n'] * $u['strength'] }}</span></li>
+                    @endforeach
+                    @if ($army['untracked'])<li class="flex items-center justify-between rounded border border-stone-800 bg-stone-900 px-2 py-1"><span>⚔ Levies</span><span class="text-stone-500">{{ $army['untracked'] }}</span></li>@endif
+                </ul>
+            @else
+                <p class="mt-2 text-xs text-amber-300/90">No army yet. Choose a unit in a city's build menu; it joins the army when finished.</p>
+            @endif
+            @if ($army['inProduction']->isNotEmpty())
+                <div class="mt-2 text-xs text-stone-500">Training: {{ $army['inProduction']->map(fn ($p) => $p['unit']['name'].' in '.$p['city']->name)->join(', ') }}</div>
+            @endif
+        </section>
+
+        {{-- Government --}}
+        <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
+            <div class="flex items-baseline justify-between"><h2 class="font-semibold">{{ $government['icon'] }} {{ $government['name'] }}</h2>@if ($anarchy)<span class="text-xs text-red-300">anarchy, {{ $anarchy }}t left</span>@endif</div>
+            <p class="mt-1 text-xs text-stone-400">{{ $government['blurb'] }}</p>
+            @if ($governments && $game->isActive() && ! $anarchy)
+                <form method="POST" action="{{ route('games.government', $game) }}" class="mt-2 flex gap-2" onsubmit="return confirm('Change government? Production and science are halved for {{ Rules::ANARCHY_TURNS }} turns of anarchy.')">
+                    @csrf
+                    <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                    <select name="government" class="min-w-0 flex-1 rounded border border-stone-700 bg-stone-900 px-2 py-1.5 text-xs focus:border-amber-500 focus:outline-none">
+                        @foreach ($governments as $key => $g)
+                            <option value="{{ $key }}">{{ $g['icon'] }} {{ $g['name'] }} — {{ $g['blurb'] }}</option>
+                        @endforeach
+                    </select>
+                    <button class="rounded border border-stone-600 px-3 py-1.5 text-xs hover:bg-stone-800">Adopt</button>
+                </form>
+            @elseif (! $governments)
+                <p class="mt-1 text-xs text-stone-500">New governments unlock with Code of Laws, Philosophy, Theology and Economics.</p>
+            @endif
+        </section>
 
         {{-- Research --}}
         <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">

@@ -67,6 +67,26 @@ class GameController extends Controller
         return redirect()->route('games.index')->with('status', 'Game abandoned.');
     }
 
+    /** The player's record: stats and achievements. */
+    public function profile(Request $request): View
+    {
+        $user = $request->user();
+        $games = Game::where('user_id', $user->id)->with('empires')->get();
+        $finished = $games->whereIn('status', ['won', 'lost', 'ended']);
+
+        return view('games.profile', [
+            'user' => $user,
+            'stats' => [
+                'games' => $games->count(),
+                'finished' => $finished->count(),
+                'wins' => $finished->where('status', 'won')->count(),
+                'best' => $finished->map(fn ($g) => $g->playerEmpire()?->score ?? 0)->max() ?? 0,
+                'turns' => $games->sum(fn ($g) => min($g->turn, $g->max_turns) - 1),
+            ],
+            'earned' => $user->achievements ?? [],
+        ]);
+    }
+
     /** Public: best finished games. */
     public function hallOfFame(): View
     {

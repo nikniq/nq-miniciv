@@ -32,6 +32,9 @@ final class MapSvg
     /** @var array<int, array<int, Tile>> */
     private array $grid = [];
 
+    /** @var array<int, int> empire id => garrison per city */
+    private array $garrisons = [];
+
     /**
      * @param  Collection<int, Empire>  $empiresById
      * @param  Collection<int, City>  $citiesByTile
@@ -39,6 +42,10 @@ final class MapSvg
      */
     public function render(Game $game, Collection $tiles, Collection $empiresById, Collection $citiesByTile, array $worked, ?int $selectedId, string $tileUrlBase, array $foundable = [], ?int $bestSiteId = null): string
     {
+        $this->garrisons = [];
+        foreach ($empiresById as $e) {
+            $this->garrisons[$e->id] = intdiv($e->army, max(1, $e->cities->count()));
+        }
         $s = self::TILE;
         $w = $game->width * $s;
         $h = $game->height * $s;
@@ -300,7 +307,11 @@ final class MapSvg
             ? sprintf('<circle cx="%s" cy="%s" r="%s" fill="none" stroke="#fbbf24" stroke-width="1.5" opacity="0.9"/>', $cx, $cy, $r + 6)
             : '';
 
-        return $walls.$glow.sprintf(
+        $garrison = $this->garrisons[$city->empire_id] ?? 0;
+        $shield = sprintf('<g style="pointer-events:none"><path d="M%1$s %2$s l5 -2 l5 2 v5 q0 4 -5 6 q-5 -2 -5 -6 z" fill="#1c1917" stroke="#e7e5e4" stroke-width="1"/><text x="%3$s" y="%4$s" font-size="7.5" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="#fff">%5$d</text></g>',
+            $cx - $r - 4, $cy + $r - 10, $cx - $r + 1, $cy + $r - 4, $garrison);
+
+        return $walls.$glow.$shield.sprintf(
             '<g class="city" style="pointer-events:none">'
             .'<circle cx="%1$s" cy="%2$s" r="%3$s" fill="%4$s" stroke="#111" stroke-width="2"/>'
             .'<circle cx="%1$s" cy="%2$s" r="%5$s" fill="none" stroke="#fff" stroke-opacity="0.6" stroke-width="1"/>'

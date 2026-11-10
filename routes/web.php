@@ -27,6 +27,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 
 Route::middleware('auth')->group(function () {
     Route::get('/games', [GameController::class, 'index'])->name('games.index');
+    Route::get('/profile', [GameController::class, 'profile'])->name('profile');
     Route::post('/games', [GameController::class, 'store'])->name('games.store');
     Route::get('/games/{game}', [GameController::class, 'show'])->name('games.show');
     Route::get('/games/{game}/panel', [GameController::class, 'panel'])->name('games.panel');
@@ -35,6 +36,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/games/{game}/end-turn', [GameActionController::class, 'endTurn'])->name('games.end-turn');
     Route::post('/games/{game}/found', [GameActionController::class, 'found'])->name('games.found');
     Route::post('/games/{game}/research', [GameActionController::class, 'research'])->name('games.research');
+    Route::post('/games/{game}/government', [GameActionController::class, 'government'])->name('games.government');
     Route::post('/games/{game}/cities/{city}/build', [GameActionController::class, 'build'])->name('games.build');
     Route::post('/games/{game}/cities/{city}/buy', [GameActionController::class, 'buy'])->name('games.buy');
     Route::post('/games/{game}/cities/{city}/attack', [GameActionController::class, 'attack'])->name('games.attack');

@@ -158,6 +158,21 @@ class GameActionController extends Controller
             : $this->back($game, "{$empire->name} refuses: they think they are winning. Try again when the war has dragged on or their army is smaller.", $request->integer('tile') ?: null);
     }
 
+    public function government(Request $request, Game $game): RedirectResponse
+    {
+        $this->own($request, $game);
+        $game->load('empires.cities');
+        $player = $game->playerEmpire();
+
+        try {
+            $this->actions->setGovernment($game, $player, (string) $request->input('government'));
+        } catch (InvalidArgumentException $e) {
+            return $this->back($game, $e->getMessage(), $request->integer('tile') ?: null);
+        }
+
+        return $this->back($game, 'The old order falls. '.Rules::ANARCHY_TURNS.' turns of anarchy, then '.Rules::GOVERNMENTS[$player->government]['name'].'.', $request->integer('tile') ?: null, 'status');
+    }
+
     public function gift(Request $request, Game $game, Empire $empire): RedirectResponse
     {
         $this->own($request, $game);

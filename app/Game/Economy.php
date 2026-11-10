@@ -85,7 +85,7 @@ final class Economy
         return $total;
     }
 
-    /** Summed empire_effects of all wonders the empire owns. */
+    /** Summed empire_effects of all wonders the empire owns, plus its government. */
     public static function empireEffects(Empire $empire): array
     {
         $effects = [];
@@ -94,8 +94,46 @@ final class Economy
                 $effects[$k] = ($effects[$k] ?? 0) + $v;
             }
         }
+        $gov = Rules::GOVERNMENTS[$empire->government ?? 'despotism'] ?? Rules::GOVERNMENTS['despotism'];
+        foreach ($gov['per_city'] as $k => $v) {
+            $effects[$k] = ($effects[$k] ?? 0) + $v;
+        }
+        if ($gov['happy']) {
+            $effects['happy'] = ($effects['happy'] ?? 0) + $gov['happy'];
+        }
+        if ($gov['defense']) {
+            $effects['defense'] = ($effects['defense'] ?? 0) + $gov['defense'];
+        }
 
         return $effects;
+    }
+
+    public static function government(Empire $empire): array
+    {
+        return Rules::GOVERNMENTS[$empire->government ?? 'despotism'] ?? Rules::GOVERNMENTS['despotism'];
+    }
+
+    /** Governments the empire may adopt now (known tech, not current). */
+    public static function availableGovernments(Empire $empire): array
+    {
+        $out = [];
+        foreach (Rules::GOVERNMENTS as $key => $g) {
+            if ($key === ($empire->government ?? 'despotism')) {
+                continue;
+            }
+            if ($g['tech'] && ! $empire->knows($g['tech'])) {
+                continue;
+            }
+            $out[$key] = $g;
+        }
+
+        return $out;
+    }
+
+    /** Growth cap for a city: Aqueducts lift it. */
+    public static function sizeCap(City $city): int
+    {
+        return $city->has('aqueduct') ? Rules::SIZE_CAP_AQUEDUCT : Rules::SIZE_CAP;
     }
 
     /**
@@ -105,11 +143,12 @@ final class Economy
      *
      * @return array{supply:int,demand:int,balance:int,unhappy:bool}
      */
-    public static function happiness(Empire $empire, int $warsCount = 0): array
+    public static function happiness(Empire $empire, int $warsCount = 0, int $bonus = 0): array
     {
         $effects = self::empireEffects($empire);
-        $supply = Rules::BASE_HAPPINESS;
-        $demand = $warsCount * Rules::WAR_WEARINESS;
+        $supply = Rules::BASE_HAPPINESS + $bonus;
+        $weariness = (int) round($warsCount * Rules::WAR_WEARINESS * self::government($empire)['war_weariness']);
+        $demand = $weariness;
         foreach ($empire->cities as $city) {
             $demand += max(0, $city->population - Rules::FREE_CITIZENS);
             $supply += Rules::CITY_HAPPINESS + ($effects['happy'] ?? 0);
@@ -119,7 +158,7 @@ final class Economy
         }
         $balance = $supply - $demand;
 
-        return ['supply' => $supply, 'demand' => $demand, 'balance' => $balance, 'unhappy' => $balance < 0, 'war_weariness' => $warsCount * Rules::WAR_WEARINESS];
+        return ['supply' => $supply, 'demand' => $demand, 'balance' => $balance, 'unhappy' => $balance < 0, 'war_weariness' => $weariness];
     }
 
     /** Gold per turn for buildings and the army. */
@@ -213,6 +252,14 @@ final class Economy
      *
      * @return array<int> partner empire ids
      */
+    public static function tradeGold(\App\Models\Game $game, Empire $empire, Collection $tiles): int
+    {
+        $n = count(self::tradePartners($game, $empire, $tiles));
+        $mult = ($empire->government ?? '') === 'merchant_republic' ? 2 : 1;
+
+        return $n * Rules::TRADE_GOLD_PER_PARTNER * $mult;
+    }
+
     public static function tradePartners(\App\Models\Game $game, Empire $empire, Collection $tiles): array
     {
         if (! $empire->knows('currency')) {

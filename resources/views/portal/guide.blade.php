@@ -36,7 +36,17 @@
                 <li>Build <b>Settlers</b> (city must be size 2+), then click a tile at least {{ Rules::MIN_CITY_DISTANCE }} tiles from any city and <b>Found city</b>.</li>
                 <li>Citizens automatically work the best tiles inside your borders. Change a city's <b>Focus</b> to favour food, production, gold or science.</li>
                 <li>Culture pushes borders outward. Monuments and temples speed it up.</li>
-                <li>Food beyond 2 per citizen grows the city; a deficit shrinks it.</li>
+                <li>Food beyond 2 per citizen grows the city; a deficit shrinks it. Cities stop at size {{ Rules::SIZE_CAP }} without an Aqueduct ({{ Rules::SIZE_CAP_AQUEDUCT }} with one).</li>
+            </ul>
+        </section>
+
+        <section class="rounded-lg border border-stone-800 bg-stone-900/50 p-5">
+            <h2 class="font-semibold text-amber-300">👑 Government</h2>
+            <ul class="mt-2 space-y-1 text-sm text-stone-300">
+                @foreach (Rules::GOVERNMENTS as $g)
+                    <li><b>{{ $g['icon'] }} {{ $g['name'] }}</b>@if ($g['tech']) <span class="text-stone-500">({{ Rules::TECHS[$g['tech']]['name'] }})</span>@endif: {{ $g['blurb'] }}</li>
+                @endforeach
+                <li class="text-xs text-stone-500">Changing government means {{ Rules::ANARCHY_TURNS }} turns of anarchy with halved production and science.</li>
             </ul>
         </section>
 
@@ -53,7 +63,7 @@
         <section class="rounded-lg border border-stone-800 bg-stone-900/50 p-5">
             <h2 class="font-semibold text-amber-300">⚔ War and barbarians</h2>
             <ul class="mt-2 space-y-1 text-sm text-stone-300">
-                <li>Units add to one empire-wide <b>army</b>. Your army defends every city a little and attacks as a whole.</li>
+                <li>Units are not placed on the map. Each one joins a single empire-wide <b>army</b> whose strength is shown in the top bar and the Army panel. The army garrisons every city equally (the shield on each city marker) and attacks as a whole from any border.</li>
                 <li>To attack a city its borders must touch yours and you must <b>declare war</b> first. War costs {{ Rules::WAR_WEARINESS }} happiness per enemy.</li>
                 <li>Attack when your army beats the city's defence (size, walls, capital, garrison). Winning takes the city and its land. Losing costs half your army.</li>
                 <li>Rivals accept peace once a war has dragged on, they are losing, or they were never that angry.</li>

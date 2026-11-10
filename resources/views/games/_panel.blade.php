@@ -46,7 +46,8 @@
             <dt class="text-stone-400">Production</dt><dd>{{ $y['prod'] }}@if ($happiness['unhappy']) <span class="text-red-400">(unrest)</span>@endif</dd>
             <dt class="text-stone-400">Gold / Science</dt><dd>{{ $y['gold'] }} / {{ $y['science'] }}</dd>
             <dt class="text-stone-400">Culture</dt><dd>{{ $city->culture }} <span class="text-stone-500">(+{{ $y['culture'] }})</span></dd>
-            <dt class="text-stone-400">Defence</dt><dd>{{ Rules::cityDefense($city, intdiv($player->army, max(1, $player->cities->count()))) }}</dd>
+            <dt class="text-stone-400">Defence</dt><dd>{{ Rules::cityDefense($city, $player->garrison(), \App\Game\Economy::empireEffects($player)['defense'] ?? 0) }} <span class="text-stone-500" title="Your army spread over your cities">(garrison {{ $player->garrison() }})</span></dd>
+            <dt class="text-stone-400">Size cap</dt><dd>{{ $selected['sizeCap'] }}@if (! $city->has('aqueduct')) <span class="text-stone-500">(Aqueduct → {{ Rules::SIZE_CAP_AQUEDUCT }})</span>@endif</dd>
         </dl>
 
         <div class="mt-3">

@@ -50,7 +50,8 @@ final class Presenter
         $tiles = $game->tiles;
         $player = $game->playerEmpire();
         $effects = Economy::empireEffects($player);
-        $happiness = Economy::happiness($player, Economy::warsCount($game, $player));
+        $difficultySpec = Rules::DIFFICULTIES[$game->difficulty ?? 'prince'];
+        $happiness = Economy::happiness($player, Economy::warsCount($game, $player), $difficultySpec['player_happy']);
         $upkeep = Economy::upkeep($player);
 
         $wondersBuilt = [];
@@ -67,7 +68,7 @@ final class Presenter
         $totals = ['food' => 0, 'prod' => 0, 'gold' => 0, 'science' => 0];
         $worked = [];
         $tradePartners = Economy::tradePartners($game, $player, $tiles);
-        $totals['gold'] += count($tradePartners) * Rules::TRADE_GOLD_PER_PARTNER;
+        $totals['gold'] += Economy::tradeGold($game, $player, $tiles);
         foreach ($player->cities as $city) {
             $centre = $tiles->firstWhere('id', $city->tile_id);
             $y = Economy::cityYields($city, $player, $tiles->where('city_id', $city->id), $effects, $happiness['unhappy'], $centre ? Economy::campsNear($centre, $tiles) : 0, $player->inGoldenAge($game->turn));
@@ -127,6 +128,7 @@ final class Presenter
                 $remaining = $cost !== null ? max(0, $cost - $selectedCity->production_stored) : null;
                 $selectedInfo['cityYields'] = $y;
                 $selectedInfo['skyline'] = CitySvg::render($selectedCity, $player);
+                $selectedInfo['sizeCap'] = Economy::sizeCap($selectedCity);
                 $selectedInfo['buildOptions'] = Economy::buildOptions($selectedCity, $player, $wondersBuilt);
                 $selectedInfo['buildCost'] = $cost;
                 $selectedInfo['turnsToBuild'] = ($remaining !== null && $y['prod'] > 0) ? (int) ceil($remaining / $y['prod']) : null;
@@ -231,7 +233,19 @@ final class Presenter
             'netGold' => $totals['gold'] - $upkeep['total'],
             'culture' => Economy::culture($player),
             'tradePartners' => collect($tradePartners)->map(fn ($id) => $empiresById->get($id))->filter()->values(),
-            'tradeGold' => count($tradePartners) * Rules::TRADE_GOLD_PER_PARTNER,
+            'tradeGold' => Economy::tradeGold($game, $player, $tiles),
+            'government' => Economy::government($player) + ['key' => $player->government ?? 'despotism'],
+            'army' => [
+                'strength' => $player->army,
+                'units' => collect($player->units ?? [])->map(fn ($n, $key) => ['key' => $key, 'n' => $n] + Rules::UNITS[$key])->sortByDesc('strength')->values(),
+                'untracked' => max(0, $player->army - collect($player->units ?? [])->sum(fn ($n, $key) => $n * Rules::UNITS[$key]['strength'])),
+                'garrison' => $player->garrison(),
+                'upkeep' => $upkeep['army'],
+                'inProduction' => $player->cities->filter(fn ($c) => isset(Rules::UNITS[$c->current_build ?? '']))->map(fn ($c) => ['city' => $c, 'unit' => Rules::UNITS[$c->current_build]])->values(),
+            ],
+            'governments' => Economy::availableGovernments($player),
+            'anarchy' => $player->inAnarchy($game->turn) ? $player->anarchy_until - $game->turn + 1 : 0,
+            'achievements' => $game->user?->achievements ?? [],
             'techTiers' => Economy::techTiers(),
             'cityYields' => $cityYields,
             'settlersWaiting' => $player->settlers > 0,

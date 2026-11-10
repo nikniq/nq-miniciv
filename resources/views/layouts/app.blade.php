@@ -18,6 +18,7 @@
                 <a href="{{ route('hall') }}" class="hidden rounded px-2 py-1 text-stone-400 hover:bg-stone-800 hover:text-white sm:inline">Hall of Fame</a>
                 @auth
                     <a href="{{ route('games.index') }}" class="rounded px-2 py-1 text-stone-300 hover:bg-stone-800 hover:text-white">My games</a>
+                    <a href="{{ route('profile') }}" class="rounded px-2 py-1 text-stone-300 hover:bg-stone-800 hover:text-white" title="Stats and achievements">🏅</a>
                     @if (auth()->user()->isGuest())
                         <a href="{{ route('register') }}" class="rounded bg-amber-500 px-3 py-1 font-medium text-stone-950 hover:bg-amber-400" title="You are playing as a guest. Register to keep your games on any device.">Save progress</a>
                     @else
