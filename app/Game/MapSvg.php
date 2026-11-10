@@ -145,7 +145,7 @@ final class MapSvg
                 continue;
             }
             if ($t->resource && ! $city) {
-                $out[] = sprintf('<text x="%s" y="%s" font-size="15" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">%s</text>', $cx, $cy, Rules::RESOURCES[$t->resource]['icon']);
+                $out[] = sprintf('<use href="#res-%s" x="%d" y="%d" style="pointer-events:none"/>', $t->resource, $t->x * $s, $t->y * $s);
             }
             if ($city) {
                 $e = $empiresById->get($city->empire_id);
@@ -345,6 +345,46 @@ final class MapSvg
     <g stroke="#8d7a33" stroke-width="1.2" stroke-linecap="round" opacity="0.6">
       <path d="M8 26 h8"/><path d="M26 16 h8"/><path d="M22 34 h8"/>
     </g>
+  </symbol>
+  <symbol id="res-wheat" viewBox="0 0 44 44" width="44" height="44">
+    <g stroke="#facc15" stroke-width="1.6" stroke-linecap="round" fill="#fde047">
+      <path d="M22 36 V16"/><path d="M16 36 V20"/><path d="M28 36 V20"/>
+      <ellipse cx="22" cy="14" rx="2.5" ry="4"/><ellipse cx="16" cy="18" rx="2.2" ry="3.5"/><ellipse cx="28" cy="18" rx="2.2" ry="3.5"/>
+      <ellipse cx="19" cy="20" rx="2" ry="3" transform="rotate(-25 19 20)"/><ellipse cx="25" cy="20" rx="2" ry="3" transform="rotate(25 25 20)"/>
+    </g>
+  </symbol>
+  <symbol id="res-cattle" viewBox="0 0 44 44" width="44" height="44">
+    <ellipse cx="22" cy="25" rx="10" ry="6.5" fill="#7c4a2a" stroke="#3b2314" stroke-width="1"/>
+    <circle cx="31" cy="21" r="4.5" fill="#8b5a36" stroke="#3b2314" stroke-width="1"/>
+    <path d="M28 17 q-1 -4 2 -5 M34 17 q1 -4 -2 -5" stroke="#f5f5f4" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    <path d="M15 30 v5 M19 31 v5 M25 31 v5 M29 30 v5" stroke="#3b2314" stroke-width="1.8" stroke-linecap="round"/>
+    <circle cx="19" cy="23" r="2" fill="#f5f5f4"/>
+  </symbol>
+  <symbol id="res-horses" viewBox="0 0 44 44" width="44" height="44">
+    <path d="M13 34 v-9 q0 -7 7 -8 h6 l4 -6 l3 1 l-1 6 q3 2 2 7 v9" fill="#a16207" stroke="#3b2314" stroke-width="1" stroke-linejoin="round"/>
+    <path d="M20 17 q4 -3 8 -1" stroke="#3b2314" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M15 34 v-6 M30 34 v-6" stroke="#3b2314" stroke-width="2"/>
+    <circle cx="29" cy="15" r="1" fill="#1c1917"/>
+  </symbol>
+  <symbol id="res-iron" viewBox="0 0 44 44" width="44" height="44">
+    <polygon points="12,32 16,22 24,24 26,32" fill="#6b7280" stroke="#1f2937" stroke-width="1"/>
+    <polygon points="22,30 26,20 34,22 33,30" fill="#9ca3af" stroke="#1f2937" stroke-width="1"/>
+    <polygon points="18,22 22,14 28,18 24,24" fill="#d1d5db" stroke="#1f2937" stroke-width="1"/>
+  </symbol>
+  <symbol id="res-gold" viewBox="0 0 44 44" width="44" height="44">
+    <ellipse cx="18" cy="28" rx="7" ry="3" fill="#ca8a04" stroke="#713f12" stroke-width="1"/>
+    <ellipse cx="18" cy="25" rx="7" ry="3" fill="#facc15" stroke="#713f12" stroke-width="1"/>
+    <ellipse cx="27" cy="23" rx="7" ry="3" fill="#ca8a04" stroke="#713f12" stroke-width="1"/>
+    <ellipse cx="27" cy="20" rx="7" ry="3" fill="#fde047" stroke="#713f12" stroke-width="1"/>
+  </symbol>
+  <symbol id="res-gems" viewBox="0 0 44 44" width="44" height="44">
+    <polygon points="22,34 12,20 17,13 27,13 32,20" fill="#a78bfa" stroke="#4c1d95" stroke-width="1" stroke-linejoin="round"/>
+    <path d="M12 20 h20 M17 13 l5 7 l5 -7 M22 20 v14" stroke="#ede9fe" stroke-width="1" opacity="0.8"/>
+  </symbol>
+  <symbol id="res-fish" viewBox="0 0 44 44" width="44" height="44">
+    <path d="M12 22 q8 -9 18 0 q-8 9 -18 0 z" fill="#38bdf8" stroke="#0c4a6e" stroke-width="1"/>
+    <polygon points="30,22 36,17 36,27" fill="#38bdf8" stroke="#0c4a6e" stroke-width="1"/>
+    <circle cx="17" cy="21" r="1.2" fill="#0c4a6e"/>
   </symbol>
   <symbol id="wave" viewBox="0 0 20 8" width="20" height="8">
     <path d="M0 5 q3 -4 6 0 t6 0 t6 0" fill="none" stroke="#9cc9ff" stroke-width="1.2" stroke-linecap="round"/>

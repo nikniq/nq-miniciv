@@ -112,7 +112,7 @@ final class AiPlayer
             }
 
             if ($happiness['unhappy']) {
-                foreach (['colosseum', 'courthouse', 'temple', 'monument'] as $fix) {
+                foreach (['cathedral', 'colosseum', 'courthouse', 'guild_hall', 'temple', 'monument'] as $fix) {
                     if (isset($options[$fix])) {
                         $city->current_build = $fix;
                         $city->save();
@@ -211,7 +211,7 @@ final class AiPlayer
         // that unlock something buildable, then the cheapest.
         $prefer = [];
         if ($empire->relationLoaded('cities') && Economy::happiness($empire)['unhappy']) {
-            $prefer = ['construction', 'code_of_laws', 'philosophy'];
+            $prefer = ['construction', 'code_of_laws', 'philosophy', 'theology'];
         }
         foreach ($prefer as $p) {
             if (isset($available[$p])) {

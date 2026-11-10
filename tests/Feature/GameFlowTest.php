@@ -290,4 +290,26 @@ class GameFlowTest extends TestCase
         $this->assertSame($before + 1, Rules::tileYield($grass, $player, $capital->fresh())['food']);
         $this->assertSame($before, Rules::tileYield($grass, $player)['food']);
     }
+
+    public function test_cultural_pressure_flips_a_weak_neighbouring_tile(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        $capital = $player->cities->first();
+        $centre = $game->tiles->firstWhere('id', $capital->tile_id);
+
+        // Give a rival a lonely low-culture tile two steps from our very cultured capital.
+        $rival = $game->empires->firstWhere('is_ai', true);
+        $rivalCity = $rival->cities->first();
+        $target = $game->tiles->first(fn ($t) => $t->distanceTo($centre) === 2 && $t->isLand() && $t->empire_id === null);
+        $this->assertNotNull($target);
+        $target->update(['empire_id' => $rival->id, 'city_id' => $rivalCity->id]);
+        $capital->update(['culture' => 500]);
+        $rivalCity->update(['culture' => 10]);
+
+        $this->actingAs($user)->post(route('games.end-turn', $game));
+        $this->assertSame($player->id, $target->fresh()->empire_id);
+        $this->assertStringContainsString('culture', strtolower(implode(' ', $game->fresh()->events)));
+    }
 }

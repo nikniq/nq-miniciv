@@ -72,10 +72,16 @@ final class Rules
     /** Eras by number of techs known, for flavour and a score multiplier on wonders. */
     public const ERAS = [
         0 => 'Ancient Era',
-        4 => 'Classical Era',
-        8 => 'Medieval Era',
-        13 => 'Renaissance',
+        5 => 'Classical Era',
+        11 => 'Medieval Era',
+        18 => 'Renaissance',
+        24 => 'Age of Discovery',
     ];
+
+    /** Cultural pressure: a tile flips when a nearby foreign city has this many times the culture of its current city. */
+    public const PRESSURE_RATIO = 2.5;
+
+    public const PRESSURE_RANGE = 2;
 
     public static function era(int $techs): string
     {
@@ -172,6 +178,16 @@ final class Rules
             'effects' => ['happy' => 3], 'blurb' => '+3 happiness.'],
         'courthouse' => ['name' => 'Courthouse', 'icon' => '⚖️', 'cost' => 90, 'tech' => 'code_of_laws', 'requires' => null, 'wonder' => false, 'score' => 3,
             'effects' => ['happy' => 2, 'gold' => 2], 'blurb' => '+2 happiness, +2 gold.'],
+        'castle' => ['name' => 'Castle', 'icon' => '🏰', 'cost' => 110, 'tech' => 'feudalism', 'requires' => 'walls', 'wonder' => false, 'score' => 3,
+            'effects' => ['culture' => 2], 'defense' => 6, 'blurb' => '+6 defence, +2 culture.'],
+        'cathedral' => ['name' => 'Cathedral', 'icon' => '⛪', 'cost' => 130, 'tech' => 'theology', 'requires' => 'temple', 'wonder' => false, 'score' => 4,
+            'effects' => ['culture' => 4, 'happy' => 2], 'blurb' => '+4 culture, +2 happiness.'],
+        'lighthouse' => ['name' => 'Lighthouse', 'icon' => '🗼', 'cost' => 80, 'tech' => 'navigation', 'requires' => 'harbor', 'wonder' => false, 'score' => 2,
+            'effects' => [], 'terrain_bonus' => ['ocean' => ['prod' => 1]], 'blurb' => '+1 production on this city\'s sea tiles.'],
+        'printing_press' => ['name' => 'Printing Press', 'icon' => '📰', 'cost' => 140, 'tech' => 'printing', 'requires' => 'library', 'wonder' => false, 'score' => 4,
+            'effects' => ['science' => 4, 'culture' => 2], 'blurb' => '+4 science, +2 culture.'],
+        'guild_hall' => ['name' => 'Guild Hall', 'icon' => '🏛️', 'cost' => 160, 'tech' => 'economics', 'requires' => 'market', 'wonder' => false, 'score' => 4,
+            'effects' => ['gold' => 6, 'happy' => 1], 'blurb' => '+6 gold, +1 happiness.'],
         'bank' => ['name' => 'Bank', 'icon' => '🏦', 'cost' => 120, 'tech' => 'banking', 'requires' => 'market', 'wonder' => false, 'score' => 4,
             'effects' => ['gold' => 5], 'blurb' => 'A great deal of gold.'],
 
@@ -187,6 +203,12 @@ final class Rules
             'effects' => ['culture' => 3, 'science' => 3], 'empire_effects' => ['happy' => 1], 'blurb' => 'Wonder: +1 happiness in every city, +3 science here.'],
         'great_wall' => ['name' => 'Great Wall', 'icon' => '🏯', 'cost' => 200, 'tech' => 'construction', 'requires' => null, 'wonder' => true, 'score' => 25,
             'effects' => ['culture' => 3], 'empire_effects' => ['defense' => 4], 'blurb' => 'Wonder: +4 defence in every city.'],
+        'notre_dame' => ['name' => 'Notre Dame', 'icon' => '🕍', 'cost' => 280, 'tech' => 'theology', 'requires' => null, 'wonder' => true, 'score' => 30,
+            'effects' => ['culture' => 5], 'empire_effects' => ['happy' => 2], 'blurb' => 'Wonder: +2 happiness in every city.'],
+        'machu_picchu' => ['name' => 'Machu Picchu', 'icon' => '⛰️', 'cost' => 260, 'tech' => 'feudalism', 'requires' => null, 'wonder' => true, 'score' => 30,
+            'effects' => ['culture' => 4], 'empire_effects' => ['gold' => 3], 'blurb' => 'Wonder: +3 gold in every city.'],
+        'angkor_wat' => ['name' => 'Angkor Wat', 'icon' => '🛕', 'cost' => 300, 'tech' => 'printing', 'requires' => null, 'wonder' => true, 'score' => 30,
+            'effects' => ['culture' => 10], 'empire_effects' => ['culture' => 2], 'blurb' => 'Wonder: +10 culture here, +2 culture in every city.'],
         'colossus' => ['name' => 'Colossus', 'icon' => '🗽', 'cost' => 180, 'tech' => 'currency', 'requires' => null, 'wonder' => true, 'score' => 25,
             'effects' => ['culture' => 3], 'empire_effects' => ['gold' => 3], 'blurb' => 'Wonder: +3 gold in every city.'],
     ];
@@ -200,6 +222,8 @@ final class Rules
         'horsemen' => ['name' => 'Horsemen', 'cost' => 45, 'tech' => 'horseback_riding', 'strength' => 3, 'blurb' => '+3 army strength.'],
         'swordsmen' => ['name' => 'Swordsmen', 'cost' => 50, 'tech' => 'bronze_working', 'strength' => 4, 'blurb' => '+4 army strength.'],
         'catapults' => ['name' => 'Catapults', 'cost' => 80, 'tech' => 'engineering', 'strength' => 7, 'blurb' => '+7 army strength.'],
+        'knights' => ['name' => 'Knights', 'cost' => 95, 'tech' => 'chivalry', 'strength' => 10, 'blurb' => '+10 army strength.'],
+        'musketeers' => ['name' => 'Musketeers', 'cost' => 120, 'tech' => 'gunpowder', 'strength' => 14, 'blurb' => '+14 army strength.'],
     ];
 
     /** Happiness every empire gets for free, and extra per city. */
@@ -241,6 +265,13 @@ final class Rules
         'astronomy' => ['name' => 'Astronomy', 'cost' => 130, 'requires' => ['mathematics', 'sailing'], 'bonus' => ['ocean' => ['gold' => 1]], 'unlocks' => '+1 gold at sea'],
         'education' => ['name' => 'Education', 'cost' => 160, 'requires' => ['philosophy', 'mathematics'], 'bonus' => [], 'unlocks' => 'University'],
         'banking' => ['name' => 'Banking', 'cost' => 180, 'requires' => ['currency', 'education'], 'bonus' => [], 'unlocks' => 'Bank'],
+        'feudalism' => ['name' => 'Feudalism', 'cost' => 170, 'requires' => ['code_of_laws', 'construction'], 'bonus' => [], 'unlocks' => 'Castle, Machu Picchu'],
+        'theology' => ['name' => 'Theology', 'cost' => 180, 'requires' => ['philosophy', 'code_of_laws'], 'bonus' => [], 'unlocks' => 'Cathedral, Notre Dame'],
+        'navigation' => ['name' => 'Navigation', 'cost' => 170, 'requires' => ['astronomy'], 'bonus' => ['ocean' => ['prod' => 1]], 'unlocks' => 'Lighthouse, +1 production at sea'],
+        'chivalry' => ['name' => 'Chivalry', 'cost' => 210, 'requires' => ['feudalism', 'horseback_riding'], 'bonus' => [], 'unlocks' => 'Knights'],
+        'printing' => ['name' => 'Printing', 'cost' => 240, 'requires' => ['education'], 'bonus' => [], 'unlocks' => 'Printing Press, Angkor Wat'],
+        'gunpowder' => ['name' => 'Gunpowder', 'cost' => 270, 'requires' => ['chivalry', 'engineering'], 'bonus' => [], 'unlocks' => 'Musketeers'],
+        'economics' => ['name' => 'Economics', 'cost' => 280, 'requires' => ['banking', 'printing'], 'bonus' => ['grassland' => ['gold' => 1]], 'unlocks' => 'Guild Hall, +1 gold on grassland'],
     ];
 
     public const EMPIRE_NAMES = ['Rome', 'Egypt', 'Babylon', 'Carthage', 'Persia', 'Athens', 'Maurya', 'Han'];

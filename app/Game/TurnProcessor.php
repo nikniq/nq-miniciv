@@ -124,6 +124,7 @@ final class TurnProcessor
                 $empire->save();
             }
 
+            $this->culturalPressure($game);
             $this->spawnCamps($game);
             $game->turn += 1;
             $this->scoresAndVictory($game, $player);
@@ -402,6 +403,63 @@ final class TurnProcessor
         }
         $history[] = [$game->turn - 1, $scores];
         $game->history = $history;
+    }
+
+    /**
+     * Culture spills over borders: a tile owned by a weak city, lying near a
+     * much more cultured foreign city, changes allegiance. At most one tile
+     * per city per turn, never a city centre or a tile hugging its own city.
+     */
+    private function culturalPressure(Game $game): void
+    {
+        $citiesById = $game->cities->keyBy('id');
+        $empiresById = $game->empires->keyBy('id');
+        $r = Rules::PRESSURE_RANGE;
+        foreach ($game->cities as $city) {
+            if ($city->culture < 30) {
+                continue;
+            }
+            $centre = $this->tiles->firstWhere('id', $city->tile_id);
+            if (! $centre) {
+                continue;
+            }
+            $best = null;
+            for ($dy = -$r; $dy <= $r; $dy++) {
+                for ($dx = -$r; $dx <= $r; $dx++) {
+                    $t = $this->grid[$centre->y + $dy][$centre->x + $dx] ?? null;
+                    if (! $t || ! $t->empire_id || $t->empire_id === $city->empire_id || ! $t->city_id) {
+                        continue;
+                    }
+                    $owner = $citiesById->get($t->city_id);
+                    if (! $owner || $owner->tile_id === $t->id) {
+                        continue;
+                    }
+                    $ownerCentre = $this->tiles->firstWhere('id', $owner->tile_id);
+                    if ($ownerCentre && $ownerCentre->distanceTo($t) <= 1) {
+                        continue;
+                    }
+                    if ($city->culture >= Rules::PRESSURE_RATIO * max(1, $owner->culture)) {
+                        $gap = $city->culture - Rules::PRESSURE_RATIO * $owner->culture;
+                        if ($best === null || $gap > $best[1]) {
+                            $best = [$t, $gap, $owner];
+                        }
+                    }
+                }
+            }
+            if ($best) {
+                [$t, , $owner] = $best;
+                $from = $empiresById->get($t->empire_id);
+                $t->empire_id = $city->empire_id;
+                $t->city_id = $city->id;
+                $t->save();
+                $to = $empiresById->get($city->empire_id);
+                if ($to && ! $to->is_ai) {
+                    $this->events[] = "The culture of {$city->name} wins over a tile from {$owner->name}.";
+                } elseif ($from && ! $from->is_ai) {
+                    $this->events[] = "A tile near {$owner->name} has defected to {$city->name}, swayed by its culture. Build culture there.";
+                }
+            }
+        }
     }
 
     /** Camps within distance 2, using the grid window instead of a full scan. */

@@ -33,8 +33,9 @@ Barbarian camps pillage nearby cities until cleared by an army. Rivers flow
 from highlands to the sea and add food and gold (deserts become flood
 plains). Cities keep a production queue and show a skyline drawn from their
 buildings. The map pans and zooms, with a minimap. Cities have a
-focus (growth, production, gold, science). Victory by domination, culture or
-score. A public Hall of Fame lists the best finished games, and /how-to-play
+focus (growth, production, gold, science). Culture also exerts pressure: a very cultured city wins over border tiles
+from weak neighbours. The tech tree runs to 25 techs through an Age of
+Discovery. Victory by domination, culture or score. A public Hall of Fame lists the best finished games, and /how-to-play
 documents every rule, tech and building from the data in `Rules.php`.
 
 Accounts: "Play now" creates a guest account on the fly so visitors start
