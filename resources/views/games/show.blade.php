@@ -35,10 +35,10 @@
     <div title="Score">⭐ <b>{{ $rivals->firstWhere('empire.id', $player->id)['score'] ?? 0 }}</b></div>
     <div class="ml-auto">
         @if ($game->isActive())
-            <form method="POST" action="{{ route('games.end-turn', $game) }}">
+            <form method="POST" action="{{ route('games.end-turn', $game) }}" id="end-turn-form">
                 @csrf
                 <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
-                <button class="rounded bg-amber-500 px-5 py-1.5 font-semibold text-stone-950 hover:bg-amber-400">End turn ▶</button>
+                <button class="rounded bg-amber-500 px-5 py-1.5 font-semibold text-stone-950 shadow hover:bg-amber-400" title="Enter">End turn ▶</button>
             </form>
         @endif
     </div>
@@ -49,6 +49,14 @@
         Unrest: your people want {{ $happiness['demand'] }} happiness and you provide {{ $happiness['supply'] }}. Cities will not grow and production is down a quarter until you build monuments or temples (or lose some population).
     </div>
 @endif
+@if ($idleCities->isNotEmpty() && $game->isActive())
+    <div class="mb-4 rounded border border-sky-800 bg-sky-950/40 px-4 py-2 text-sm text-sky-200">
+        {{ $idleCities->count() === 1 ? 'A city is' : $idleCities->count().' cities are' }} producing Wealth while new buildings are available:
+        @foreach ($idleCities as $c)
+            <a href="{{ route('games.show', ['game' => $game, 'tile' => $c->tile_id]) }}" class="font-medium underline decoration-sky-500/50 hover:text-white">{{ $c->name }}</a>@if (! $loop->last), @endif
+        @endforeach
+    </div>
+@endif
 @if ($player->settlers > 0 && $game->isActive())
     <div class="mb-4 rounded border border-amber-800 bg-amber-950/40 px-4 py-2 text-sm text-amber-200">
         You have {{ $player->settlers }} {{ Str::plural('band', $player->settlers) }} of settlers. Click a tile at least {{ Rules::MIN_CITY_DISTANCE }} tiles from any city and choose <b>Found city</b>.
@@ -57,44 +65,15 @@
 
 <div class="grid gap-4 lg:grid-cols-[1fr_22rem]">
     {{-- Map --}}
-    <div class="overflow-x-auto rounded-lg border border-stone-800 bg-stone-900/40 p-2">
-        <div id="map" data-panel-url="{{ route('games.panel', $game) }}" class="grid gap-px" style="grid-template-columns: repeat({{ $game->width }}, minmax(0, 1fr)); min-width: {{ $game->width * 26 }}px;">
-            @foreach ($grid as $y => $row)
-                @foreach ($row as $x => $t)
-                    @php
-                        $owner = $t->empire_id ? $empiresById->get($t->empire_id) : null;
-                        $city = $citiesByTile->get($t->id);
-                        $isSel = $selTile && $selTile->id === $t->id;
-                        $terrain = Rules::TERRAIN[$t->terrain];
-                        $title = $terrain['name'].($t->resource ? ', '.Rules::RESOURCES[$t->resource]['name'] : '').($owner ? ' · '.$owner->name : '').($city ? ' · '.$city->name.' ('.$city->population.')' : '');
-                        $style = 'background:'.$terrain['color'].';';
-                        if ($owner) {
-                            $style .= 'box-shadow: inset 0 0 0 2px '.$owner->color.'; background-image: linear-gradient('.$owner->color.'40,'.$owner->color.'40);';
-                        }
-                    @endphp
-                    <a href="{{ $tileUrl($t) }}" title="{{ $title }}" data-tile="{{ $t->id }}"
-                       class="map-tile relative flex aspect-square items-center justify-center text-[11px] leading-none select-none {{ $isSel ? 'is-selected' : '' }} {{ isset($worked[$t->id]) ? 'after:absolute after:bottom-0.5 after:right-0.5 after:h-1 after:w-1 after:rounded-full after:bg-white/80' : '' }}"
-                       style="{{ $style }}">
-                        @if ($city)
-                            <span class="rounded-sm px-1 font-bold text-white drop-shadow {{ $city->is_capital ? 'ring-1 ring-white/70' : '' }}" style="background: {{ $owner?->color }}">{{ $city->population }}</span>
-                        @elseif ($t->resource)
-                            <span class="opacity-90">{{ Rules::RESOURCES[$t->resource]['icon'] }}</span>
-                        @elseif ($t->terrain === 'mountain')
-                            <span class="text-stone-300">▲</span>
-                        @elseif ($t->terrain === 'forest')
-                            <span class="text-green-300/70">♣</span>
-                        @elseif ($t->terrain === 'hills')
-                            <span class="text-stone-300/70">⌒</span>
-                        @endif
-                    </a>
-                @endforeach
-            @endforeach
+    <div class="overflow-x-auto rounded-lg border border-stone-800 bg-stone-950 p-2 shadow-inner">
+        <div id="map" data-panel-url="{{ route('games.panel', $game) }}">
+            {!! $mapSvg !!}
         </div>
-        <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 px-1 text-xs text-stone-400">
+        <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-xs text-stone-400">
             @foreach ($rivals as $r)
-                <span><span class="mr-1 inline-block h-2.5 w-2.5 rounded-sm" style="background: {{ $r['empire']->color }}"></span>{{ $r['empire']->name }}</span>
+                <span class="{{ $r['empire']->eliminated ? 'line-through opacity-50' : '' }}"><span class="mr-1 inline-block h-2.5 w-2.5 rounded-sm" style="background: {{ $r['empire']->color }}"></span>{{ $r['empire']->name }}</span>
             @endforeach
-            <span class="ml-auto">numbers are cities (population) · white dot = worked by your citizens</span>
+            <span class="ml-auto hidden sm:inline">circle = city with population · ★ capital · white dot = worked by your citizens</span>
         </div>
     </div>
 

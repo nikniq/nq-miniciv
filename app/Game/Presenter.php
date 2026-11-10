@@ -11,7 +11,7 @@ use App\Models\Tile;
  */
 final class Presenter
 {
-    public function __construct(private Actions $actions) {}
+    public function __construct(private Actions $actions, private MapSvg $mapSvg) {}
 
     public function present(Game $game, ?int $selectedTileId): array
     {
@@ -94,6 +94,16 @@ final class Presenter
             }
         }
 
+        // Cities producing Wealth although something useful could be built.
+        $idleCities = $player->cities->filter(function ($c) use ($player, $wondersBuilt) {
+            if ($c->current_build !== 'wealth' && $c->current_build !== null) {
+                return false;
+            }
+            $opts = Economy::buildOptions($c, $player, $wondersBuilt);
+
+            return (bool) array_filter($opts, fn ($o) => $o['kind'] === 'building');
+        })->values();
+
         $research = null;
         if ($player->current_tech) {
             $t = Rules::TECHS[$player->current_tech];
@@ -118,10 +128,13 @@ final class Presenter
             'score' => $e->score ?: Economy::score($e, $ownedBy[$e->id] ?? 0),
         ])->sortByDesc('score')->values();
 
+        $mapSvg = $this->mapSvg->render($game, $tiles, $empiresById, $citiesByTile, array_flip($worked), $selected?->id, route('games.show', $game));
+
         return [
             'game' => $game,
             'player' => $player,
             'grid' => $grid,
+            'mapSvg' => $mapSvg,
             'empiresById' => $empiresById,
             'citiesByTile' => $citiesByTile,
             'worked' => array_flip($worked),
@@ -131,6 +144,7 @@ final class Presenter
             'netGold' => $totals['gold'] - $upkeep['total'],
             'research' => $research,
             'availableTechs' => $player->availableTechs(),
+            'idleCities' => $idleCities,
             'selected' => $selectedInfo,
             'rivals' => $rivals,
             'landShare' => round(100 * ($ownedBy[$player->id] ?? 0) / $landTotal),

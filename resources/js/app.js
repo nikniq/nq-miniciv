@@ -10,7 +10,30 @@ if (map) {
     const select = (id) => {
         map.querySelectorAll('.map-tile.is-selected').forEach((el) => el.classList.remove('is-selected'));
         const tile = map.querySelector(`.map-tile[data-tile="${id}"]`);
-        if (tile) tile.classList.add('is-selected');
+        if (tile) {
+            tile.classList.add('is-selected');
+            // Move the selection ring (SVG) to the clicked tile.
+            const rect = tile.querySelector('rect');
+            const svg = map.querySelector('svg');
+            let ring = svg?.querySelector('#selection');
+            if (svg && rect) {
+                if (!ring) {
+                    ring = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    ring.id = 'selection';
+                    ring.setAttribute('fill', 'none');
+                    ring.setAttribute('stroke', '#fff');
+                    ring.setAttribute('stroke-width', '3');
+                    ring.setAttribute('rx', '3');
+                    ring.style.pointerEvents = 'none';
+                    svg.appendChild(ring);
+                }
+                const s = parseFloat(rect.getAttribute('width'));
+                ring.setAttribute('x', parseFloat(rect.getAttribute('x')) + 1.5);
+                ring.setAttribute('y', parseFloat(rect.getAttribute('y')) + 1.5);
+                ring.setAttribute('width', s - 3);
+                ring.setAttribute('height', s - 3);
+            }
+        }
         document.querySelectorAll('.selected-tile-input').forEach((el) => { el.value = id; });
     };
 
@@ -46,6 +69,13 @@ if (map) {
         if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
         e.preventDefault();
         load(a.dataset.tile, true);
+    });
+
+    // Enter ends the turn when nothing is focused.
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(document.activeElement?.tagName)) {
+            document.getElementById('end-turn-form')?.requestSubmit();
+        }
     });
 
     window.addEventListener('popstate', (e) => {

@@ -8,8 +8,11 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
-/* Map selection outline, toggled by resources/js/app.js without a reload. */
-.map-tile.is-selected {
-    z-index: 10;
-    outline: 2px solid #fff;
-}
+/* Map interaction (SVG). Selection ring is drawn by the renderer; hover
+   tint and the JS-toggled class live here. */
+#map-svg a.map-tile rect { transition: fill 120ms; }
+#map-svg a.map-tile:hover rect { fill: rgba(255, 255, 255, 0.14); }
+#map-svg a.map-tile.is-selected rect { fill: rgba(255, 255, 255, 0.08); }
+#map-svg .city text { font-family: var(--font-sans); }
+#selection { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { stroke-opacity: 1; } 50% { stroke-opacity: 0.45; } }
