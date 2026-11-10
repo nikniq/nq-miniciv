@@ -62,6 +62,8 @@ if (map) {
     map.addEventListener('pointerdown', (e) => {
         if (e.button !== 0 && e.pointerType === 'mouse') return;
         pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        // Capture so a drag keeps panning outside the map. Capture retargets
+        // later events to the map itself, so remember which tile was pressed.
         map.setPointerCapture(e.pointerId);
         if (pointers.size === 2) {
             const [a, b] = [...pointers.values()];
@@ -69,7 +71,7 @@ if (map) {
             drag = null;
             return;
         }
-        drag = { x: e.clientX, y: e.clientY, vx: vb.x, vy: vb.y, moved: false };
+        drag = { x: e.clientX, y: e.clientY, vx: vb.x, vy: vb.y, moved: false, tile: e.target.closest('a.map-tile')?.dataset.tile ?? null };
     });
     map.addEventListener('pointermove', (e) => {
         if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -95,7 +97,11 @@ if (map) {
         pointers.delete(e.pointerId);
         if (pointers.size < 2) pinch = null;
         map.classList.remove('cursor-grabbing');
-        setTimeout(() => { drag = null; }, 0);
+        // A press-and-release without movement is a click on that tile.
+        if (drag && !drag.moved && drag.tile && e.type === 'pointerup' && !(e.metaKey || e.ctrlKey || e.shiftKey)) {
+            load(drag.tile, true);
+        }
+        drag = null;
     };
     map.addEventListener('pointerup', endDrag);
     map.addEventListener('pointercancel', endDrag);
@@ -152,9 +158,9 @@ if (map) {
     map.addEventListener('click', (e) => {
         const a = e.target.closest('a.map-tile');
         if (!a) return;
+        // Modifier clicks keep the browser's open-in-new-tab behaviour.
+        if (e.metaKey || e.ctrlKey || e.shiftKey) return;
         e.preventDefault();
-        if (drag?.moved || e.metaKey || e.ctrlKey || e.shiftKey) return;
-        load(a.dataset.tile, true);
     });
 
     document.addEventListener('click', (e) => {
