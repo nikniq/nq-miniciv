@@ -32,6 +32,21 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+# Any failure after maintenance mode is switched on would otherwise leave a
+# silent 503. Say what broke and how to recover.
+on_error() {
+    local code=$? line=$1
+    echo
+    echo "✗ deploy.sh failed at line $line (exit $code)."
+    if [ -f storage/framework/down ]; then
+        echo "  The site is still in MAINTENANCE MODE (503)."
+        echo "  Bring it back with:  php artisan up"
+        echo "  Then fix the step above and re-run ./deploy.sh, or ./deploy.sh --rollback"
+    fi
+    exit "$code"
+}
+trap 'on_error $LINENO' ERR
+
 LAST_DEPLOY_FILE="storage/app/.last-deploy"
 NO_DOWN=0
 ACTION=deploy
@@ -127,6 +142,7 @@ verify() {
 # verify only
 #---------------------------------------------------------------
 if [ "$ACTION" = "verify" ]; then
+    trap - ERR
     verify
     exit $?
 fi
@@ -212,7 +228,9 @@ if [ "$LOCK_BEFORE" != "$LOCK_AFTER" ] || [ ! -d vendor ]; then
         # Not fatal: the pull has landed and stopping here would also leave the
         # tree un-migrated. Say so loudly instead; verify will catch the rest.
         warn "composer.lock changed but composer is not on PATH."
-        echo "  Install dependencies manually before trusting this deploy."
+        echo "  Dependencies are now out of date and requests may 500."
+        echo "  Try:  php /usr/local/bin/composer install --no-dev  (or wherever composer lives)"
+        false
     fi
 fi
 
