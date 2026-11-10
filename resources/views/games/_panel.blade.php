@@ -116,6 +116,13 @@
                     @endforeach
                 </ol>
             @endif
+            @if ($city->current_build !== 'settlers' && isset($selected['buildOptions']['settlers']))
+                <form method="POST" action="{{ route('games.build', [$game, $city]) }}" class="mt-2">
+                    @csrf
+                    <input type="hidden" name="build" value="settlers">
+                    <button class="w-full rounded border border-emerald-800 px-3 py-1.5 text-xs text-emerald-200 hover:bg-emerald-950" title="Settlers found a new city. Costs {{ Rules::SETTLER_COST }} production and 1 population when complete (city must be size 2+).">🏕️ Train settlers to found a new city ({{ Rules::SETTLER_COST }} ⚒{{ $city->population < 2 ? ', needs size 2' : '' }})</button>
+                </form>
+            @endif
             @if ($selected['buyPrice'])
                 <form method="POST" action="{{ route('games.buy', [$game, $city]) }}" class="mt-2">
                     @csrf
@@ -191,10 +198,13 @@
                     <form method="POST" action="{{ route('games.found', $game) }}">
                         @csrf
                         <input type="hidden" name="tile" value="{{ $tile->id }}">
-                        <button class="w-full rounded bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-500">Found city here 🏕️</button>
+                        <button class="w-full rounded bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-500">🏕️ Found city here</button>
                     </form>
+                    <p class="mt-1 text-xs text-stone-500">Uses 1 band of settlers ({{ $player->settlers }} ready). The new city claims the land around it.</p>
+                @elseif ($player->settlers > 0)
+                    <p class="text-xs text-amber-300/90">Cannot found here: {{ $selected['foundingProblem'] }} Green tiles on the map are valid.</p>
                 @else
-                    <p class="text-xs text-stone-500">{{ $selected['foundingProblem'] }}</p>
+                    <p class="text-xs text-stone-500">To found a city here you need settlers: open one of your cities (size 2+) and choose <b>Train settlers</b>.</p>
                 @endif
             </div>
         @endif

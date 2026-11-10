@@ -102,6 +102,17 @@
         Unrest: your people want {{ $happiness['demand'] }} happiness and you provide {{ $happiness['supply'] }}. Cities will not grow and production is down a quarter until you build monuments or temples (or lose some population).
     </div>
 @endif
+@if ($tips && $game->isActive())
+    <div id="advisor" class="mb-4 space-y-2">
+        @foreach ($tips as $tip)
+            <div class="advisor-tip flex items-start gap-3 rounded border border-violet-800/70 bg-violet-950/40 px-4 py-2 text-sm text-violet-100" data-tip="{{ $tip['id'] }}">
+                <span class="mt-0.5">🧙</span>
+                <span class="flex-1">{{ $tip['text'] }}</span>
+                <button type="button" class="dismiss-tip text-violet-300 hover:text-white" aria-label="Dismiss">✕</button>
+            </div>
+        @endforeach
+    </div>
+@endif
 @if ($idleCities->isNotEmpty() && $game->isActive())
     <div class="mb-4 rounded border border-sky-800 bg-sky-950/40 px-4 py-2 text-sm text-sky-200">
         {{ $idleCities->count() === 1 ? 'A city is' : $idleCities->count().' cities are' }} producing Wealth while new buildings are available:
@@ -111,8 +122,21 @@
     </div>
 @endif
 @if ($player->settlers > 0 && $game->isActive())
-    <div class="mb-4 rounded border border-amber-800 bg-amber-950/40 px-4 py-2 text-sm text-amber-200">
-        You have {{ $player->settlers }} {{ Str::plural('band', $player->settlers) }} of settlers. Click a tile at least {{ Rules::MIN_CITY_DISTANCE }} tiles from any city and choose <b>Found city</b>.
+    <div class="mb-4 flex flex-wrap items-center gap-3 rounded border border-emerald-700 bg-emerald-950/50 px-4 py-2 text-sm text-emerald-100">
+        <span class="text-lg">🏕️</span>
+        <span class="flex-1">
+            <b>Settlers ready.</b> The <span class="rounded bg-emerald-500/30 px-1">green tiles</span> on the map are places you can found a city. Click one, then press <b>Found city here</b>.
+            @if ($bestSite) The ★ marks the best site nearby. @endif
+            @if ($foundableCount === 0) No legal site is in reach right now: cities need {{ Rules::MIN_CITY_DISTANCE }} tiles between them and unclaimed land. @endif
+        </span>
+        @if ($bestSite)
+            <form method="POST" action="{{ route('games.found', $game) }}">
+                @csrf
+                <input type="hidden" name="tile" value="{{ $bestSite->id }}">
+                <button class="rounded bg-emerald-500 px-3 py-1.5 font-medium text-stone-950 hover:bg-emerald-400">Found at best site ★</button>
+            </form>
+            <a href="{{ route('games.show', ['game' => $game, 'tile' => $bestSite->id]) }}" class="map-tile-link text-xs text-emerald-300 underline" data-tile="{{ $bestSite->id }}">show me</a>
+        @endif
     </div>
 @endif
 
@@ -285,15 +309,20 @@
             </table>
         </section>
 
-        {{-- Events --}}
-        @if ($game->events)
+        {{-- Chronicle --}}
+        @if ($chronicle)
             <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
-                <h2 class="font-semibold">Last turn</h2>
-                <ul class="mt-2 space-y-1 text-xs text-stone-300">
-                    @foreach ($game->events as $e)
-                        <li>· {{ $e }}</li>
-                    @endforeach
-                </ul>
+                <h2 class="font-semibold">Chronicle</h2>
+                @foreach ($chronicle as $i => $entry)
+                    <details class="mt-2 text-xs" @if ($i === 0) open @endif>
+                        <summary class="cursor-pointer text-stone-400 hover:text-white">Turn {{ $entry['turn'] }} <span class="text-stone-600">· {{ count($entry['events']) }} {{ Str::plural('event', count($entry['events'])) }}</span></summary>
+                        <ul class="mt-1 space-y-0.5 text-stone-300">
+                            @foreach ($entry['events'] as $e)
+                                <li>· {{ $e }}</li>
+                            @endforeach
+                        </ul>
+                    </details>
+                @endforeach
             </section>
         @endif
     </aside>

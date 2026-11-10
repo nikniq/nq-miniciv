@@ -8,6 +8,17 @@
     <h1 class="text-3xl font-semibold">How to play</h1>
     <p class="mt-2 text-stone-400">A game lasts {{ Rules::MAX_TURNS }} turns. Each turn you manage your cities, pick research, and press <b>End turn</b> (or Enter). Your rivals act at the same time.</p>
 
+    <section class="mt-6 rounded-lg border border-emerald-800/60 bg-emerald-950/30 p-5">
+        <h2 class="font-semibold text-emerald-300">🏕️ Founding a city, step by step</h2>
+        <ol class="mt-2 list-inside list-decimal space-y-1 text-sm text-stone-300">
+            <li>Click one of your cities on the map. In the panel on the right press <b>Train settlers</b> (the city must be size 2 or more; it loses 1 population when the settlers are ready).</li>
+            <li>End turns until the panel says the settlers are ready. The top bar shows 🏕️ with the number of bands you have.</li>
+            <li>Legal sites light up <span class="rounded bg-emerald-500/30 px-1">green</span> on the map, and ★ marks the best one. Sites must be land, unclaimed, and at least 3 tiles from any city.</li>
+            <li>Click a green tile and press <b>Found city here</b>, or press <b>Found at best site</b> in the banner.</li>
+        </ol>
+        <p class="mt-2 text-xs text-stone-500">Every new game also starts you with one band of settlers so you can found a second city on turn 1.</p>
+    </section>
+
     <div class="mt-8 grid gap-6 sm:grid-cols-2">
         <section class="rounded-lg border border-stone-800 bg-stone-900/50 p-5">
             <h2 class="font-semibold text-amber-300">🏆 Ways to win</h2>

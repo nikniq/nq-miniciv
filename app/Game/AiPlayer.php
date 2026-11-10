@@ -276,56 +276,6 @@ final class AiPlayer
     /** Best legal city site within reach of the empire's existing cities. */
     private function bestSite(Game $game, Empire $empire, Collection $tiles): ?Tile
     {
-        $own = $tiles->whereIn('id', $empire->cities->pluck('tile_id'));
-        if ($own->isEmpty()) {
-            return null;
-        }
-        $grid = [];
-        foreach ($tiles as $t) {
-            $grid[$t->x.','.$t->y] = $t;
-        }
-        $allCentres = $tiles->whereIn('id', $game->cities->pluck('tile_id'))->values();
-
-        $best = null;
-        $bestScore = -1;
-        foreach ($tiles as $t) {
-            if (! $t->canSettle() || $t->empire_id || $t->camp) {
-                continue;
-            }
-            $near = PHP_INT_MAX;
-            foreach ($own as $c) {
-                $near = min($near, $c->distanceTo($t));
-            }
-            if ($near > 6 || $near < Rules::MIN_CITY_DISTANCE) {
-                continue;
-            }
-            $tooClose = false;
-            foreach ($allCentres as $c) {
-                if ($c->distanceTo($t) < Rules::MIN_CITY_DISTANCE) {
-                    $tooClose = true;
-                    break;
-                }
-            }
-            if ($tooClose) {
-                continue;
-            }
-            $score = 0;
-            for ($dx = -1; $dx <= 1; $dx++) {
-                for ($dy = -1; $dy <= 1; $dy++) {
-                    $n = $grid[($t->x + $dx).','.($t->y + $dy)] ?? null;
-                    if ($n && ! $n->empire_id) {
-                        $y = Rules::tileYield($n, $empire);
-                        $score += $y['food'] * 2 + $y['prod'] + $y['gold'];
-                    }
-                }
-            }
-            $score -= $near; // prefer nearer sites slightly
-            if ($score > $bestScore) {
-                $bestScore = $score;
-                $best = $t;
-            }
-        }
-
-        return $best;
+        return $this->actions->bestSite($game, $empire, $tiles);
     }
 }

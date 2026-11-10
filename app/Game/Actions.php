@@ -86,15 +86,25 @@ final class Actions
     }
 
     /** Claim unowned tiles within radius² of the city centre. */
-    public function expandBorders(City $city, Tile $centre, Collection $tiles, int $radiusSq): int
+    public function expandBorders(City $city, Tile $centre, Collection $tiles, int $radiusSq, ?array $grid = null): int
     {
-        $claimed = 0;
-        foreach ($tiles as $t) {
-            if ($t->empire_id !== null || $t->camp) {
-                continue;
+        if ($grid === null) {
+            $grid = [];
+            foreach ($tiles as $t) {
+                $grid[$t->y][$t->x] = $t;
             }
-            $d = ($t->x - $centre->x) ** 2 + ($t->y - $centre->y) ** 2;
-            if ($d <= $radiusSq) {
+        }
+        $r = (int) ceil(sqrt($radiusSq));
+        $claimed = 0;
+        for ($dy = -$r; $dy <= $r; $dy++) {
+            for ($dx = -$r; $dx <= $r; $dx++) {
+                if ($dx * $dx + $dy * $dy > $radiusSq) {
+                    continue;
+                }
+                $t = $grid[$centre->y + $dy][$centre->x + $dx] ?? null;
+                if (! $t || $t->empire_id !== null || $t->camp) {
+                    continue;
+                }
                 $t->empire_id = $city->empire_id;
                 $t->city_id = $city->id;
                 $t->save();
@@ -358,6 +368,63 @@ final class Actions
         }
         $city->focus = $focus;
         $city->save();
+    }
+
+    /**
+     * Best legal city site within reach (6 tiles) of the empire's cities:
+     * most food, production and gold in the surrounding ring, unowned and
+     * properly spaced. Shared by the AI and the "found at best site" button.
+     *
+     * @param  Collection<int, Tile>  $tiles
+     */
+    public function bestSite(Game $game, Empire $empire, Collection $tiles, int $reach = 6): ?Tile
+    {
+        $own = $tiles->whereIn('id', $empire->cities->pluck('tile_id'));
+        if ($own->isEmpty()) {
+            return null;
+        }
+        $grid = [];
+        foreach ($tiles as $t) {
+            $grid[$t->y][$t->x] = $t;
+        }
+        $allCentres = $tiles->whereIn('id', $game->cities->pluck('tile_id'))->values();
+
+        $best = null;
+        $bestScore = -1;
+        foreach ($tiles as $t) {
+            if (! $t->canSettle() || $t->empire_id || $t->camp) {
+                continue;
+            }
+            $near = PHP_INT_MAX;
+            foreach ($own as $c) {
+                $near = min($near, $c->distanceTo($t));
+            }
+            if ($near > $reach || $near < Rules::MIN_CITY_DISTANCE) {
+                continue;
+            }
+            foreach ($allCentres as $c) {
+                if ($c->distanceTo($t) < Rules::MIN_CITY_DISTANCE) {
+                    continue 2;
+                }
+            }
+            $score = $t->river ? 3 : 0;
+            for ($dx = -1; $dx <= 1; $dx++) {
+                for ($dy = -1; $dy <= 1; $dy++) {
+                    $n = $grid[$t->y + $dy][$t->x + $dx] ?? null;
+                    if ($n && ! $n->empire_id) {
+                        $y = Rules::tileYield($n, $empire);
+                        $score += $y['food'] * 2 + $y['prod'] + $y['gold'];
+                    }
+                }
+            }
+            $score -= $near; // prefer nearer sites slightly
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $best = $t;
+            }
+        }
+
+        return $best;
     }
 
     private function nextCityName(Empire $empire, Game $game): string

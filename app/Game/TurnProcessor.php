@@ -21,6 +21,9 @@ final class TurnProcessor
     /** @var Collection<int, Tile> */
     private Collection $tiles;
 
+    /** @var array<int, array<int, Tile>> y => x => tile */
+    private array $grid = [];
+
     public function __construct(private Actions $actions, private AiPlayer $ai) {}
 
     public function endTurn(Game $game): Game
@@ -29,6 +32,10 @@ final class TurnProcessor
             $game->load(['empires.cities', 'cities', 'tiles']);
             $this->tiles = $game->tiles;
             $this->events = [];
+            $this->grid = [];
+            foreach ($this->tiles as $t) {
+                $this->grid[$t->y][$t->x] = $t;
+            }
             $player = $game->playerEmpire();
 
             $wondersBuilt = $this->wondersBuilt($game);
@@ -72,7 +79,7 @@ final class TurnProcessor
                 foreach ($empire->cities as $city) {
                     $cityTiles = collect($index->cityTiles($city->id));
                     $centre = $this->tiles->firstWhere('id', $city->tile_id);
-                    $pillaged = $centre ? Economy::campsNear($centre, $this->tiles) : 0;
+                    $pillaged = $centre ? $this->campsNear($centre) : 0;
                     if ($pillaged) {
                         $this->note($empire, "Barbarians are pillaging around {$city->name} (−".(2 * $pillaged).' food). Clear the camp with your army.');
                     }
@@ -123,6 +130,12 @@ final class TurnProcessor
             $this->recordHistory($game);
 
             $game->events = array_slice($this->events, 0, 12);
+            // Chronicle: the last 8 turns' events, oldest first.
+            $log = $game->log ?? [];
+            if ($this->events) {
+                $log[] = ['turn' => $game->turn - 1, 'events' => array_slice($this->events, 0, 12)];
+            }
+            $game->log = array_slice($log, -8);
             $game->save();
 
             return $game;
@@ -244,7 +257,7 @@ final class TurnProcessor
         $after = Rules::borderRadiusSq($city->culture);
         if ($after > $before) {
             $centre = $this->tiles->firstWhere('id', $city->tile_id);
-            $claimed = $this->actions->expandBorders($city, $centre, $this->tiles, $after);
+            $claimed = $this->actions->expandBorders($city, $centre, $this->tiles, $after, $this->grid);
             if ($claimed) {
                 $this->note($empire, "The borders of {$city->name} have expanded.");
             }
@@ -389,6 +402,22 @@ final class TurnProcessor
         }
         $history[] = [$game->turn - 1, $scores];
         $game->history = $history;
+    }
+
+    /** Camps within distance 2, using the grid window instead of a full scan. */
+    private function campsNear(Tile $centre): int
+    {
+        $n = 0;
+        for ($dy = -2; $dy <= 2; $dy++) {
+            for ($dx = -2; $dx <= 2; $dx++) {
+                $t = $this->grid[$centre->y + $dy][$centre->x + $dx] ?? null;
+                if ($t && $t->camp) {
+                    $n++;
+                }
+            }
+        }
+
+        return $n;
     }
 
     /** A new barbarian camp every 12 turns on empty land away from cities. */

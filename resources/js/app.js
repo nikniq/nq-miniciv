@@ -55,17 +55,48 @@ if (map) {
         }
     }));
 
-    // Drag to pan; a click (little movement) selects.
+    // Drag to pan; a click (little movement) selects. Two pointers pinch-zoom.
     let drag = null;
-    map.addEventListener('pointerdown', (e) => { if (e.button !== 0) return; drag = { x: e.clientX, y: e.clientY, vx: vb.x, vy: vb.y, moved: false }; map.setPointerCapture(e.pointerId); });
+    const pointers = new Map();
+    let pinch = null;
+    map.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0 && e.pointerType === 'mouse') return;
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        map.setPointerCapture(e.pointerId);
+        if (pointers.size === 2) {
+            const [a, b] = [...pointers.values()];
+            pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), w: vb.w, cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 };
+            drag = null;
+            return;
+        }
+        drag = { x: e.clientX, y: e.clientY, vx: vb.x, vy: vb.y, moved: false };
+    });
     map.addEventListener('pointermove', (e) => {
+        if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (pinch && pointers.size === 2) {
+            const [a, b] = [...pointers.values()];
+            const d = Math.hypot(a.x - b.x, a.y - b.y);
+            if (d > 0) {
+                const p = toSvg(pinch.cx, pinch.cy);
+                const nw = Math.min(W, Math.max(W / 6, pinch.w * pinch.d / d));
+                const k = nw / vb.w;
+                vb = { x: p.x - (p.x - vb.x) * k, y: p.y - (p.y - vb.y) * k, w: nw, h: nw * H / W };
+                apply();
+            }
+            return;
+        }
         if (!drag) return;
         const r = svg.getBoundingClientRect();
         const dx = (e.clientX - drag.x) / r.width * vb.w, dy = (e.clientY - drag.y) / r.height * vb.h;
         if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 4) { drag.moved = true; map.classList.add('cursor-grabbing'); }
         if (drag.moved) { vb.x = drag.vx - dx; vb.y = drag.vy - dy; apply(); }
     });
-    const endDrag = () => { map.classList.remove('cursor-grabbing'); setTimeout(() => { drag = null; }, 0); };
+    const endDrag = (e) => {
+        pointers.delete(e.pointerId);
+        if (pointers.size < 2) pinch = null;
+        map.classList.remove('cursor-grabbing');
+        setTimeout(() => { drag = null; }, 0);
+    };
     map.addEventListener('pointerup', endDrag);
     map.addEventListener('pointercancel', endDrag);
 
@@ -159,9 +190,37 @@ if (map) {
         if (warn && !confirm(`End turn anyway? Right now ${warn}.`)) e.preventDefault();
     });
 
+    // Advisor tips: remember dismissals per browser.
+    const tipKey = 'miniciv.tips';
+    let dismissed = [];
+    try { dismissed = JSON.parse(localStorage.getItem(tipKey)) || []; } catch {}
+    document.querySelectorAll('.advisor-tip').forEach((el) => {
+        if (dismissed.includes(el.dataset.tip)) el.remove();
+        el.querySelector('.dismiss-tip')?.addEventListener('click', () => {
+            dismissed.push(el.dataset.tip);
+            try { localStorage.setItem(tipKey, JSON.stringify(dismissed.slice(-50))); } catch {}
+            el.remove();
+        });
+    });
+
     document.addEventListener('keydown', (e) => {
         if (['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(document.activeElement?.tagName)) return;
         if (e.key === 'Enter') document.getElementById('end-turn-form')?.requestSubmit();
+        // Arrow keys move the selection one tile.
+        const dirs = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
+        if (dirs[e.key]) {
+            const cur = map.querySelector('.map-tile.is-selected') || map.querySelector(`.map-tile[data-tile="${new URL(window.location).searchParams.get('tile')}"]`);
+            if (!cur) return;
+            e.preventDefault();
+            const [dx, dy] = dirs[e.key];
+            const next = map.querySelector(`.map-tile[data-x="${+cur.dataset.x + dx}"][data-y="${+cur.dataset.y + dy}"]`);
+            if (next) {
+                load(next.dataset.tile, true);
+                const r = next.querySelector('rect');
+                const x = +r.getAttribute('x'), y = +r.getAttribute('y'), s = +r.getAttribute('width');
+                if (x < vb.x || x + s > vb.x + vb.w || y < vb.y || y + s > vb.y + vb.h) centerOn(x + s / 2, y + s / 2);
+            }
+        }
         if (e.key === '+' || e.key === '=') zoomAt(1 / 1.3);
         if (e.key === '-') zoomAt(1.3);
         if (e.key === '0') { vb = { x: 0, y: 0, w: W, h: H }; apply(); }

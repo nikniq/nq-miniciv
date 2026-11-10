@@ -144,6 +144,29 @@ final class Presenter
             return (bool) array_filter($opts, fn ($o) => $o['kind'] === 'building');
         })->values();
 
+        // Advisor: short, situational tips. The page hides dismissed ids.
+        $tips = [];
+        if ($player->current_tech === null && $player->availableTechs()) {
+            $tips[] = ['id' => 'pick-research-'.$game->turn, 'text' => 'Choose a technology. Agriculture (Granary, Farms) or Mining (Workshop, Mine) are strong first picks.'];
+        }
+        if ($game->turn >= 5 && $player->army === 0) {
+            $tips[] = ['id' => 'no-army', 'text' => 'You have no army. A few Warriors deter neighbours and let you clear barbarian camps for gold.'];
+        }
+        if ($happiness['unhappy']) {
+            $tips[] = ['id' => 'unhappy-'.intdiv($game->turn, 10), 'text' => 'Your people are restless. Monuments and Temples add happiness; so does avoiding wars and letting cities stay a little smaller.'];
+        }
+        if ($player->gold >= 250 && $game->turn > 10) {
+            $tips[] = ['id' => 'rich-'.intdiv($game->turn, 15), 'text' => 'You have a large treasury. Rush-buy a building or wonder with Buy now before a rival finishes it.'];
+        }
+        if ($player->knows('currency') && count($tradePartners) === 0 && $game->turn > 20) {
+            $tips[] = ['id' => 'trade-'.intdiv($game->turn, 20), 'text' => 'Currency pays 3 gold per peaceful neighbour whose land touches yours. Expand toward a neighbour and keep the peace.'];
+        }
+        if ($player->cities->count() === 1 && $game->turn >= 12) {
+            $tips[] = ['id' => 'one-city-'.intdiv($game->turn, 12), 'text' => 'One city will not win. Build Settlers (city size 2+) and claim land while it is free.'];
+        }
+        // One tip while the settlers banner is showing, two otherwise.
+        $tips = array_slice($tips, 0, $player->settlers > 0 ? 1 : 2);
+
         $research = null;
         if ($player->current_tech) {
             $t = Rules::TECHS[$player->current_tech];
@@ -172,7 +195,19 @@ final class Presenter
             'score' => $e->score ?: Economy::score($e, $ownedBy[$e->id] ?? 0),
         ])->sortByDesc('score')->values();
 
-        $mapSvg = $this->mapSvg->render($game, $tiles, $empiresById, $citiesByTile, array_flip($worked), $selected?->id, route('games.show', $game));
+        // Founding help: every legal site, and the best of them.
+        $foundable = [];
+        $bestSite = null;
+        if ($player->settlers > 0 && $game->isActive()) {
+            foreach ($tiles as $t) {
+                if ($t->canSettle() && ! $t->camp && $this->actions->foundingProblem($game, $player, $t, $tiles) === null) {
+                    $foundable[$t->id] = true;
+                }
+            }
+            $bestSite = $this->actions->bestSite($game, $player, $tiles, 8);
+        }
+
+        $mapSvg = $this->mapSvg->render($game, $tiles, $empiresById, $citiesByTile, array_flip($worked), $selected?->id, route('games.show', $game), $foundable, $bestSite?->id);
 
         return [
             'game' => $game,
@@ -193,6 +228,8 @@ final class Presenter
             'techTiers' => Economy::techTiers(),
             'cityYields' => $cityYields,
             'settlersWaiting' => $player->settlers > 0,
+            'bestSite' => $bestSite,
+            'foundableCount' => count($foundable),
             'researchUnset' => $player->current_tech === null && (bool) $player->availableTechs(),
             'cultureGoal' => Rules::cultureGoal($game),
             'wars' => Economy::warsCount($game, $player),
@@ -211,6 +248,8 @@ final class Presenter
             'dominationShare' => (int) (Rules::DOMINATION_SHARE * 100),
             'winner' => $game->winner_empire_id ? $empiresById->get($game->winner_empire_id) : null,
             'chart' => $this->chart($game, $empiresById),
+            'tips' => $tips,
+            'chronicle' => array_reverse($game->log ?? []),
             'toasts' => collect($game->events ?? [])->map(fn ($e) => ['text' => $e, 'kind' => Rules::eventKind($e)])->values(),
             'difficulty' => Rules::DIFFICULTIES[$game->difficulty ?? 'prince'],
         ];

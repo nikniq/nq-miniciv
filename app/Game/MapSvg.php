@@ -37,7 +37,7 @@ final class MapSvg
      * @param  Collection<int, City>  $citiesByTile
      * @param  array<int, true>  $worked
      */
-    public function render(Game $game, Collection $tiles, Collection $empiresById, Collection $citiesByTile, array $worked, ?int $selectedId, string $tileUrlBase): string
+    public function render(Game $game, Collection $tiles, Collection $empiresById, Collection $citiesByTile, array $worked, ?int $selectedId, string $tileUrlBase, array $foundable = [], ?int $bestSiteId = null): string
     {
         $s = self::TILE;
         $w = $game->width * $s;
@@ -154,6 +154,21 @@ final class MapSvg
         }
         $out[] = '</g>';
 
+        // Layer 4b: where settlers may found a city, and the best spot
+        if ($foundable) {
+            $out[] = '<g id="founding" style="pointer-events:none">';
+            foreach ($tiles as $t) {
+                if (! isset($foundable[$t->id])) {
+                    continue;
+                }
+                $out[] = sprintf('<rect x="%s" y="%s" width="%s" height="%s" rx="4" fill="#22c55e" fill-opacity="0.28" stroke="#4ade80" stroke-width="1.5" class="foundable"/>', $t->x * $s + 3, $t->y * $s + 3, $s - 6, $s - 6);
+                if ($t->id === $bestSiteId) {
+                    $out[] = sprintf('<text x="%s" y="%s" font-size="22" text-anchor="middle" dominant-baseline="central" fill="#fde68a" style="paint-order:stroke;stroke:#000;stroke-width:2px" class="best-site">★</text>', $t->x * $s + $s / 2, $t->y * $s + $s / 2);
+                }
+            }
+            $out[] = '</g>';
+        }
+
         // Layer 5: click targets + tooltips + selection
         $out[] = '<g id="targets">';
         foreach ($tiles as $t) {
@@ -167,8 +182,8 @@ final class MapSvg
                 .($city ? ' · '.$city->name.' ('.$city->population.')' : '');
             $sel = $selectedId === $t->id ? ' is-selected' : '';
             $out[] = sprintf(
-                '<a href="%s?tile=%d" data-tile="%d" class="map-tile%s"><rect x="%d" y="%d" width="%d" height="%d" fill="transparent"/><title>%s</title></a>',
-                e($tileUrlBase), $t->id, $t->id, $sel, $t->x * $s, $t->y * $s, $s, $s, e($title)
+                '<a href="%s?tile=%d" data-tile="%d" data-x="%d" data-y="%d" class="map-tile%s"><rect x="%d" y="%d" width="%d" height="%d" fill="transparent"/><title>%s</title></a>',
+                e($tileUrlBase), $t->id, $t->id, $t->x, $t->y, $sel, $t->x * $s, $t->y * $s, $s, $s, e($title)
             );
         }
         $out[] = '</g>';
