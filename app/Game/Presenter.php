@@ -19,6 +19,8 @@ final class Presenter
         $tiles = $game->tiles;
         $player = $game->playerEmpire();
         $effects = Economy::empireEffects($player);
+        $happiness = Economy::happiness($player);
+        $upkeep = Economy::upkeep($player);
 
         $wondersBuilt = [];
         foreach ($game->cities as $c) {
@@ -34,7 +36,7 @@ final class Presenter
         $totals = ['food' => 0, 'prod' => 0, 'gold' => 0, 'science' => 0];
         $worked = [];
         foreach ($player->cities as $city) {
-            $y = Economy::cityYields($city, $player, $tiles->where('city_id', $city->id), $effects);
+            $y = Economy::cityYields($city, $player, $tiles->where('city_id', $city->id), $effects, $happiness['unhappy']);
             $cityYields[$city->id] = $y;
             $totals['gold'] += $y['gold'] + ($city->current_build === 'wealth' ? $y['prod'] : 0);
             $totals['science'] += $y['science'];
@@ -71,6 +73,12 @@ final class Presenter
                 'city' => $selectedCity,
                 'foundingProblem' => $selectedCity ? null : $this->actions->foundingProblem($game, $player, $selected, $tiles),
             ];
+            if ($selectedCity && $selectedCity->empire_id !== $player->id && $owner) {
+                $defense = Rules::cityDefense($selectedCity, $this->actions->garrison($owner));
+                $selectedInfo['defense'] = $defense;
+                $selectedInfo['attackProblem'] = $this->actions->attackProblem($player, $selectedCity, $tiles);
+                $selectedInfo['attackOdds'] = $player->army > $defense ? 'win' : ($player->army > $defense * 0.7 ? 'close' : 'lose');
+            }
             if ($selectedCity && $selectedCity->empire_id === $player->id) {
                 $y = $cityYields[$selectedCity->id];
                 $cost = Economy::buildCost($selectedCity->current_build ?? '');
@@ -101,6 +109,7 @@ final class Presenter
 
         $rivals = $game->empires->map(fn ($e) => [
             'empire' => $e,
+            'army' => $e->army,
             'cities' => $e->cities->count(),
             'pop' => $e->cities->sum('population'),
             'tiles' => $ownedBy[$e->id] ?? 0,
@@ -117,6 +126,9 @@ final class Presenter
             'citiesByTile' => $citiesByTile,
             'worked' => array_flip($worked),
             'totals' => $totals,
+            'happiness' => $happiness,
+            'upkeep' => $upkeep,
+            'netGold' => $totals['gold'] - $upkeep['total'],
             'research' => $research,
             'availableTechs' => $player->availableTechs(),
             'selected' => $selectedInfo,

@@ -8,18 +8,20 @@ use App\Models\Tile;
 use Illuminate\Support\Collection;
 
 /**
- * Pure yield maths for a city. Given the city, its empire and the tiles
- * inside its borders, works out which tiles are worked and the totals.
+ * Pure yield maths for a city and an empire. Given the city, its empire and
+ * the tiles inside its borders, works out which tiles are worked and the
+ * totals. Happiness and upkeep live here too.
  */
 final class Economy
 {
     /**
      * @param  Collection<int, Tile>  $cityTiles  tiles with city_id === $city->id
-     * @return array{food:int,prod:int,gold:int,science:int,culture:int,surplus:int,worked:array<int>}
+     * @param  bool  $unhappy  empire-wide unrest: no growth, production -25%
+     * @return array{food:int,prod:int,gold:int,science:int,culture:int,happy:int,surplus:int,worked:array<int>}
      */
-    public static function cityYields(City $city, Empire $empire, Collection $cityTiles, array $empireEffects = []): array
+    public static function cityYields(City $city, Empire $empire, Collection $cityTiles, array $empireEffects = [], bool $unhappy = false): array
     {
-        $total = ['food' => 0, 'prod' => 0, 'gold' => 0, 'science' => 0, 'culture' => 1];
+        $total = ['food' => 0, 'prod' => 0, 'gold' => 0, 'science' => 0, 'culture' => 1, 'happy' => 0];
         $worked = [];
 
         // City centre is always worked and gets a bonus so size-1 cities live.
@@ -28,7 +30,7 @@ final class Economy
             $y = Rules::tileYield($centre, $empire);
             $total['food'] += max(2, $y['food'] + 1);
             $total['prod'] += max(1, $y['prod'] + 1);
-            $total['gold'] += $y['gold'];
+            $total['gold'] += $y['gold'] + 1 + intdiv($city->population, 3); // taxes
             $total['science'] += $y['science'];
             $worked[] = $centre->id;
         }
@@ -59,7 +61,14 @@ final class Economy
             $total[$k] += $v;
         }
 
+        if ($unhappy) {
+            $total['prod'] = (int) floor($total['prod'] * 0.75);
+        }
+
         $total['surplus'] = $total['food'] - 2 * $city->population;
+        if ($unhappy && $total['surplus'] > 0) {
+            $total['surplus'] = 0;
+        }
         $total['worked'] = $worked;
 
         return $total;
@@ -79,8 +88,49 @@ final class Economy
     }
 
     /**
+     * Happiness: supply from the base allowance plus buildings, demand from
+     * population beyond the first citizen of each city. Negative balance
+     * means unrest.
+     *
+     * @return array{supply:int,demand:int,balance:int,unhappy:bool}
+     */
+    public static function happiness(Empire $empire): array
+    {
+        $effects = self::empireEffects($empire);
+        $supply = Rules::BASE_HAPPINESS;
+        $demand = 0;
+        foreach ($empire->cities as $city) {
+            $demand += max(0, $city->population - Rules::FREE_CITIZENS);
+            $supply += Rules::CITY_HAPPINESS + ($effects['happy'] ?? 0);
+            foreach ($city->buildings ?? [] as $b) {
+                $supply += Rules::BUILDINGS[$b]['effects']['happy'] ?? 0;
+            }
+        }
+        $balance = $supply - $demand;
+
+        return ['supply' => $supply, 'demand' => $demand, 'balance' => $balance, 'unhappy' => $balance < 0];
+    }
+
+    /** Gold per turn for buildings and the army. */
+    public static function upkeep(Empire $empire): array
+    {
+        $count = 0;
+        foreach ($empire->cities as $city) {
+            foreach ($city->buildings ?? [] as $b) {
+                if (! Rules::isWonder($b)) {
+                    $count++;
+                }
+            }
+        }
+        $buildings = intdiv($count, Rules::BUILDINGS_PER_GOLD);
+        $army = (int) ceil($empire->army / Rules::ARMY_PER_GOLD);
+
+        return ['buildings' => $buildings, 'army' => $army, 'total' => $buildings + $army];
+    }
+
+    /**
      * What a city may build right now. Keys are build keys; values carry
-     * name, cost, blurb and a `kind` of building|wonder|project.
+     * name, cost, blurb and a `kind` of building|wonder|unit|project.
      */
     public static function buildOptions(City $city, Empire $empire, array $wondersBuilt): array
     {
@@ -100,6 +150,12 @@ final class Economy
             }
             $options[$key] = ['name' => $b['name'], 'cost' => $b['cost'], 'blurb' => $b['blurb'], 'kind' => $b['wonder'] ? 'wonder' : 'building'];
         }
+        foreach (Rules::UNITS as $key => $u) {
+            if ($u['tech'] && ! $empire->knows($u['tech'])) {
+                continue;
+            }
+            $options[$key] = ['name' => $u['name'], 'cost' => $u['cost'], 'blurb' => $u['blurb'], 'kind' => 'unit'];
+        }
         foreach (Rules::PROJECTS as $key => $p) {
             $options[$key] = $p + ['kind' => 'project'];
         }
@@ -109,7 +165,7 @@ final class Economy
 
     public static function buildCost(string $key): ?int
     {
-        return Rules::BUILDINGS[$key]['cost'] ?? Rules::PROJECTS[$key]['cost'] ?? null;
+        return Rules::BUILDINGS[$key]['cost'] ?? Rules::UNITS[$key]['cost'] ?? Rules::PROJECTS[$key]['cost'] ?? null;
     }
 
     public static function buildName(?string $key): string
@@ -118,7 +174,7 @@ final class Economy
             return 'Nothing';
         }
 
-        return Rules::BUILDINGS[$key]['name'] ?? Rules::PROJECTS[$key]['name'] ?? ucfirst($key);
+        return Rules::BUILDINGS[$key]['name'] ?? Rules::UNITS[$key]['name'] ?? Rules::PROJECTS[$key]['name'] ?? ucfirst($key);
     }
 
     public static function score(Empire $empire, int $tiles): int
@@ -138,6 +194,7 @@ final class Economy
             + count($empire->technologies ?? []) * 5
             + $buildings * 2
             + $wonders * 25
-            + $tiles;
+            + $tiles
+            + intdiv($empire->army, 2);
     }
 }

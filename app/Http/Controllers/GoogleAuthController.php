@@ -35,7 +35,19 @@ class GoogleAuthController extends Controller
         $user = User::where('google_id', $google->getId())->first()
             ?? User::where('email', $google->getEmail())->first();
 
-        if ($user) {
+        // A guest linking Google for the first time keeps their games.
+        $guest = $request->user();
+        if (! $user && $guest && $guest->isGuest()) {
+            $guest->forceFill([
+                'name' => $google->getName() ?: $guest->name,
+                'email' => $google->getEmail(),
+                'google_id' => $google->getId(),
+                'avatar' => $google->getAvatar(),
+                'is_guest' => false,
+                'email_verified_at' => now(),
+            ])->save();
+            $user = $guest;
+        } elseif ($user) {
             $user->forceFill([
                 'google_id' => $google->getId(),
                 'avatar' => $google->getAvatar(),

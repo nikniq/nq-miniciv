@@ -15,14 +15,21 @@
             <div class="flex items-center gap-3 text-sm">
                 @auth
                     <a href="{{ route('games.index') }}" class="rounded px-2 py-1 text-stone-300 hover:bg-stone-800 hover:text-white">My games</a>
-                    <span class="hidden text-stone-500 sm:inline">{{ auth()->user()->name }}</span>
+                    @if (auth()->user()->isGuest())
+                        <a href="{{ route('register') }}" class="rounded bg-amber-500 px-3 py-1 font-medium text-stone-950 hover:bg-amber-400" title="You are playing as a guest. Register to keep your games on any device.">Save progress</a>
+                    @else
+                        <span class="hidden text-stone-500 sm:inline">{{ auth()->user()->name }}</span>
+                    @endif
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button class="rounded px-2 py-1 text-stone-300 hover:bg-stone-800 hover:text-white">Log out</button>
                     </form>
                 @else
                     <a href="{{ route('login') }}" class="rounded px-2 py-1 text-stone-300 hover:bg-stone-800 hover:text-white">Log in</a>
-                    <a href="{{ route('register') }}" class="rounded bg-amber-500 px-3 py-1 font-medium text-stone-950 hover:bg-amber-400">Sign up</a>
+                    <form method="POST" action="{{ route('play') }}">
+                        @csrf
+                        <button class="rounded bg-amber-500 px-3 py-1 font-medium text-stone-950 hover:bg-amber-400">Play now</button>
+                    </form>
                 @endauth
             </div>
         </div>

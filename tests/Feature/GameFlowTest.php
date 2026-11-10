@@ -106,4 +106,68 @@ class GameFlowTest extends TestCase
         $this->actingAs($stranger)->get(route('games.show', $game))->assertForbidden();
         $this->actingAs($stranger)->post(route('games.end-turn', $game))->assertForbidden();
     }
+
+    public function test_guest_can_play_without_an_account_and_register_later(): void
+    {
+        $this->post(route('play'))->assertRedirect();
+        $this->assertAuthenticated();
+        $guest = auth()->user();
+        $this->assertTrue($guest->isGuest());
+        $this->assertSame(1, Game::where('user_id', $guest->id)->count());
+
+        $this->post(route('register'), [
+            'name' => 'Ada',
+            'email' => 'ada@example.com',
+            'password' => 'correct-horse-battery',
+            'password_confirmation' => 'correct-horse-battery',
+        ])->assertRedirect(route('games.index'));
+
+        $guest->refresh();
+        $this->assertFalse($guest->isGuest());
+        $this->assertSame('ada@example.com', $guest->email);
+        $this->assertSame(1, Game::where('user_id', $guest->id)->count());
+    }
+
+    public function test_army_can_capture_a_bordering_enemy_city(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        $actions = app(\App\Game\Actions::class);
+
+        $enemyCity = $game->cities->first(fn ($c) => $c->empire_id !== $player->id);
+        $enemy = $game->empires->firstWhere('id', $enemyCity->empire_id);
+
+        // Make the enemy city border the player's land by handing the player
+        // a tile next to it, then arm the player heavily.
+        $centre = $game->tiles->firstWhere('id', $enemyCity->tile_id);
+        $neighbour = $game->tiles->first(fn ($t) => $t->distanceTo($centre) === 2 && $t->empire_id === null);
+        $neighbour->update(['empire_id' => $player->id]);
+        $game->load('tiles');
+
+        $this->assertSame('You have no army. Build units in a city first.', $actions->attackProblem($player, $enemyCity, $game->tiles));
+
+        $player->update(['army' => 50]);
+        $this->actingAs($user)->post(route('games.attack', [$game, $enemyCity]))->assertSessionHas('status');
+
+        $enemyCity->refresh();
+        $this->assertSame($player->id, $enemyCity->empire_id);
+        $this->assertFalse($enemyCity->is_capital);
+        $this->assertTrue($game->tiles()->where('city_id', $enemyCity->id)->get()->every(fn ($t) => $t->empire_id === $player->id));
+        $this->assertTrue($enemy->fresh()->eliminated);
+        $this->assertLessThan(50, $player->fresh()->army);
+    }
+
+    public function test_tile_panel_endpoint_returns_just_the_panel(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $capital = $game->playerEmpire()->cities->first();
+
+        $this->actingAs($user)->get(route('games.panel', ['game' => $game, 'tile' => $capital->tile_id]))
+            ->assertOk()
+            ->assertSee('id="tile-panel"', false)
+            ->assertSee($capital->name)
+            ->assertDontSee('End turn');
+    }
 }

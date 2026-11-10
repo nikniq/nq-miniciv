@@ -47,6 +47,14 @@ class GameController extends Controller
         return view('games.show', $presenter->present($game, $tileId));
     }
 
+    /** The side panel for one tile, for the in-page map selection. */
+    public function panel(Request $request, Game $game, Presenter $presenter): View
+    {
+        $this->own($request, $game);
+
+        return view('games._panel', $presenter->present($game, $request->integer('tile') ?: null));
+    }
+
     public function destroy(Request $request, Game $game): RedirectResponse
     {
         $this->own($request, $game);

@@ -11,8 +11,12 @@ use Illuminate\View\View;
 
 class AuthController extends Controller
 {
-    public function showLogin(): View
+    public function showLogin(Request $request): View|RedirectResponse
     {
+        if ($request->user() && ! $request->user()->isGuest()) {
+            return redirect()->route('games.index');
+        }
+
         return view('auth.login', ['google' => $this->googleEnabled()]);
     }
 
@@ -33,9 +37,13 @@ class AuthController extends Controller
         return redirect()->intended(route('games.index'));
     }
 
-    public function showRegister(): View
+    public function showRegister(Request $request): View|RedirectResponse
     {
-        return view('auth.register', ['google' => $this->googleEnabled()]);
+        if ($request->user() && ! $request->user()->isGuest()) {
+            return redirect()->route('games.index');
+        }
+
+        return view('auth.register', ['google' => $this->googleEnabled(), 'guest' => $request->user()]);
     }
 
     public function register(Request $request): RedirectResponse
@@ -45,6 +53,15 @@ class AuthController extends Controller
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::min(8)],
         ]);
+
+        // A guest who registers keeps their account and every game on it.
+        $guest = $request->user();
+        if ($guest && $guest->isGuest()) {
+            $guest->forceFill($data + ['is_guest' => false])->save();
+            $request->session()->regenerate();
+
+            return redirect()->route('games.index')->with('status', 'Your progress is saved. Welcome, '.$guest->name.'.');
+        }
 
         $user = User::create($data);
         Auth::login($user);

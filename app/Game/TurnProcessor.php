@@ -34,13 +34,20 @@ final class TurnProcessor
             $wondersBuilt = $this->wondersBuilt($game);
 
             foreach ($game->empires as $empire) {
+                if ($empire->eliminated) {
+                    continue;
+                }
                 $effects = Economy::empireEffects($empire);
+                $happiness = Economy::happiness($empire);
+                if ($happiness['unhappy']) {
+                    $this->note($empire, 'Unrest across your empire: no growth and production is down. Build monuments and temples.');
+                }
                 $science = 0;
                 $gold = 0;
 
                 foreach ($empire->cities as $city) {
                     $cityTiles = $this->tiles->where('city_id', $city->id);
-                    $y = Economy::cityYields($city, $empire, $cityTiles, $effects);
+                    $y = Economy::cityYields($city, $empire, $cityTiles, $effects, $happiness['unhappy']);
                     $science += $y['science'];
                     $gold += $y['gold'];
 
@@ -50,11 +57,22 @@ final class TurnProcessor
                     $city->save();
                 }
 
-                $empire->gold += $gold;
+                $upkeep = Economy::upkeep($empire)['total'];
+                $empire->gold += $gold - $upkeep;
+                if ($empire->gold < 0) {
+                    // Bankrupt: the shortfall is covered by dismissing troops,
+                    // then by halting research for the turn.
+                    $this->note($empire, 'The treasury is empty. Upkeep is outstripping income.');
+                    $empire->army = max(0, $empire->army - 2);
+                    $empire->gold = 0;
+                    $science = intdiv($science, 2);
+                }
                 $this->research($empire, $science);
 
                 if ($empire->is_ai) {
-                    $this->ai->act($game, $empire, $this->tiles, $wondersBuilt);
+                    foreach ($this->ai->act($game, $empire, $this->tiles, $wondersBuilt) as $event) {
+                        $this->events[] = $event;
+                    }
                 }
 
                 $empire->save();
@@ -113,7 +131,10 @@ final class TurnProcessor
             return 0;
         }
 
-        if ($key === 'settlers') {
+        if (isset(Rules::UNITS[$key])) {
+            $empire->army += Rules::UNITS[$key]['strength'];
+            $this->note($empire, Rules::UNITS[$key]['name']." mustered in {$city->name} (army {$empire->army}).");
+        } elseif ($key === 'settlers') {
             if ($city->population < 2) {
                 return 0; // wait until the city can spare the people
             }
@@ -138,8 +159,12 @@ final class TurnProcessor
 
     private function nextBuild(City $city, Empire $empire, array $wondersBuilt): string
     {
-        $options = Economy::buildOptions($city, $empire, $wondersBuilt);
-        unset($options['settlers'], $options['wealth']);
+        // Buildings only: units and settlers are deliberate choices, and a
+        // city left to itself should improve rather than arm.
+        $options = array_filter(
+            Economy::buildOptions($city, $empire, $wondersBuilt),
+            fn ($o) => $o['kind'] === 'building'
+        );
         if ($options) {
             uasort($options, fn ($a, $b) => $a['cost'] <=> $b['cost']);
 
@@ -189,9 +214,22 @@ final class TurnProcessor
         $landTotal = $this->tiles->filter(fn (Tile $t) => $t->isLand())->count();
         $ownedBy = $this->tiles->filter(fn (Tile $t) => $t->isLand() && $t->empire_id)->countBy('empire_id');
 
+        if ($player && $player->eliminated) {
+            $game->status = 'lost';
+            array_unshift($this->events, 'Your last city has fallen. The empire is no more.');
+
+            return;
+        }
+
         $best = null;
         foreach ($game->empires as $empire) {
             $owned = $ownedBy[$empire->id] ?? 0;
+            if ($empire->eliminated) {
+                $empire->score = 0;
+                $empire->save();
+
+                continue;
+            }
             $empire->score = Economy::score($empire, $owned);
             $empire->save();
             if ($best === null || $empire->score > $best->score) {

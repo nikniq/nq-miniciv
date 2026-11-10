@@ -53,7 +53,7 @@ final class Rules
      */
     public const BUILDINGS = [
         'monument' => ['name' => 'Monument', 'cost' => 30, 'tech' => null, 'requires' => null, 'wonder' => false, 'score' => 2,
-            'effects' => ['culture' => 2], 'blurb' => 'Expands borders faster.'],
+            'effects' => ['culture' => 2, 'happy' => 1], 'blurb' => 'Expands borders faster, +1 happiness.'],
         'granary' => ['name' => 'Granary', 'cost' => 40, 'tech' => 'agriculture', 'requires' => null, 'wonder' => false, 'score' => 2,
             'effects' => ['food' => 2], 'blurb' => 'Faster growth.'],
         'workshop' => ['name' => 'Workshop', 'cost' => 60, 'tech' => 'mining', 'requires' => null, 'wonder' => false, 'score' => 2,
@@ -65,21 +65,47 @@ final class Rules
         'aqueduct' => ['name' => 'Aqueduct', 'cost' => 80, 'tech' => 'mathematics', 'requires' => null, 'wonder' => false, 'score' => 3,
             'effects' => ['food' => 3], 'blurb' => 'Large cities.'],
         'temple' => ['name' => 'Temple', 'cost' => 70, 'tech' => 'philosophy', 'requires' => 'monument', 'wonder' => false, 'score' => 3,
-            'effects' => ['culture' => 3, 'science' => 1], 'blurb' => 'Culture and a little science.'],
+            'effects' => ['culture' => 3, 'science' => 1, 'happy' => 2], 'blurb' => 'Culture, +2 happiness, a little science.'],
         'university' => ['name' => 'University', 'cost' => 120, 'tech' => 'education', 'requires' => 'library', 'wonder' => false, 'score' => 4,
             'effects' => ['science' => 5], 'blurb' => 'Much faster research.'],
+        'walls' => ['name' => 'Walls', 'cost' => 50, 'tech' => 'masonry', 'requires' => null, 'wonder' => false, 'score' => 2,
+            'effects' => [], 'defense' => 6, 'blurb' => '+6 defence against attack.'],
         'bank' => ['name' => 'Bank', 'cost' => 120, 'tech' => 'banking', 'requires' => 'market', 'wonder' => false, 'score' => 4,
             'effects' => ['gold' => 5], 'blurb' => 'A great deal of gold.'],
 
         'pyramids' => ['name' => 'Pyramids', 'cost' => 200, 'tech' => 'masonry', 'requires' => null, 'wonder' => true, 'score' => 25,
             'effects' => ['culture' => 3], 'empire_effects' => ['prod' => 2], 'blurb' => 'Wonder: +2 production in every city.'],
         'hanging_gardens' => ['name' => 'Hanging Gardens', 'cost' => 220, 'tech' => 'mathematics', 'requires' => null, 'wonder' => true, 'score' => 25,
-            'effects' => ['culture' => 3], 'empire_effects' => ['food' => 2], 'blurb' => 'Wonder: +2 food in every city.'],
+            'effects' => ['culture' => 3], 'empire_effects' => ['food' => 2, 'happy' => 1], 'blurb' => 'Wonder: +2 food and +1 happiness in every city.'],
         'great_library' => ['name' => 'Great Library', 'cost' => 220, 'tech' => 'philosophy', 'requires' => null, 'wonder' => true, 'score' => 25,
             'effects' => ['culture' => 3], 'empire_effects' => ['science' => 3], 'blurb' => 'Wonder: +3 science in every city.'],
         'colossus' => ['name' => 'Colossus', 'cost' => 180, 'tech' => 'currency', 'requires' => null, 'wonder' => true, 'score' => 25,
             'effects' => ['culture' => 3], 'empire_effects' => ['gold' => 3], 'blurb' => 'Wonder: +3 gold in every city.'],
     ];
+
+    /**
+     * Military units. Completed units add `strength` to the empire's army,
+     * an abstract pool used to attack and defend cities.
+     */
+    public const UNITS = [
+        'warriors' => ['name' => 'Warriors', 'cost' => 30, 'tech' => null, 'strength' => 2, 'blurb' => '+2 army strength.'],
+        'swordsmen' => ['name' => 'Swordsmen', 'cost' => 50, 'tech' => 'bronze_working', 'strength' => 4, 'blurb' => '+4 army strength.'],
+        'catapults' => ['name' => 'Catapults', 'cost' => 80, 'tech' => 'engineering', 'strength' => 7, 'blurb' => '+7 army strength.'],
+    ];
+
+    /** Happiness every empire gets for free, and extra per city. */
+    public const BASE_HAPPINESS = 4;
+
+    public const CITY_HAPPINESS = 2;
+
+    /** Citizens per city who are content without any help. */
+    public const FREE_CITIZENS = 2;
+
+    /** Non-wonder buildings supported per gold of upkeep. */
+    public const BUILDINGS_PER_GOLD = 2;
+
+    /** Army strength supported per gold of upkeep. */
+    public const ARMY_PER_GOLD = 4;
 
     /** Non-building things a city can produce. */
     public const PROJECTS = [
@@ -160,6 +186,20 @@ final class Rules
         }
 
         return $r;
+    }
+
+    /** How hard a city is to take. */
+    public static function cityDefense(\App\Models\City $city, int $garrison): int
+    {
+        $d = 5 + $city->population + $garrison;
+        if ($city->is_capital) {
+            $d += 4;
+        }
+        foreach ($city->buildings ?? [] as $b) {
+            $d += self::BUILDINGS[$b]['defense'] ?? 0;
+        }
+
+        return $d;
     }
 
     public static function isWonder(string $key): bool

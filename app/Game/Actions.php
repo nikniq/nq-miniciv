@@ -145,6 +145,109 @@ final class Actions
         $empire->save();
     }
 
+    /**
+     * Why $attacker cannot attack $target, or null if it can. A city can be
+     * attacked when its borders touch the attacker's territory.
+     *
+     * @param  Collection<int, Tile>  $tiles  every tile in the game
+     */
+    public function attackProblem(Empire $attacker, City $target, Collection $tiles): ?string
+    {
+        if ($target->empire_id === $attacker->id) {
+            return 'That is your own city.';
+        }
+        if ($attacker->army < 1) {
+            return 'You have no army. Build units in a city first.';
+        }
+        if (! $this->bordersTouch($attacker, $target, $tiles)) {
+            return 'Your territory does not border this city.';
+        }
+
+        return null;
+    }
+
+    public function bordersTouch(Empire $attacker, City $target, Collection $tiles): bool
+    {
+        $mine = [];
+        foreach ($tiles as $t) {
+            if ($t->empire_id === $attacker->id) {
+                $mine[$t->x.','.$t->y] = true;
+            }
+        }
+        foreach ($tiles->where('city_id', $target->id) as $t) {
+            for ($dx = -1; $dx <= 1; $dx++) {
+                for ($dy = -1; $dy <= 1; $dy++) {
+                    if (isset($mine[($t->x + $dx).','.($t->y + $dy)])) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /** Garrison strength a defender spreads over each of its cities. */
+    public function garrison(Empire $defender): int
+    {
+        return intdiv($defender->army, max(1, $defender->cities->count()));
+    }
+
+    /**
+     * Resolve an attack. Captures the city and its land on success. Returns
+     * ['captured' => bool, 'text' => string, 'eliminated' => ?Empire].
+     *
+     * @param  Collection<int, Tile>  $tiles  every tile in the game (mutated)
+     */
+    public function attack(Game $game, Empire $attacker, City $target, Collection $tiles): array
+    {
+        $problem = $this->attackProblem($attacker, $target, $tiles);
+        if ($problem) {
+            throw new InvalidArgumentException($problem);
+        }
+
+        $defender = $game->empires->firstWhere('id', $target->empire_id);
+        $garrison = $this->garrison($defender);
+        $defense = Rules::cityDefense($target, $garrison);
+        $eliminated = null;
+
+        if ($attacker->army > $defense) {
+            $attacker->army -= (int) ceil($defense * 0.8);
+            $defender->army = max(0, $defender->army - $garrison);
+
+            $target->empire_id = $attacker->id;
+            $target->is_capital = false;
+            $target->population = max(1, $target->population - 1);
+            $target->current_build = 'warriors';
+            $target->production_stored = 0;
+            $target->save();
+            foreach ($tiles->where('city_id', $target->id) as $t) {
+                $t->empire_id = $attacker->id;
+                $t->save();
+            }
+
+            $defender->setRelation('cities', $defender->cities->reject(fn (City $c) => $c->id === $target->id)->values());
+            $attacker->setRelation('cities', $attacker->cities->push($target));
+            if ($defender->cities->isEmpty()) {
+                $defender->eliminated = true;
+                $eliminated = $defender;
+            }
+            $defender->save();
+            $attacker->save();
+
+            return ['captured' => true, 'eliminated' => $eliminated,
+                'text' => "{$attacker->name} captured {$target->name} from {$defender->name}."];
+        }
+
+        $attacker->army -= (int) ceil($attacker->army / 2);
+        $defender->army = max(0, $defender->army - min($garrison, intdiv($attacker->army, 3)));
+        $attacker->save();
+        $defender->save();
+
+        return ['captured' => false, 'eliminated' => null,
+            'text' => "{$attacker->name}'s assault on {$target->name} was repelled (defence {$defense})."];
+    }
+
     private function nextCityName(Empire $empire, Game $game): string
     {
         $pool = Rules::CITY_NAMES[$empire->name] ?? null;

@@ -73,6 +73,28 @@ class GameActionController extends Controller
         return $this->back($game, "Paid {$price} gold. It will be finished at the end of the turn.", $city->tile_id, 'status');
     }
 
+    public function attack(Request $request, Game $game, City $city): RedirectResponse
+    {
+        $this->own($request, $game);
+        $game->load(['empires.cities', 'cities', 'tiles']);
+        $empire = $game->playerEmpire();
+        abort_unless($city->game_id === $game->id, 404);
+        $target = $game->cities->firstWhere('id', $city->id);
+
+        try {
+            $result = $this->actions->attack($game, $empire, $target, $game->tiles);
+        } catch (InvalidArgumentException $e) {
+            return $this->back($game, $e->getMessage(), $city->tile_id);
+        }
+
+        $text = $result['text'];
+        if ($result['eliminated']) {
+            $text .= " {$result['eliminated']->name} has been wiped from the map.";
+        }
+
+        return $this->back($game, $text, $city->tile_id, $result['captured'] ? 'status' : 'error');
+    }
+
     public function research(Request $request, Game $game): RedirectResponse
     {
         $this->own($request, $game);

@@ -52,6 +52,7 @@ final class GameSetup
                 'is_ai' => false,
                 'technologies' => [],
                 'settlers' => 1,
+                'gold' => 30,
             ]);
             for ($i = 0; $i < $rivals; $i++) {
                 $empires[] = Empire::create([
@@ -61,6 +62,7 @@ final class GameSetup
                     'is_ai' => true,
                     'technologies' => [],
                     'settlers' => 1,
+                    'gold' => 30,
                 ]);
             }
 

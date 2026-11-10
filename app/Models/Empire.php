@@ -8,13 +8,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['game_id', 'user_id', 'name', 'color', 'is_ai', 'gold', 'settlers', 'technologies', 'current_tech', 'research_progress', 'score'])]
+#[Fillable(['game_id', 'user_id', 'name', 'color', 'is_ai', 'eliminated', 'gold', 'settlers', 'army', 'technologies', 'current_tech', 'research_progress', 'score'])]
 class Empire extends Model
 {
     protected function casts(): array
     {
         return [
             'is_ai' => 'boolean',
+            'eliminated' => 'boolean',
             'technologies' => 'array',
         ];
     }

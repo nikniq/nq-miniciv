@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'google_id', 'avatar', 'email_verified_at'])]
+#[Fillable(['name', 'email', 'password', 'google_id', 'avatar', 'is_guest', 'email_verified_at'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -22,10 +22,17 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
+    /** A throwaway account made by "Play now"; can be claimed by registering. */
+    public function isGuest(): bool
+    {
+        return (bool) $this->is_guest;
+    }
+
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
+            'is_guest' => 'boolean',
             'password' => 'hashed',
         ];
     }

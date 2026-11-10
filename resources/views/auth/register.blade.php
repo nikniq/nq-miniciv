@@ -3,8 +3,13 @@
 
 @section('content')
 <div class="mx-auto max-w-sm">
-    <h1 class="text-2xl font-semibold">Create your account</h1>
-    <p class="mt-1 text-sm text-stone-400">Free to play. Your games are saved to your account.</p>
+    @if ($guest)
+        <h1 class="text-2xl font-semibold">Save your progress</h1>
+        <p class="mt-1 text-sm text-stone-400">You are playing as a guest. Add an email and password (or link Google) and every game you have started stays with you.</p>
+    @else
+        <h1 class="text-2xl font-semibold">Create your account</h1>
+        <p class="mt-1 text-sm text-stone-400">Free to play. Your games are saved to your account.</p>
+    @endif
 
     @if ($google)
         <a href="{{ route('google.redirect') }}" class="mt-6 flex w-full items-center justify-center gap-2 rounded border border-stone-700 bg-white px-4 py-2 font-medium text-stone-900 hover:bg-stone-100">

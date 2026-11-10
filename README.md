@@ -19,7 +19,15 @@ Code lives in `app/Game/`:
 - `TurnProcessor.php` advances a turn; `AiPlayer.php` drives rivals.
 - `Presenter.php` shapes everything the game screen needs.
 
-Accounts: email and password, plus Google sign-in through Laravel Socialite
+Military is abstract: units add to an empire-wide army, and a bordering
+enemy city can be attacked when the army beats its defence (size, walls,
+capital bonus, garrison). Capturing takes the city and its land. Happiness
+(base + per city + monuments/temples) must cover citizens beyond the first
+two in each city or growth stops; buildings and the army cost gold upkeep.
+
+Accounts: "Play now" creates a guest account on the fly so visitors start
+immediately; registering later (or linking Google) converts that account
+and keeps every game. Also email and password, plus Google sign-in through Laravel Socialite
 when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set in `.env`. The
 authorised redirect URI in Google Cloud must be `APP_URL/auth/google/callback`.
 
