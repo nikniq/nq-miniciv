@@ -1,3 +1,6 @@
+import { init as initMusic, cue } from './music.js';
+initMusic();
+
 // Game map: in-page tile selection, pan & zoom, minimap. Falls back to the
 // plain links if anything goes wrong.
 const map = document.getElementById('map');
@@ -193,7 +196,8 @@ if (map) {
 
     document.getElementById('end-turn-form')?.addEventListener('submit', (e) => {
         const warn = e.target.dataset.warn;
-        if (warn && !confirm(`End turn anyway? Right now ${warn}.`)) e.preventDefault();
+        if (warn && !confirm(`End turn anyway? Right now ${warn}.`)) return e.preventDefault();
+        cue('turn');
     });
 
     // Advisor tips: remember dismissals per browser.

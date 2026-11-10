@@ -7,13 +7,17 @@
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-stone-950 text-stone-100 antialiased">
+<body class="min-h-screen bg-stone-950 text-stone-100 antialiased" data-mood="@yield('mood', 'peace')" data-cue="@yield('cue')">
     <nav class="border-b border-stone-800 bg-stone-900/60">
         <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-            <a href="{{ route('home') }}" class="flex items-center gap-2 font-semibold tracking-tight">
-                <span class="text-amber-400">⬢</span> {{ config('app.name') }}
-            </a>
+            <div class="flex items-center gap-3">
+                <a href="https://nikniq.com" class="hidden text-xs text-stone-500 hover:text-stone-300 sm:inline" title="Back to nikniq.com">← nikniq.com</a>
+                <a href="{{ route('home') }}" class="flex items-center gap-2 font-semibold tracking-tight">
+                    <span class="text-amber-400">⬢</span> {{ config('app.name') }}
+                </a>
+            </div>
             <div class="flex items-center gap-3 text-sm">
+                <button type="button" id="music-toggle" class="rounded px-2 py-1 text-stone-400 hover:bg-stone-800 hover:text-white" title="Music" aria-label="Toggle music">🔇</button>
                 <a href="{{ route('guide') }}" class="hidden rounded px-2 py-1 text-stone-400 hover:bg-stone-800 hover:text-white sm:inline">How to play</a>
                 <a href="{{ route('hall') }}" class="hidden rounded px-2 py-1 text-stone-400 hover:bg-stone-800 hover:text-white sm:inline">Hall of Fame</a>
                 @auth
@@ -58,5 +62,12 @@
 
         @yield('content')
     </main>
+
+    <footer class="mx-auto max-w-7xl px-4 py-6 text-xs text-stone-500">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-t border-stone-800 pt-4">
+            <span>{{ config('app.name') }} · a <a href="https://nikniq.com" class="text-stone-400 hover:text-white">nikniq.com</a> game</span>
+            <span><a href="{{ route('guide') }}" class="hover:text-white">How to play</a> · <a href="{{ route('hall') }}" class="hover:text-white">Hall of Fame</a> · music is generated in your browser, toggle with 🔇</span>
+        </div>
+    </footer>
 </body>
 </html>

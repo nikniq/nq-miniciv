@@ -1,5 +1,5 @@
 # Select the PHP version on the host (cPanel/shared hosting handler)
-AddHandler application/x-httpd-php84 .php .php5 .php4 .php3
+AddHandler application/x-httpd-php85 .php .php5 .php4 .php3
 
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>

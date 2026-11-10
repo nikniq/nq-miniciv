@@ -43,6 +43,11 @@ from weak neighbours. The tech tree runs to 25 techs through an Age of
 Discovery. Victory by domination, culture or score. A public Hall of Fame lists the best finished games, and /how-to-play
 documents every rule, tech and building from the data in `Rules.php`.
 
+Music is generated in the browser with the Web Audio API (no audio files):
+an ambient Dorian bed in peace, Phrygian at war, Ionian on victory, with
+short cues for ending a turn, founding, war and achievements. Off by default;
+the 🔇 toggle in the nav remembers the choice.
+
 Accounts: "Play now" creates a guest account on the fly so visitors start
 immediately; registering later (or linking Google) converts that account
 and keeps every game. Also email and password, plus Google sign-in through Laravel Socialite
