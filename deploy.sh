@@ -10,6 +10,7 @@
 #   ./deploy.sh --rollback          # check out the previous deploy and rebuild
 #   ./deploy.sh --verify            # run only the post-deploy checks
 #   ./deploy.sh --no-down           # deploy without maintenance mode
+#   ./deploy.sh --build             # also run npm build here (usually not)
 #
 # The web root is public_html/, not public/ (see bootstrap/app.php). Nothing
 # here should ever write to a public/ directory.
@@ -20,7 +21,8 @@
 #   3. maintenance mode (bypass secret printed so you can still test)
 #   4. git pull --ff-only
 #   5. composer install, only when composer.lock moved
-#   6. npm build, only when package-lock.json or resources/ moved and npm exists
+#   6. (only with --build) npm build; normally assets are committed, because
+#      shared hosts cannot run Vite (thread pool errors on SiteGround)
 #   7. migrate --force
 #   8. optional seeding
 #   9. storage:link, rebuild caches
@@ -49,6 +51,7 @@ trap 'on_error $LINENO' ERR
 
 LAST_DEPLOY_FILE="storage/app/.last-deploy"
 NO_DOWN=0
+BUILD=0
 ACTION=deploy
 SEEDER=""
 
@@ -58,6 +61,7 @@ for arg in "$@"; do
         --verify)   ACTION=verify ;;
         --seed)     SEEDER="--all" ;;
         --no-down)  NO_DOWN=1 ;;
+        --build)    BUILD=1 ;;
         --*)        echo "Unknown flag: $arg"; exit 2 ;;
         *)          SEEDER="$arg" ;;
     esac
@@ -234,12 +238,19 @@ if [ "$LOCK_BEFORE" != "$LOCK_AFTER" ] || [ ! -d vendor ]; then
     fi
 fi
 
-# Built assets are usually committed from a dev machine because shared hosts
-# rarely have node. If npm is here and the inputs moved, rebuild; otherwise
-# verify checks that a manifest exists at all.
-if [ "$BUILD_CHANGED" = "1" ] && command -v npm >/dev/null 2>&1; then
-    say "npm ci && npm run build (frontend inputs changed)"
-    npm ci --no-audit --no-fund && npm run build
+# Built assets are committed from a dev machine (./cx.sh 27). Shared hosts
+# cannot run Vite: on SiteGround it panics with "global thread pool has not
+# been initialized". So nothing is built here unless asked, and verify checks
+# that a committed manifest exists.
+if [ "$BUILD" = "1" ]; then
+    if command -v npm >/dev/null 2>&1; then
+        say "npm ci && npm run build (--build requested)"
+        npm ci --no-audit --no-fund && npm run build
+    else
+        warn "--build requested but npm is not on PATH"
+    fi
+elif [ "$BUILD_CHANGED" = "1" ]; then
+    say "frontend inputs changed; using committed public_html/build (run ./cx.sh 27 locally if it is stale)"
 fi
 
 #---------------------------------------------------------------
