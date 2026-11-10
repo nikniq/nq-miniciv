@@ -69,7 +69,12 @@
     <div class="flex items-center gap-2 font-semibold">
         <span class="flex h-6 w-6 items-center justify-center rounded-full text-sm ring-2" style="background: {{ $player->color }}22; --tw-ring-color: {{ $player->color }}">{{ Rules::crest($player->name) }}</span>{{ $player->name }}
     </div>
-    <div>Turn <b>{{ min($game->turn, $game->max_turns) }}</b><span class="text-stone-500">/{{ $game->max_turns }}</span></div>
+    <div>Turn <b>{{ min($game->turn, $game->max_turns) }}</b><span class="text-stone-500">/{{ $game->max_turns }}</span> <span class="hidden text-stone-500 md:inline">· {{ $era }}</span></div>
+    @if ($goldenAge)
+        <div class="rounded bg-amber-500/20 px-2 py-0.5 text-amber-200" title="+{{ (int) (Rules::GOLDEN_AGE_BONUS * 100) }}% production and gold">✦ Golden Age · {{ $goldenAge }}t</div>
+    @else
+        <div class="hidden items-center gap-1 text-stone-500 lg:flex" title="Happiness surplus builds toward a Golden Age ({{ $goldenProgress }}%)"><span>✦</span><span class="h-1.5 w-12 rounded bg-stone-800"><span class="block h-1.5 rounded bg-amber-500" style="width: {{ $goldenProgress }}%"></span></span></div>
+    @endif
     <div title="Treasury: income {{ $totals['gold'] }} (incl. trade {{ $tradeGold }} from {{ $tradePartners->count() }} peaceful neighbours{{ $player->knows('currency') ? '' : ', needs Currency' }}) − upkeep {{ $upkeep['total'] }} per turn">💰 <b>{{ $player->gold }}</b> <span class="{{ $netGold < 0 ? 'text-red-400' : 'text-stone-500' }}">{{ $netGold >= 0 ? '+' : '' }}{{ $netGold }}</span></div>
     <div title="Science per turn">🔬 <b>+{{ $totals['science'] }}</b></div>
     <div title="Settlers ready">🏕️ <b>{{ $player->settlers }}</b></div>
@@ -241,6 +246,22 @@
             <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
                 <div class="flex items-baseline justify-between"><h2 class="font-semibold">Score over time</h2><span class="text-xs text-stone-500">{{ $difficulty['name'] }}</span></div>
                 <div class="mt-2">{!! $chart !!}</div>
+            </section>
+        @endif
+
+        @if ($wonderRaces->isNotEmpty() && $game->isActive())
+            <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
+                <h2 class="font-semibold">Wonder races</h2>
+                <ul class="mt-2 space-y-1 text-xs">
+                    @foreach ($wonderRaces as $w)
+                        <li class="flex items-center gap-2">
+                            <span class="inline-block h-2.5 w-2.5 rounded-sm" style="background: {{ $w['empire']?->color }}"></span>
+                            <span class="flex-1 truncate">{{ $w['empire']?->name }} · {{ $w['wonder'] }}</span>
+                            <span class="h-1.5 w-16 rounded bg-stone-800"><span class="block h-1.5 rounded bg-amber-500" style="width: {{ $w['pct'] }}%"></span></span>
+                            <span class="w-8 text-right text-stone-400">{{ $w['pct'] }}%</span>
+                        </li>
+                    @endforeach
+                </ul>
             </section>
         @endif
 

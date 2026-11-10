@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['game_id', 'user_id', 'name', 'color', 'is_ai', 'eliminated', 'gold', 'settlers', 'army', 'technologies', 'current_tech', 'research_progress', 'score'])]
+#[Fillable(['game_id', 'user_id', 'name', 'color', 'is_ai', 'eliminated', 'gold', 'settlers', 'army', 'golden_age_until', 'golden_points', 'technologies', 'current_tech', 'research_progress', 'score'])]
 class Empire extends Model
 {
     protected function casts(): array
@@ -33,6 +33,11 @@ class Empire extends Model
     public function tiles(): HasMany
     {
         return $this->hasMany(Tile::class);
+    }
+
+    public function inGoldenAge(int $turn): bool
+    {
+        return $this->golden_age_until >= $turn;
     }
 
     public function knows(string $tech): bool

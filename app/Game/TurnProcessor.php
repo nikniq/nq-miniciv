@@ -45,6 +45,29 @@ final class TurnProcessor
                 $science = 0;
                 $gold = 0;
 
+                // Golden ages: happiness surplus accrues points; enough points
+                // start an age of extra production and gold.
+                $golden = $empire->inGoldenAge($game->turn);
+                if (! $golden && $happiness['balance'] > 0) {
+                    $empire->golden_points += $happiness['balance'];
+                    if ($empire->golden_points >= Rules::GOLDEN_POINTS_NEEDED) {
+                        $empire->golden_points = 0;
+                        $empire->golden_age_until = $game->turn + Rules::GOLDEN_AGE_TURNS;
+                        $golden = true;
+                        $this->note($empire, '✦ A Golden Age begins! +'.(int) (Rules::GOLDEN_AGE_BONUS * 100).'% production and gold for '.Rules::GOLDEN_AGE_TURNS.' turns.');
+                    }
+                } elseif ($golden && $empire->golden_age_until === $game->turn) {
+                    $this->note($empire, 'The Golden Age draws to a close.');
+                }
+
+                // A capital lost to conquest: the largest city takes over.
+                if ($empire->cities->isNotEmpty() && ! $empire->cities->contains('is_capital', true)) {
+                    $newCap = $empire->cities->sortByDesc('population')->first();
+                    $newCap->is_capital = true;
+                    $newCap->save();
+                    $this->note($empire, "The court moves to {$newCap->name}, your new capital.");
+                }
+
                 $index = new TileIndex($this->tiles);
                 foreach ($empire->cities as $city) {
                     $cityTiles = collect($index->cityTiles($city->id));
@@ -53,7 +76,7 @@ final class TurnProcessor
                     if ($pillaged) {
                         $this->note($empire, "Barbarians are pillaging around {$city->name} (−".(2 * $pillaged).' food). Clear the camp with your army.');
                     }
-                    $y = Economy::cityYields($city, $empire, $cityTiles, $effects, $happiness['unhappy'], $pillaged);
+                    $y = Economy::cityYields($city, $empire, $cityTiles, $effects, $happiness['unhappy'], $pillaged, $golden);
                     if ($empire->is_ai) {
                         $mult = Rules::DIFFICULTIES[$game->difficulty ?? 'prince']['ai'] ?? 1.0;
                         $y['prod'] = (int) round($y['prod'] * $mult);
@@ -143,8 +166,12 @@ final class TurnProcessor
             return 0;
         }
 
+        $wasFresh = $city->production_stored === 0;
         $city->production_stored += $y['prod'];
         $cost = Economy::buildCost($key);
+        if ($wasFresh && Rules::isWonder($key) && $empire->is_ai) {
+            $this->events[] = "{$empire->name} has begun building the ".Economy::buildName($key).'.';
+        }
         if ($cost === null || $city->production_stored < $cost) {
             return 0;
         }

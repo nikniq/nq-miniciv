@@ -155,6 +155,21 @@ final class AiPlayer
                 continue;
             }
 
+            // Improvements that pay off on this city's land come first.
+            $terrainCount = [];
+            foreach ($index->cityTiles($city->id) as $ct) {
+                $terrainCount[$ct->terrain] = ($terrainCount[$ct->terrain] ?? 0) + 1;
+            }
+            foreach (['farms' => ['grassland', 'plains'], 'lumber_mill' => ['forest'], 'mine' => ['hills'], 'harbor' => ['ocean']] as $imp => $terrains) {
+                $n = array_sum(array_map(fn ($t) => $terrainCount[$t] ?? 0, $terrains));
+                if ($n >= 3 && isset($options[$imp])) {
+                    $city->current_build = $imp;
+                    $city->save();
+
+                    continue 2;
+                }
+            }
+
             $options = array_filter($options, fn ($o) => in_array($o['kind'], ['building', 'wonder'], true));
             // Wonders only for larger cities; otherwise cheapest building.
             if ($city->population < 4) {

@@ -70,7 +70,7 @@ final class Presenter
         $totals['gold'] += count($tradePartners) * Rules::TRADE_GOLD_PER_PARTNER;
         foreach ($player->cities as $city) {
             $centre = $tiles->firstWhere('id', $city->tile_id);
-            $y = Economy::cityYields($city, $player, $tiles->where('city_id', $city->id), $effects, $happiness['unhappy'], $centre ? Economy::campsNear($centre, $tiles) : 0);
+            $y = Economy::cityYields($city, $player, $tiles->where('city_id', $city->id), $effects, $happiness['unhappy'], $centre ? Economy::campsNear($centre, $tiles) : 0, $player->inGoldenAge($game->turn));
             $cityYields[$city->id] = $y;
             $totals['gold'] += $y['gold'] + ($city->current_build === 'wealth' ? $y['prod'] : 0);
             $totals['science'] += $y['science'];
@@ -196,6 +196,12 @@ final class Presenter
             'researchUnset' => $player->current_tech === null && (bool) $player->availableTechs(),
             'cultureGoal' => Rules::cultureGoal($game),
             'wars' => Economy::warsCount($game, $player),
+            'era' => Rules::era(count($player->technologies ?? [])),
+            'goldenAge' => $player->inGoldenAge($game->turn) ? $player->golden_age_until - $game->turn + 1 : 0,
+            'goldenProgress' => min(100, (int) round(100 * $player->golden_points / Rules::GOLDEN_POINTS_NEEDED)),
+            'wonderRaces' => $game->cities->filter(fn ($c) => $c->current_build && Rules::isWonder($c->current_build) && $c->empire_id !== $player->id)
+                ->map(fn ($c) => ['empire' => $empiresById->get($c->empire_id), 'wonder' => Economy::buildName($c->current_build), 'pct' => (int) round(100 * $c->production_stored / max(1, Economy::buildCost($c->current_build)))])
+                ->sortByDesc('pct')->values(),
             'research' => $research,
             'availableTechs' => $player->availableTechs(),
             'idleCities' => $idleCities,

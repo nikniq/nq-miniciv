@@ -263,4 +263,31 @@ class GameFlowTest extends TestCase
         $this->actingAs($user)->post(route('games.dequeue', [$game, $capital]), ['position' => 0])->assertRedirect();
         $this->assertSame([], $capital->fresh()->queue);
     }
+
+    public function test_sustained_happiness_triggers_a_golden_age(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        $player->update(['golden_points' => Rules::GOLDEN_POINTS_NEEDED - 1]);
+
+        $this->actingAs($user)->post(route('games.end-turn', $game));
+        $player->refresh();
+        $this->assertTrue($player->inGoldenAge($game->fresh()->turn));
+        $this->assertStringContainsString('Golden Age', implode(' ', $game->fresh()->events));
+    }
+
+    public function test_farms_improve_grassland_yield_for_that_city_only(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        $capital = $player->cities->first();
+        $grass = $game->tiles->first(fn ($t) => $t->terrain === 'grassland');
+
+        $before = Rules::tileYield($grass, $player, $capital)['food'];
+        $capital->update(['buildings' => ['farms']]);
+        $this->assertSame($before + 1, Rules::tileYield($grass, $player, $capital->fresh())['food']);
+        $this->assertSame($before, Rules::tileYield($grass, $player)['food']);
+    }
 }

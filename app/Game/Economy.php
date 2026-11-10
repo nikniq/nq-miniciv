@@ -19,7 +19,7 @@ final class Economy
      * @param  bool  $unhappy  empire-wide unrest: no growth, production -25%
      * @return array{food:int,prod:int,gold:int,science:int,culture:int,happy:int,surplus:int,worked:array<int>}
      */
-    public static function cityYields(City $city, Empire $empire, Collection $cityTiles, array $empireEffects = [], bool $unhappy = false, int $pillaged = 0): array
+    public static function cityYields(City $city, Empire $empire, Collection $cityTiles, array $empireEffects = [], bool $unhappy = false, int $pillaged = 0, bool $goldenAge = false): array
     {
         $focus = Rules::FOCUS[$city->focus ?? 'balanced'] ?? Rules::FOCUS['balanced'];
         $total = ['food' => 0, 'prod' => 0, 'gold' => 0, 'science' => 0, 'culture' => 1, 'happy' => 0];
@@ -66,6 +66,10 @@ final class Economy
 
         if ($unhappy) {
             $total['prod'] = (int) floor($total['prod'] * 0.75);
+        }
+        if ($goldenAge) {
+            $total['prod'] = (int) ceil($total['prod'] * (1 + Rules::GOLDEN_AGE_BONUS));
+            $total['gold'] = (int) ceil($total['gold'] * (1 + Rules::GOLDEN_AGE_BONUS));
         }
         // Barbarian camps nearby pillage the countryside.
         $total['food'] = max(0, $total['food'] - 2 * $pillaged);

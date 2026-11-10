@@ -41,7 +41,7 @@ final class Rules
     public const DOMINATION_SHARE = 0.55;
 
     /** Total culture for a cultural victory on a normal map; scales with area. */
-    public const CULTURE_VICTORY = 3000;
+    public const CULTURE_VICTORY = 4000;
 
     public static function cultureGoal(\App\Models\Game $game): int
     {
@@ -61,6 +61,33 @@ final class Rules
 
     /** Happiness lost per empire you are at war with. */
     public const WAR_WEARINESS = 2;
+
+    /** Golden age: earned by sustained happiness, lasts a few turns. */
+    public const GOLDEN_POINTS_NEEDED = 60;
+
+    public const GOLDEN_AGE_TURNS = 8;
+
+    public const GOLDEN_AGE_BONUS = 0.25; // production and gold
+
+    /** Eras by number of techs known, for flavour and a score multiplier on wonders. */
+    public const ERAS = [
+        0 => 'Ancient Era',
+        4 => 'Classical Era',
+        8 => 'Medieval Era',
+        13 => 'Renaissance',
+    ];
+
+    public static function era(int $techs): string
+    {
+        $era = 'Ancient Era';
+        foreach (self::ERAS as $min => $name) {
+            if ($techs >= $min) {
+                $era = $name;
+            }
+        }
+
+        return $era;
+    }
 
     /** Gold per turn from each peaceful neighbour you share a border with (needs Currency). */
     public const TRADE_GOLD_PER_PARTNER = 3;
@@ -133,6 +160,12 @@ final class Rules
             'effects' => ['science' => 5], 'blurb' => 'Much faster research.'],
         'walls' => ['name' => 'Walls', 'icon' => '🧱', 'cost' => 50, 'tech' => 'masonry', 'requires' => null, 'wonder' => false, 'score' => 2,
             'effects' => [], 'defense' => 6, 'blurb' => '+6 defence against attack.'],
+        'farms' => ['name' => 'Farms', 'icon' => '🚜', 'cost' => 45, 'tech' => 'agriculture', 'requires' => null, 'wonder' => false, 'score' => 2,
+            'effects' => [], 'terrain_bonus' => ['grassland' => ['food' => 1], 'plains' => ['food' => 1]], 'blurb' => '+1 food on this city\'s grassland and plains.'],
+        'lumber_mill' => ['name' => 'Lumber Mill', 'icon' => '🪵', 'cost' => 55, 'tech' => 'bronze_working', 'requires' => null, 'wonder' => false, 'score' => 2,
+            'effects' => [], 'terrain_bonus' => ['forest' => ['prod' => 1]], 'blurb' => '+1 production on this city\'s forests.'],
+        'mine' => ['name' => 'Mine', 'icon' => '⛏', 'cost' => 55, 'tech' => 'mining', 'requires' => null, 'wonder' => false, 'score' => 2,
+            'effects' => [], 'terrain_bonus' => ['hills' => ['prod' => 1, 'gold' => 1], 'mountain' => ['gold' => 1]], 'blurb' => '+1 production and +1 gold on this city\'s hills.'],
         'harbor' => ['name' => 'Harbor', 'icon' => '⚓', 'cost' => 70, 'tech' => 'sailing', 'requires' => null, 'wonder' => false, 'score' => 2,
             'effects' => [], 'terrain_bonus' => ['ocean' => ['food' => 1, 'gold' => 1]], 'blurb' => '+1 food and +1 gold on this city\'s sea tiles.'],
         'colosseum' => ['name' => 'Colosseum', 'icon' => '🏟️', 'cost' => 90, 'tech' => 'construction', 'requires' => null, 'wonder' => false, 'score' => 3,
