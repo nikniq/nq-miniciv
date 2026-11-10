@@ -101,6 +101,7 @@ final class Presenter
                 'terrain' => Rules::TERRAIN[$selected->terrain],
                 'resource' => $selected->resource ? Rules::RESOURCES[$selected->resource] : null,
                 'river' => $selected->river && $selected->isLand(),
+                'feature' => $selected->feature ? Rules::NATURAL_WONDERS[$selected->feature] : null,
                 'yield' => Rules::tileYield($selected, $player, $selected->city_id ? $game->cities->firstWhere('id', $selected->city_id) : null),
                 'campProblem' => $selected->camp ? $this->actions->campProblem($player, $selected, $tiles) : null,
                 'owner' => $owner,
@@ -115,6 +116,8 @@ final class Presenter
                 $selectedInfo['defense'] = $defense;
                 $selectedInfo['attackProblem'] = $this->actions->attackProblem($player, $selectedCity, $tiles, $game, new TileIndex($tiles));
                 $selectedInfo['atWar'] = $game->atWar($player->id, $owner->id);
+                $selectedInfo['raidProblem'] = $this->actions->raidProblem($game, $player, $selectedCity, $tiles);
+                $selectedInfo['raidGold'] = min($owner->gold, 10 + 3 * $selectedCity->population);
                 $selectedInfo['warProblem'] = $this->actions->warProblem($game, $player, $owner);
                 $selectedInfo['attackOdds'] = $player->army > $defense ? 'win' : ($player->army > $defense * 0.7 ? 'close' : 'lose');
             }
@@ -185,6 +188,10 @@ final class Presenter
             'army' => $e->army,
             'culture' => Economy::culture($e),
             'relation' => $e->id === $player->id ? null : $game->relation($player->id, $e->id),
+            'attitude' => $e->id === $player->id ? null : $game->attitude($player->id, $e->id),
+            'attitudeLabel' => $e->id === $player->id ? null : Rules::attitudeLabel($game->attitude($player->id, $e->id)),
+            'personality' => $e->is_ai ? Rules::personality($e->name) : null,
+            'canTribute' => $e->id !== $player->id && ! $game->atWar($player->id, $e->id) && $player->army >= 2 * $e->army + 5,
             'warProblem' => $e->id === $player->id ? null : $this->actions->warProblem($game, $player, $e),
             'peaceLikely' => $e->id !== $player->id && $game->atWar($player->id, $e->id) && $this->actions->peaceAcceptable($game, $player, $e),
             'cities' => $e->cities->count(),
@@ -248,6 +255,11 @@ final class Presenter
             'dominationShare' => (int) (Rules::DOMINATION_SHARE * 100),
             'winner' => $game->winner_empire_id ? $empiresById->get($game->winner_empire_id) : null,
             'chart' => $this->chart($game, $empiresById),
+            'victory' => [
+                'domination' => $game->empires->filter(fn ($e) => ! $e->eliminated)->map(fn ($e) => ['empire' => $e, 'pct' => min(100, (int) round(100 * (($ownedBy[$e->id] ?? 0) / $landTotal) / Rules::DOMINATION_SHARE))])->sortByDesc('pct')->values()->take(3),
+                'culture' => $game->empires->filter(fn ($e) => ! $e->eliminated)->map(fn ($e) => ['empire' => $e, 'pct' => min(100, (int) round(100 * Economy::culture($e) / Rules::cultureGoal($game)))])->sortByDesc('pct')->values()->take(3),
+                'turnsLeft' => max(0, $game->max_turns - $game->turn + 1),
+            ],
             'tips' => $tips,
             'chronicle' => array_reverse($game->log ?? []),
             'toasts' => collect($game->events ?? [])->map(fn ($e) => ['text' => $e, 'kind' => Rules::eventKind($e)])->values(),

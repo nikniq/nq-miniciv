@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['game_id', 'x', 'y', 'terrain', 'resource', 'camp', 'river', 'empire_id', 'city_id'])]
+#[Fillable(['game_id', 'x', 'y', 'terrain', 'resource', 'camp', 'river', 'feature', 'empire_id', 'city_id'])]
 class Tile extends Model
 {
     public $timestamps = false;
@@ -47,7 +47,7 @@ class Tile extends Model
 
     public function canSettle(): bool
     {
-        return Rules::TERRAIN[$this->terrain]['settle'];
+        return Rules::TERRAIN[$this->terrain]['settle'] && $this->feature === null;
     }
 
     public function distanceTo(Tile $other): int

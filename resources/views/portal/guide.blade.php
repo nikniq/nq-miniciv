@@ -56,7 +56,10 @@
                 <li>Units add to one empire-wide <b>army</b>. Your army defends every city a little and attacks as a whole.</li>
                 <li>To attack a city its borders must touch yours and you must <b>declare war</b> first. War costs {{ Rules::WAR_WEARINESS }} happiness per enemy.</li>
                 <li>Attack when your army beats the city's defence (size, walls, capital, garrison). Winning takes the city and its land. Losing costs half your army.</li>
-                <li>Rivals accept peace once a war has dragged on or they are losing.</li>
+                <li>Rivals accept peace once a war has dragged on, they are losing, or they were never that angry.</li>
+                <li><b>Raid</b> a bordering enemy city to loot gold and burn its food without taking it. Needs an army of {{ Rules::RAID_MIN_ARMY }}.</li>
+                <li>Each rival has a personality and an <b>attitude</b> toward you. Gifts, trade and peace warm it; wars, conquests and tribute demands cool it. Friendly rivals do not attack you.</li>
+                <li>If your army dwarfs a neighbour's you can <b>demand tribute</b>; they pay, and resent it.</li>
                 <li>☠ Barbarian camps pillage food from cities within 2 tiles. Clear one with an army of {{ Rules::CAMP_CLEAR_ARMY }}+ to loot gold.</li>
             </ul>
         </section>
@@ -100,6 +103,7 @@
                 <span class="rounded border border-stone-800 px-3 py-1"><span class="mr-1 inline-block h-3 w-3 rounded-sm align-middle" style="background: {{ $t['color'] }}"></span>{{ $t['name'] }} <span class="text-stone-500">🌾{{ $t['food'] }} ⚒{{ $t['prod'] }} 💰{{ $t['gold'] }}</span></span>
             @endforeach
         </div>
+        <p class="mt-3 text-xs text-stone-500">Natural wonders are unique tiles worth working: @foreach (Rules::NATURAL_WONDERS as $nw){{ $nw['glyph'] }} {{ $nw['name'] }} (🌾{{ $nw['food'] }} ⚒{{ $nw['prod'] }} 💰{{ $nw['gold'] }} 🎭{{ $nw['culture'] }})@if (! $loop->last), @endif @endforeach.</p>
         <p class="mt-3 text-xs text-stone-500">Resources add to a tile's yield: @foreach (Rules::RESOURCES as $r){{ $r['icon'] }} {{ $r['name'] }}@if (! $loop->last), @endif @endforeach.</p>
     </section>
 </div>

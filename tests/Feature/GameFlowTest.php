@@ -312,4 +312,43 @@ class GameFlowTest extends TestCase
         $this->assertSame($player->id, $target->fresh()->empire_id);
         $this->assertStringContainsString('culture', strtolower(implode(' ', $game->fresh()->events)));
     }
+
+    public function test_gifts_tribute_and_raids(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        $rival = $game->empires->firstWhere('is_ai', true);
+
+        $player->update(['gold' => 200, 'army' => 40]);
+        $this->actingAs($user)->post(route('games.gift', [$game, $rival]), ['gold' => 100])->assertSessionHas('status');
+        $this->assertSame(10, $game->fresh()->attitude($player->id, $rival->id));
+        $this->assertSame(100, $player->fresh()->gold);
+
+        $rival->update(['gold' => 80, 'army' => 2]);
+        $this->actingAs($user)->post(route('games.tribute', [$game, $rival]))->assertSessionHas('status');
+        $this->assertLessThan(80, $rival->fresh()->gold);
+        $this->assertLessThan(10, $game->fresh()->attitude($player->id, $rival->id));
+
+        // Raid needs war and a shared border.
+        $city = $rival->cities->first();
+        $centre = $game->tiles->firstWhere('id', $city->tile_id);
+        $near = $game->tiles->first(fn ($t) => $t->distanceTo($centre) === 2 && $t->empire_id === null);
+        $near->update(['empire_id' => $player->id]);
+        $this->actingAs($user)->post(route('games.raid', [$game, $city]))->assertSessionHas('error');
+        $this->actingAs($user)->post(route('games.war', [$game, $rival]));
+        $goldBefore = $player->fresh()->gold;
+        $this->actingAs($user)->post(route('games.raid', [$game, $city]))->assertSessionHas('status');
+        $this->assertGreaterThan($goldBefore, $player->fresh()->gold);
+        $this->assertSame(39, $player->fresh()->army);
+    }
+
+    public function test_natural_wonders_exist_and_cannot_be_settled(): void
+    {
+        $game = $this->startGame(User::factory()->create());
+        $wonder = $game->tiles->first(fn ($t) => $t->feature !== null);
+        $this->assertNotNull($wonder);
+        $this->assertFalse($wonder->canSettle());
+        $this->assertGreaterThan(0, Rules::tileYield($wonder)['culture']);
+    }
 }

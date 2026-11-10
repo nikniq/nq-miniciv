@@ -144,7 +144,10 @@ final class MapSvg
 
                 continue;
             }
-            if ($t->resource && ! $city) {
+            if ($t->feature && isset(Rules::NATURAL_WONDERS[$t->feature])) {
+                $nw = Rules::NATURAL_WONDERS[$t->feature];
+                $out[] = sprintf('<g style="pointer-events:none"><circle cx="%s" cy="%s" r="15" fill="%s" fill-opacity="0.25" stroke="%s" stroke-width="1.5" class="natural-wonder"/><text x="%s" y="%s" font-size="17" text-anchor="middle" dominant-baseline="central">%s</text></g>', $cx, $cy, e($nw['color']), e($nw['color']), $cx, $cy + 0.5, $nw['glyph']);
+            } elseif ($t->resource && ! $city) {
                 $out[] = sprintf('<use href="#res-%s" x="%d" y="%d" style="pointer-events:none"/>', $t->resource, $t->x * $s, $t->y * $s);
             }
             if ($city) {
@@ -178,6 +181,7 @@ final class MapSvg
                 .($t->resource ? ', '.Rules::RESOURCES[$t->resource]['name'] : '')
                 .($t->camp ? ' · Barbarian camp' : '')
                 .($t->river && $t->isLand() ? ' · River' : '')
+                .($t->feature ? ' · '.Rules::NATURAL_WONDERS[$t->feature]['name'] : '')
                 .($e ? ' · '.$e->name : '')
                 .($city ? ' · '.$city->name.' ('.$city->population.')' : '');
             $sel = $selectedId === $t->id ? ' is-selected' : '';

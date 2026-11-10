@@ -57,7 +57,24 @@ class Game extends Model
     {
         $key = min($a, $b).'-'.max($a, $b);
         $diplomacy = $this->diplomacy ?? [];
-        $diplomacy[$key] = ['state' => $state, 'since' => $this->turn];
+        $attitude = $diplomacy[$key]['attitude'] ?? 0;
+        $diplomacy[$key] = ['state' => $state, 'since' => $this->turn, 'attitude' => $attitude];
+        $this->diplomacy = $diplomacy;
+    }
+
+    /** Attitude of the pair, -100 (hostile) to 100 (devoted). */
+    public function attitude(int $a, int $b): int
+    {
+        return (int) ($this->relation($a, $b)['attitude'] ?? 0);
+    }
+
+    public function adjustAttitude(int $a, int $b, int $delta): void
+    {
+        $key = min($a, $b).'-'.max($a, $b);
+        $diplomacy = $this->diplomacy ?? [];
+        $rel = $diplomacy[$key] ?? ['state' => 'peace', 'since' => 0];
+        $rel['attitude'] = max(-100, min(100, (int) ($rel['attitude'] ?? 0) + $delta));
+        $diplomacy[$key] = $rel;
         $this->diplomacy = $diplomacy;
     }
 

@@ -74,6 +74,7 @@ final class MapGenerator
         }
 
         $this->carveRivers($tiles, $land);
+        $this->placeNaturalWonders($tiles);
 
         // Smooth lonely mountains next to the coast into hills so start sites
         // are not boxed in.
@@ -198,6 +199,47 @@ final class MapGenerator
             $tiles[$k]['river'] = true;
             if ($tiles[$k]['terrain'] === 'mountain') {
                 $tiles[$k]['terrain'] = 'hills'; // a river valley
+            }
+        }
+    }
+
+    /** A few unique tiles per map, spaced apart, matching their terrain. */
+    private function placeNaturalWonders(array &$tiles): void
+    {
+        $want = max(2, intdiv($this->w * $this->h, 150));
+        $keys = array_keys(Rules::NATURAL_WONDERS);
+        shuffle($keys);
+        $placed = [];
+        $order = range(0, count($tiles) - 1);
+        shuffle($order);
+        foreach ($keys as $key) {
+            if (count($placed) >= $want) {
+                break;
+            }
+            $spec = Rules::NATURAL_WONDERS[$key];
+            foreach ($order as $i) {
+                $t = $tiles[$i];
+                if ($t['terrain'] === 'ocean' || ! in_array($t['terrain'], $spec['on'], true) || $t['resource'] !== null || isset($t['feature'])) {
+                    continue;
+                }
+                $ok = true;
+                foreach ($placed as $p) {
+                    if (abs($p[0] - $t['x']) < 5 && abs($p[1] - $t['y']) < 5) {
+                        $ok = false;
+                        break;
+                    }
+                }
+                if (! $ok) {
+                    continue;
+                }
+                $tiles[$i]['feature'] = $key;
+                $placed[] = [$t['x'], $t['y']];
+                break;
+            }
+        }
+        foreach ($tiles as $i => $t) {
+            if (! isset($t['feature'])) {
+                $tiles[$i]['feature'] = null;
             }
         }
     }

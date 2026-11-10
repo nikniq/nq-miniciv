@@ -257,6 +257,8 @@ final class Actions
             }
             $defender->save();
             $attacker->save();
+            $game->adjustAttitude($attacker->id, $defender->id, -30);
+            $game->save();
 
             return ['captured' => true, 'eliminated' => $eliminated,
                 'text' => "{$attacker->name} captured {$target->name} from {$defender->name}."];
@@ -298,7 +300,115 @@ final class Actions
             throw new InvalidArgumentException($problem);
         }
         $game->setDiplomacy($a->id, $b->id, 'war');
+        $game->adjustAttitude($a->id, $b->id, -40);
+        // Third parties dislike warmongers a little.
+        foreach ($game->empires as $other) {
+            if ($other->id !== $a->id && $other->id !== $b->id && ! $other->eliminated) {
+                $game->adjustAttitude($a->id, $other->id, -5);
+            }
+        }
         $game->save();
+    }
+
+    /** Give gold to improve relations: +1 attitude per 10 gold, up to +30 per gift. */
+    public function gift(Game $game, Empire $from, Empire $to, int $gold): int
+    {
+        if ($to->eliminated || $from->id === $to->id) {
+            throw new InvalidArgumentException('There is no one to receive that.');
+        }
+        if ($gold < 10 || $from->gold < $gold) {
+            throw new InvalidArgumentException('A gift needs at least 10 gold, and you must have it.');
+        }
+        $from->gold -= $gold;
+        $from->save();
+        $to->gold += $gold;
+        $to->save();
+        $delta = min(30, intdiv($gold, 10));
+        $game->adjustAttitude($from->id, $to->id, $delta);
+        $game->save();
+
+        return $delta;
+    }
+
+    /**
+     * Demand tribute. Works when the target is clearly weaker and not yet
+     * hostile; otherwise they refuse and resent it. Returns gold received.
+     */
+    public function demandTribute(Game $game, Empire $from, Empire $to): array
+    {
+        if ($to->eliminated || $from->id === $to->id) {
+            throw new InvalidArgumentException('There is no one to demand from.');
+        }
+        if ($game->atWar($from->id, $to->id)) {
+            throw new InvalidArgumentException('You are at war; raid or attack instead.');
+        }
+        $rel = $game->relation($from->id, $to->id);
+        if (($rel['tribute_turn'] ?? -99) > $game->turn - 10) {
+            throw new InvalidArgumentException('You demanded tribute recently. Wait a few turns.');
+        }
+        $diplomacy = $game->diplomacy ?? [];
+        $key = min($from->id, $to->id).'-'.max($from->id, $to->id);
+        $diplomacy[$key] = ($diplomacy[$key] ?? ['state' => 'peace', 'since' => 0]) + ['tribute_turn' => $game->turn];
+        $diplomacy[$key]['tribute_turn'] = $game->turn;
+        $game->diplomacy = $diplomacy;
+
+        $intimidated = $from->army >= 2 * $to->army + 5 && $game->attitude($from->id, $to->id) > -40;
+        if ($intimidated && $to->gold >= 20) {
+            $amount = min($to->gold, 20 + 6 * $to->cities->count());
+            $to->gold -= $amount;
+            $to->save();
+            $from->gold += $amount;
+            $from->save();
+            $game->adjustAttitude($from->id, $to->id, -15);
+            $game->save();
+
+            return ['paid' => true, 'gold' => $amount];
+        }
+        $game->adjustAttitude($from->id, $to->id, -10);
+        $game->save();
+
+        return ['paid' => false, 'gold' => 0];
+    }
+
+    public function raidProblem(Game $game, Empire $attacker, City $target, Collection $tiles, ?TileIndex $index = null): ?string
+    {
+        if ($target->empire_id === $attacker->id) {
+            return 'That is your own city.';
+        }
+        if (! $game->atWar($attacker->id, $target->empire_id)) {
+            return 'You are at peace with this empire. Declare war first.';
+        }
+        if ($attacker->army < Rules::RAID_MIN_ARMY) {
+            return 'A raid needs an army of at least '.Rules::RAID_MIN_ARMY.'.';
+        }
+        if (! $this->bordersTouch($attacker, $target, $tiles, $index)) {
+            return 'Your territory does not border this city.';
+        }
+
+        return null;
+    }
+
+    /** Pillage a bordering enemy city: steal gold, burn its food stores. */
+    public function raid(Game $game, Empire $attacker, City $target, Collection $tiles): array
+    {
+        $problem = $this->raidProblem($game, $attacker, $target, $tiles);
+        if ($problem) {
+            throw new InvalidArgumentException($problem);
+        }
+        $defender = $game->empires->firstWhere('id', $target->empire_id);
+        $gold = min($defender->gold, 10 + 3 * $target->population);
+        $defender->gold -= $gold;
+        $defender->save();
+        $attacker->gold += $gold;
+        $attacker->army = max(0, $attacker->army - 1);
+        $attacker->save();
+        $target->food_stored = 0;
+        $target->production_stored = (int) floor($target->production_stored / 2);
+        $target->save();
+        $game->adjustAttitude($attacker->id, $defender->id, -10);
+        $game->save();
+
+        return ['gold' => $gold, 'text' => "{$attacker->name} raided {$target->name}: {$gold} gold looted, granaries burned."];
     }
 
     /** Whether the AI empire $b would accept peace from $a right now. */
@@ -309,9 +419,10 @@ final class Actions
             return false;
         }
         $duration = $game->turn - $rel['since'];
+        $attitude = $game->attitude($a->id, $b->id);
 
-        // Tired of a long war, or clearly losing it.
-        return $duration >= 12 || $b->army < $a->army * 0.6;
+        // Tired of a long war, clearly losing it, or never that angry.
+        return $duration >= 12 || $b->army < $a->army * 0.6 || ($duration >= 5 && $attitude > -30);
     }
 
     public function proposePeace(Game $game, Empire $a, Empire $b): bool

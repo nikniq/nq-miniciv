@@ -14,7 +14,7 @@
                 @if ($city)
                     {{ $city->name }} <span class="text-stone-400">· size {{ $city->population }}</span> @if ($city->is_capital) <span title="Capital">★</span> @endif
                 @else
-                    {{ $selected['terrain']['name'] }}@if ($selected['river']) · 🏞️ River @endif @if ($selected['resource']) · {{ $selected['resource']['icon'] }} {{ $selected['resource']['name'] }}@endif
+                    @if ($selected['feature']) {{ $selected['feature']['glyph'] }} {{ $selected['feature']['name'] }} <span class="text-stone-400">· natural wonder on {{ strtolower($selected['terrain']['name']) }}</span> @else {{ $selected['terrain']['name'] }} @endif @if ($selected['river']) · 🏞️ River @endif @if ($selected['resource']) · {{ $selected['resource']['icon'] }} {{ $selected['resource']['name'] }}@endif
                 @endif
             </h2>
             <div class="text-xs text-stone-500">
@@ -26,7 +26,7 @@
             </div>
         </div>
         <div class="shrink-0 text-right text-xs text-stone-400" title="Tile yield for your empire">
-            🌾{{ $selected['yield']['food'] }} ⚒{{ $selected['yield']['prod'] }} 💰{{ $selected['yield']['gold'] }}@if ($selected['yield']['science']) 🔬{{ $selected['yield']['science'] }}@endif
+            🌾{{ $selected['yield']['food'] }} ⚒{{ $selected['yield']['prod'] }} 💰{{ $selected['yield']['gold'] }}@if ($selected['yield']['science']) 🔬{{ $selected['yield']['science'] }}@endif @if ($selected['yield']['culture'] ?? 0) 🎭{{ $selected['yield']['culture'] }}@endif
         </div>
     </div>
 
@@ -173,6 +173,12 @@
                     <p class="mt-1 text-xs text-stone-500">{{ $oddsText }} Capturing takes the city and its land.</p>
                 @else
                     <p class="text-xs text-stone-500">{{ $selected['attackProblem'] }}</p>
+                @endif
+                @if ($selected['atWar'] && $selected['raidProblem'] === null)
+                    <form method="POST" action="{{ route('games.raid', [$game, $city]) }}" class="mt-2">
+                        @csrf
+                        <button class="w-full rounded border border-orange-700 px-3 py-1.5 text-xs text-orange-200 hover:bg-orange-950">🔥 Raid {{ $city->name }} — loot ~{{ $selected['raidGold'] }} gold, burn its food (costs 1 army)</button>
+                    </form>
                 @endif
             </div>
         @endif

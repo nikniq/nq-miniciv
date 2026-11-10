@@ -27,6 +27,7 @@ final class AiPlayer
     {
         $events = [];
         $index = new TileIndex($tiles);
+        $mind = Rules::personality($empire->name);
 
         // Use settlers as soon as there is somewhere to put them.
         while ($empire->settlers > 0) {
@@ -58,11 +59,16 @@ final class AiPlayer
         }
         if ($game->turn >= 30 && ! Economy::happiness($empire, Economy::warsCount($game, $empire))['unhappy']) {
             foreach ($this->borderingEnemyCities($game, $empire, $index) as [$city, $defense]) {
-                if ($empire->army <= $defense * 1.8 || $empire->army < 12) {
+                if ($empire->army <= $defense * $mind['aggression'] || $empire->army < 12) {
                     continue;
                 }
                 $victim = $game->empires->firstWhere('id', $city->empire_id);
                 if (! $game->atWar($empire->id, $victim->id)) {
+                    // Friends are not attacked; the bolder the personality, the less friendship it takes.
+                    $friendship = $game->attitude($empire->id, $victim->id);
+                    if ($friendship > (int) round(10 * $mind['aggression'])) {
+                        continue;
+                    }
                     if ($this->actions->warProblem($game, $empire, $victim) === null && Economy::warsCount($game, $empire) === 0) {
                         $this->actions->declareWar($game, $empire, $victim);
                         $events[] = $victim->is_ai
@@ -83,6 +89,18 @@ final class AiPlayer
             }
         }
 
+        // At war but outmatched: raid instead of besieging.
+        foreach ($this->borderingEnemyCities($game, $empire, $index) as [$city, $defense]) {
+            if ($game->atWar($empire->id, $city->empire_id) && $empire->army >= Rules::RAID_MIN_ARMY + 2 && $empire->army <= $defense * $mind['aggression']) {
+                $victim = $game->empires->firstWhere('id', $city->empire_id);
+                $r = $this->actions->raid($game, $empire, $city, $tiles);
+                if (! $victim->is_ai) {
+                    $events[] = $r['text'];
+                }
+                break;
+            }
+        }
+
         // Clear barbarian camps near home whenever the army can spare it.
         foreach ($tiles->where('camp', true) as $camp) {
             if ($empire->army < Rules::CAMP_CLEAR_ARMY + 1) {
@@ -94,10 +112,10 @@ final class AiPlayer
         }
 
         $threat = $this->threatLevel($game, $empire, $index);
-        $wantArmy = min(24, 2 + intdiv($game->turn, 12) + $threat);
+        $wantArmy = max(0, min(28, 2 + intdiv($game->turn, 12) + $threat + $mind['army']));
         // An empty treasury means units would only be dismissed again.
         $broke = $empire->gold < 10;
-        $wantCities = min(Rules::aiCityCap($game), 2 + intdiv($game->turn, 20));
+        $wantCities = min(Rules::aiCityCap($game) + $mind['expansion'], 2 + $mind['expansion'] + intdiv($game->turn, 20));
         $roomToGrow = $this->bestSite($game, $empire, $tiles) !== null;
         $happiness = Economy::happiness($empire, Economy::warsCount($game, $empire));
         $pillaged = $tiles->contains(fn (Tile $t) => $t->camp && $this->actions->campProblem($empire, $t, $tiles) === null);
@@ -172,7 +190,7 @@ final class AiPlayer
 
             $options = array_filter($options, fn ($o) => in_array($o['kind'], ['building', 'wonder'], true));
             // Wonders only for larger cities; otherwise cheapest building.
-            if ($city->population < 4) {
+            if ($city->population < $mind['wonder_pop']) {
                 $options = array_filter($options, fn ($o) => $o['kind'] !== 'wonder');
             }
             if ($options) {

@@ -33,6 +33,7 @@ final class Economy
             $total['prod'] += max(1, $y['prod'] + 1);
             $total['gold'] += $y['gold'] + 1 + intdiv($city->population, 3); // taxes
             $total['science'] += $y['science'];
+            $total['culture'] += $y['culture'];
             $worked[] = $centre->id;
         }
 
@@ -40,7 +41,7 @@ final class Economy
         $candidates = $cityTiles
             ->reject(fn (Tile $t) => $t->id === $city->tile_id)
             ->map(fn (Tile $t) => [$t, Rules::tileYield($t, $empire, $city)])
-            ->sortByDesc(fn ($pair) => $pair[1]['food'] * $focus['food'] + $pair[1]['prod'] * $focus['prod'] + $pair[1]['gold'] * $focus['gold'] + $pair[1]['science'] * $focus['science'])
+            ->sortByDesc(fn ($pair) => $pair[1]['food'] * $focus['food'] + $pair[1]['prod'] * $focus['prod'] + $pair[1]['gold'] * $focus['gold'] + $pair[1]['science'] * $focus['science'] + $pair[1]['culture'] * 2)
             ->take($city->population);
 
         foreach ($candidates as [$t, $y]) {

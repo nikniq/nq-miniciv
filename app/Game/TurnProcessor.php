@@ -124,6 +124,7 @@ final class TurnProcessor
                 $empire->save();
             }
 
+            $this->attitudeDrift($game);
             $this->culturalPressure($game);
             $this->spawnCamps($game);
             $game->turn += 1;
@@ -457,6 +458,34 @@ final class TurnProcessor
                     $this->events[] = "The culture of {$city->name} wins over a tile from {$owner->name}.";
                 } elseif ($from && ! $from->is_ai) {
                     $this->events[] = "A tile near {$owner->name} has defected to {$city->name}, swayed by its culture. Build culture there.";
+                }
+            }
+        }
+    }
+
+    /** Relations warm slowly in peace and trade, cool in war, and drift toward neutral. */
+    private function attitudeDrift(Game $game): void
+    {
+        $live = $game->empires->filter(fn (Empire $e) => ! $e->eliminated)->values();
+        $partners = [];
+        foreach ($live as $e) {
+            $partners[$e->id] = Economy::tradePartners($game, $e, $this->tiles);
+        }
+        foreach ($live as $i => $a) {
+            foreach ($live as $j => $b) {
+                if ($j <= $i) {
+                    continue;
+                }
+                $att = $game->attitude($a->id, $b->id);
+                if ($game->atWar($a->id, $b->id)) {
+                    $delta = -2;
+                } elseif (in_array($b->id, $partners[$a->id], true)) {
+                    $delta = 2;
+                } else {
+                    $delta = $att > 0 ? -1 : ($att < 0 ? 1 : 0); // forgetting
+                }
+                if ($delta) {
+                    $game->adjustAttitude($a->id, $b->id, $delta);
                 }
             }
         }

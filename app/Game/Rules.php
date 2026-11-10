@@ -41,7 +41,7 @@ final class Rules
     public const DOMINATION_SHARE = 0.55;
 
     /** Total culture for a cultural victory on a normal map; scales with area. */
-    public const CULTURE_VICTORY = 4000;
+    public const CULTURE_VICTORY = 5000;
 
     public static function cultureGoal(\App\Models\Game $game): int
     {
@@ -208,7 +208,7 @@ final class Rules
         'machu_picchu' => ['name' => 'Machu Picchu', 'icon' => '⛰️', 'cost' => 260, 'tech' => 'feudalism', 'requires' => null, 'wonder' => true, 'score' => 30,
             'effects' => ['culture' => 4], 'empire_effects' => ['gold' => 3], 'blurb' => 'Wonder: +3 gold in every city.'],
         'angkor_wat' => ['name' => 'Angkor Wat', 'icon' => '🛕', 'cost' => 300, 'tech' => 'printing', 'requires' => null, 'wonder' => true, 'score' => 30,
-            'effects' => ['culture' => 10], 'empire_effects' => ['culture' => 2], 'blurb' => 'Wonder: +10 culture here, +2 culture in every city.'],
+            'effects' => ['culture' => 6], 'empire_effects' => ['culture' => 1], 'blurb' => 'Wonder: +6 culture here, +1 culture in every city.'],
         'colossus' => ['name' => 'Colossus', 'icon' => '🗽', 'cost' => 180, 'tech' => 'currency', 'requires' => null, 'wonder' => true, 'score' => 25,
             'effects' => ['culture' => 3], 'empire_effects' => ['gold' => 3], 'blurb' => 'Wonder: +3 gold in every city.'],
     ];
@@ -276,6 +276,50 @@ final class Rules
 
     public const EMPIRE_NAMES = ['Rome', 'Egypt', 'Babylon', 'Carthage', 'Persia', 'Athens', 'Maurya', 'Han'];
 
+    /**
+     * AI personalities by empire name. aggression scales the superiority a
+     * rival wants before attacking (lower = bolder); expansion adds cities;
+     * wonder_pop is the city size at which it starts wonders.
+     */
+    public const PERSONALITIES = [
+        'Rome' => ['trait' => 'Conqueror', 'aggression' => 1.4, 'expansion' => 1, 'wonder_pop' => 6, 'army' => 4, 'blurb' => 'Builds a large army and strikes weak neighbours.'],
+        'Egypt' => ['trait' => 'Builder', 'aggression' => 2.4, 'expansion' => 0, 'wonder_pop' => 3, 'army' => -1, 'blurb' => 'Races for wonders; slow to anger.'],
+        'Babylon' => ['trait' => 'Scholar', 'aggression' => 2.2, 'expansion' => 0, 'wonder_pop' => 4, 'army' => 0, 'blurb' => 'Researches quickly and prefers peace.'],
+        'Carthage' => ['trait' => 'Merchant', 'aggression' => 2.6, 'expansion' => 1, 'wonder_pop' => 5, 'army' => 0, 'blurb' => 'Values trade partners; rarely declares war.'],
+        'Persia' => ['trait' => 'Expansionist', 'aggression' => 1.7, 'expansion' => 3, 'wonder_pop' => 5, 'army' => 2, 'blurb' => 'Settles everywhere it can.'],
+        'Athens' => ['trait' => 'Cultured', 'aggression' => 2.3, 'expansion' => 0, 'wonder_pop' => 4, 'army' => 0, 'blurb' => 'Pursues culture and its border pressure.'],
+        'Maurya' => ['trait' => 'Peaceful', 'aggression' => 3.0, 'expansion' => 1, 'wonder_pop' => 4, 'army' => -2, 'blurb' => 'Avoids war unless provoked.'],
+        'Han' => ['trait' => 'Balanced', 'aggression' => 1.9, 'expansion' => 1, 'wonder_pop' => 4, 'army' => 1, 'blurb' => 'A little of everything.'],
+    ];
+
+    public static function personality(string $name): array
+    {
+        return self::PERSONALITIES[$name] ?? ['trait' => 'Balanced', 'aggression' => 1.9, 'expansion' => 1, 'wonder_pop' => 4, 'army' => 0, 'blurb' => 'A little of everything.'];
+    }
+
+    /** Attitude thresholds and labels. */
+    public static function attitudeLabel(int $a): string
+    {
+        return match (true) {
+            $a <= -40 => 'Hostile',
+            $a < -10 => 'Wary',
+            $a <= 15 => 'Neutral',
+            $a <= 45 => 'Friendly',
+            default => 'Devoted',
+        };
+    }
+
+    /** Natural wonders: unique tiles with rich yields and culture. */
+    public const NATURAL_WONDERS = [
+        'great_falls' => ['name' => 'Great Falls', 'glyph' => '💧', 'food' => 2, 'prod' => 0, 'gold' => 2, 'science' => 0, 'culture' => 3, 'on' => ['hills', 'grassland'], 'color' => '#38bdf8'],
+        'sacred_grove' => ['name' => 'Sacred Grove', 'glyph' => '🌳', 'food' => 2, 'prod' => 1, 'gold' => 0, 'science' => 1, 'culture' => 3, 'on' => ['forest', 'grassland'], 'color' => '#4ade80'],
+        'crystal_caves' => ['name' => 'Crystal Caves', 'glyph' => '✨', 'food' => 0, 'prod' => 2, 'gold' => 3, 'science' => 1, 'culture' => 2, 'on' => ['hills', 'mountain', 'desert'], 'color' => '#c084fc'],
+        'great_oasis' => ['name' => 'Great Oasis', 'glyph' => '🏝️', 'food' => 4, 'prod' => 0, 'gold' => 1, 'science' => 0, 'culture' => 2, 'on' => ['desert', 'plains'], 'color' => '#fbbf24'],
+    ];
+
+    /** Raids: a lighter act of war than a siege. */
+    public const RAID_MIN_ARMY = 3;
+
     /** A crest glyph per empire; unknown names get one from the pool. */
     public const CRESTS = ['Rome' => '🦅', 'Egypt' => '𓂀', 'Babylon' => '🦁', 'Carthage' => '🐘', 'Persia' => '🪶', 'Athens' => '🦉', 'Maurya' => '☸', 'Han' => '🐉'];
 
@@ -325,7 +369,13 @@ final class Rules
     public static function tileYield(Tile $tile, ?Empire $empire = null, ?\App\Models\City $city = null): array
     {
         $t = self::TERRAIN[$tile->terrain];
-        $y = ['food' => $t['food'], 'prod' => $t['prod'], 'gold' => $t['gold'], 'science' => 0];
+        $y = ['food' => $t['food'], 'prod' => $t['prod'], 'gold' => $t['gold'], 'science' => 0, 'culture' => 0];
+
+        if ($tile->feature && isset(self::NATURAL_WONDERS[$tile->feature])) {
+            foreach (['food', 'prod', 'gold', 'science', 'culture'] as $k) {
+                $y[$k] += self::NATURAL_WONDERS[$tile->feature][$k];
+            }
+        }
 
         if ($tile->river && $t['land']) {
             foreach (self::RIVER_BONUS as $k => $v) {

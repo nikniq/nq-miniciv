@@ -158,6 +158,57 @@ class GameActionController extends Controller
             : $this->back($game, "{$empire->name} refuses: they think they are winning. Try again when the war has dragged on or their army is smaller.", $request->integer('tile') ?: null);
     }
 
+    public function gift(Request $request, Game $game, Empire $empire): RedirectResponse
+    {
+        $this->own($request, $game);
+        abort_unless($empire->game_id === $game->id, 404);
+        $game->load('empires');
+        $player = $game->playerEmpire();
+
+        try {
+            $delta = $this->actions->gift($game, $player, $empire, $request->integer('gold'));
+        } catch (InvalidArgumentException $e) {
+            return $this->back($game, $e->getMessage(), $request->integer('tile') ?: null);
+        }
+
+        return $this->back($game, "{$empire->name} accepts your gift. Relations improve by {$delta}.", $request->integer('tile') ?: null, 'status');
+    }
+
+    public function tribute(Request $request, Game $game, Empire $empire): RedirectResponse
+    {
+        $this->own($request, $game);
+        abort_unless($empire->game_id === $game->id, 404);
+        $game->load('empires.cities');
+        $player = $game->playerEmpire();
+
+        try {
+            $r = $this->actions->demandTribute($game, $player, $empire);
+        } catch (InvalidArgumentException $e) {
+            return $this->back($game, $e->getMessage(), $request->integer('tile') ?: null);
+        }
+
+        return $r['paid']
+            ? $this->back($game, "{$empire->name} pays {$r['gold']} gold in tribute, and resents it.", $request->integer('tile') ?: null, 'status')
+            : $this->back($game, "{$empire->name} refuses to pay. Relations sour.", $request->integer('tile') ?: null);
+    }
+
+    public function raid(Request $request, Game $game, City $city): RedirectResponse
+    {
+        $this->own($request, $game);
+        $game->load(['empires.cities', 'cities', 'tiles']);
+        $empire = $game->playerEmpire();
+        abort_unless($city->game_id === $game->id, 404);
+        $target = $game->cities->firstWhere('id', $city->id);
+
+        try {
+            $r = $this->actions->raid($game, $empire, $target, $game->tiles);
+        } catch (InvalidArgumentException $e) {
+            return $this->back($game, $e->getMessage(), $city->tile_id);
+        }
+
+        return $this->back($game, $r['text'], $city->tile_id, 'status');
+    }
+
     public function clearCamp(Request $request, Game $game): RedirectResponse
     {
         $this->own($request, $game);
