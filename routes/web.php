@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GameActionController;
 use App\Http\Controllers\GameController;
 use App\Http\Controllers\GoogleAuthController;
+use App\Http\Controllers\MagicLinkController;
 use App\Http\Controllers\PlayController;
 use Illuminate\Support\Facades\Route;
 
@@ -20,6 +21,8 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:10,1');
+Route::post('/auth/email', [MagicLinkController::class, 'send'])->middleware('throttle:5,1')->name('magic.send');
+Route::get('/auth/email/verify', [MagicLinkController::class, 'verify'])->middleware('throttle:20,1')->name('magic.verify');
 Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('google.redirect');
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
 

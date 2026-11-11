@@ -2,8 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Game;
 use App\Models\User;
+use App\Notifications\MagicLink;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class AuthTest extends TestCase
@@ -29,6 +33,72 @@ class AuthTest extends TestCase
 
         $this->assertAuthenticated();
         $this->assertDatabaseHas('users', ['email' => 'ada@example.com']);
+    }
+
+    public function test_visitor_signs_up_with_just_an_email_link(): void
+    {
+        Notification::fake();
+        $this->get(route('register'))->assertOk()->assertSee('Email me a sign-up link')->assertDontSee('Confirm password');
+
+        $this->post(route('magic.send'), ['email' => 'Ada.Lovelace@Example.com'])->assertOk()->assertSee('Check your inbox');
+        $this->assertGuest();
+        $this->assertDatabaseMissing('users', ['email' => 'ada.lovelace@example.com']);
+
+        $url = null;
+        Notification::assertSentOnDemand(MagicLink::class, function (MagicLink $n) use (&$url) {
+            $url = $n->url;
+
+            return $n->isNew;
+        });
+
+        $this->get($url)->assertRedirect(route('games.index'));
+        $this->assertAuthenticated();
+        $user = User::where('email', 'ada.lovelace@example.com')->firstOrFail();
+        $this->assertSame('Ada Lovelace', $user->name);
+        $this->assertNotNull($user->email_verified_at);
+        $this->assertFalse($user->isGuest());
+
+        // Single use: the same link is refused afterwards.
+        $this->post(route('logout'));
+        $this->get($url)->assertRedirect(route('login'))->assertSessionHasErrors('email');
+        $this->assertGuest();
+    }
+
+    public function test_guest_keeps_games_when_claiming_by_email(): void
+    {
+        $this->post(route('play'))->assertRedirect();
+        $guest = auth()->user();
+        $this->assertTrue($guest->isGuest());
+        $game = Game::firstOrFail();
+
+        $url = URL::temporarySignedRoute('magic.verify', now()->addMinutes(30), ['email' => 'ruler@example.com', 'guest' => $guest->id]);
+        $this->get($url)->assertRedirect(route('games.index'));
+        $this->assertAuthenticatedAs($guest->fresh());
+        $this->assertSame('ruler@example.com', $guest->fresh()->email);
+        $this->assertFalse($guest->fresh()->isGuest());
+        $this->assertSame($guest->id, $game->fresh()->user_id);
+    }
+
+    public function test_guest_games_move_to_an_existing_account(): void
+    {
+        $existing = User::factory()->create(['email' => 'old@example.com']);
+        $this->post(route('play'))->assertRedirect();
+        $guest = auth()->user();
+        $game = Game::firstOrFail();
+
+        $url = URL::temporarySignedRoute('magic.verify', now()->addMinutes(30), ['email' => 'old@example.com', 'guest' => $guest->id]);
+        $this->get($url)->assertRedirect(route('games.index'));
+        $this->assertAuthenticatedAs($existing);
+        $this->assertSame($existing->id, $game->fresh()->user_id);
+        $this->assertDatabaseMissing('users', ['id' => $guest->id]);
+    }
+
+    public function test_tampered_or_expired_links_are_refused(): void
+    {
+        $url = URL::temporarySignedRoute('magic.verify', now()->subMinute(), ['email' => 'x@example.com']);
+        $this->get($url)->assertRedirect(route('login'))->assertSessionHasErrors('email');
+        $this->get(route('magic.verify', ['email' => 'x@example.com']))->assertRedirect(route('login'));
+        $this->assertGuest();
     }
 
     public function test_user_can_log_in_and_out(): void

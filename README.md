@@ -50,7 +50,11 @@ the 🔇 toggle in the nav remembers the choice.
 
 Accounts: "Play now" creates a guest account on the fly so visitors start
 immediately; registering later (or linking Google) converts that account
-and keeps every game. Also email and password, plus Google sign-in through Laravel Socialite
+and keeps every game. Registering means entering an email address: a signed one-time link is
+mailed (`MAIL_*` in `.env`; `MAIL_MAILER=log` writes it to the log locally)
+and opening it confirms the address, creates or claims the account and signs
+the player in. No password is needed, though older password accounts still
+work from the login page. Google sign-in runs through Laravel Socialite
 when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set in `.env`. The
 authorised redirect URI in Google Cloud must be `APP_URL/auth/google/callback`.
 

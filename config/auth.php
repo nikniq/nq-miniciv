@@ -112,6 +112,9 @@ return [
     |
     */
 
+    /** Minutes a passwordless sign-in link stays valid. */
+    'magic_link_minutes' => (int) env('MAGIC_LINK_MINUTES', 30),
+
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
 ];
