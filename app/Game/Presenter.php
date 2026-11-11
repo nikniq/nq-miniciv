@@ -244,6 +244,8 @@ final class Presenter
                 'inProduction' => $player->cities->filter(fn ($c) => isset(Rules::UNITS[$c->current_build ?? '']))->map(fn ($c) => ['city' => $c, 'unit' => Rules::UNITS[$c->current_build]])->values(),
             ],
             'governments' => Economy::availableGovernments($player),
+            'greatPeople' => array_count_values($player->great_people ?? []),
+            'greatProgress' => ['have' => $player->greatPointsTotal(), 'need' => $player->greatPointsNeeded(), 'kinds' => $player->great_progress ?? []],
             'anarchy' => $player->inAnarchy($game->turn) ? $player->anarchy_until - $game->turn + 1 : 0,
             'achievements' => $game->user?->achievements ?? [],
             'techTiers' => Economy::techTiers(),

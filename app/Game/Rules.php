@@ -2,7 +2,9 @@
 
 namespace App\Game;
 
+use App\Models\City;
 use App\Models\Empire;
+use App\Models\Game;
 use App\Models\Tile;
 
 /**
@@ -43,7 +45,7 @@ final class Rules
     /** Total culture for a cultural victory on a normal map; scales with area. */
     public const CULTURE_VICTORY = 5000;
 
-    public static function cultureGoal(\App\Models\Game $game): int
+    public static function cultureGoal(Game $game): int
     {
         $normal = self::MAP_SIZES['normal']['width'] * self::MAP_SIZES['normal']['height'];
 
@@ -51,7 +53,7 @@ final class Rules
     }
 
     /** How many cities a rival aims for, by map area. */
-    public static function aiCityCap(\App\Models\Game $game): int
+    public static function aiCityCap(Game $game): int
     {
         return max(6, intdiv($game->width * $game->height, 70));
     }
@@ -347,6 +349,7 @@ final class Rules
         'second_city' => ['name' => 'Settler', 'icon' => '🏕️', 'blurb' => 'Found a second city.'],
         'five_cities' => ['name' => 'Empire Builder', 'icon' => '🏙️', 'blurb' => 'Rule five cities at once.'],
         'first_wonder' => ['name' => 'Wonder of the World', 'icon' => '🔺', 'blurb' => 'Complete a wonder.'],
+        'great_person' => ['name' => 'Patron', 'icon' => '🔭', 'blurb' => 'A great person arrives at your court.'],
         'golden_age' => ['name' => 'Golden Age', 'icon' => '✦', 'blurb' => 'Enter a Golden Age.'],
         'conqueror' => ['name' => 'Conqueror', 'icon' => '⚔', 'blurb' => 'Capture a city.'],
         'peacemaker' => ['name' => 'Peacemaker', 'icon' => '☮', 'blurb' => 'Sign a peace treaty.'],
@@ -356,6 +359,36 @@ final class Rules
         'win_culture' => ['name' => 'Beacon of Culture', 'icon' => '🎭', 'blurb' => 'Win by culture.'],
         'win_king' => ['name' => 'Kingslayer', 'icon' => '👑', 'blurb' => 'Win at King difficulty or above.'],
         'win_huge' => ['name' => 'Wide World', 'icon' => '🌍', 'blurb' => 'Win on a huge map.'],
+    ];
+
+    /**
+     * Great people. Buildings and wonders yield points of a kind each turn;
+     * when an empire's total reaches the threshold the kind with the most
+     * points arrives at court and waits to be used.
+     */
+    public const GREAT_PEOPLE = [
+        'scientist' => ['name' => 'Great Scientist', 'icon' => '🔭', 'blurb' => 'Completes your current research at once.', 'verb' => 'Discover'],
+        'engineer' => ['name' => 'Great Engineer', 'icon' => '🏗️', 'blurb' => 'Finishes whatever a city is building, wonders included.', 'verb' => 'Finish build'],
+        'merchant' => ['name' => 'Great Merchant', 'icon' => '💰', 'blurb' => 'Brings a fortune in gold to the treasury.', 'verb' => 'Trade mission'],
+        'artist' => ['name' => 'Great Artist', 'icon' => '🎨', 'blurb' => 'Starts a Golden Age and inspires culture in a city.', 'verb' => 'Great work'],
+    ];
+
+    public const GREAT_POINTS_BASE = 60;
+
+    public const GREAT_POINTS_STEP = 40;
+
+    /** Great Merchant gold: base plus a share of the turn count. */
+    public const GREAT_MERCHANT_GOLD = 60;
+
+    /** Great Artist culture burst in the chosen city. */
+    public const GREAT_ARTIST_CULTURE = 60;
+
+    /** Great-person points per turn by building. Wonders count double. */
+    public const GREAT_SOURCES = [
+        'library' => ['scientist' => 1], 'university' => ['scientist' => 2], 'printing_press' => ['scientist' => 1], 'great_library' => ['scientist' => 3],
+        'workshop' => ['engineer' => 1], 'guild_hall' => ['engineer' => 1, 'merchant' => 1], 'pyramids' => ['engineer' => 3],
+        'market' => ['merchant' => 1], 'bank' => ['merchant' => 2], 'harbor' => ['merchant' => 1], 'colossus' => ['merchant' => 3],
+        'temple' => ['artist' => 1], 'cathedral' => ['artist' => 2], 'colosseum' => ['artist' => 1], 'oracle' => ['artist' => 2], 'notre_dame' => ['artist' => 3], 'hanging_gardens' => ['artist' => 2],
     ];
 
     /** Raids: a lighter act of war than a siege. */
@@ -407,7 +440,7 @@ final class Rules
      * Yield of a single tile for a given empire: terrain + resource + tech
      * bonuses. Returns food, prod, gold, science.
      */
-    public static function tileYield(Tile $tile, ?Empire $empire = null, ?\App\Models\City $city = null): array
+    public static function tileYield(Tile $tile, ?Empire $empire = null, ?City $city = null): array
     {
         $t = self::TERRAIN[$tile->terrain];
         $y = ['food' => $t['food'], 'prod' => $t['prod'], 'gold' => $t['gold'], 'science' => 0, 'culture' => 0];
@@ -466,7 +499,7 @@ final class Rules
     }
 
     /** How hard a city is to take. */
-    public static function cityDefense(\App\Models\City $city, int $garrison, int $extra = 0): int
+    public static function cityDefense(City $city, int $garrison, int $extra = 0): int
     {
         $d = 5 + $city->population + $garrison + $extra;
         if ($city->is_capital) {

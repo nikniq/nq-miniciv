@@ -51,6 +51,17 @@
         </section>
 
         <section class="rounded-lg border border-stone-800 bg-stone-900/50 p-5">
+            <h2 class="font-semibold text-amber-300">🔭 Great people</h2>
+            <ul class="mt-2 space-y-1 text-sm text-stone-300">
+                <li>Libraries, workshops, markets and temples (and their upgrades) earn great-person points every turn; wonders earn the most.</li>
+                <li>At {{ Rules::GREAT_POINTS_BASE }} points (+{{ Rules::GREAT_POINTS_STEP }} each time) the kind you lean toward arrives at court and waits until you spend them:</li>
+                @foreach (Rules::GREAT_PEOPLE as $gp)
+                    <li class="ml-4"><b>{{ $gp['icon'] }} {{ $gp['name'] }}</b>: {{ $gp['blurb'] }}</li>
+                @endforeach
+            </ul>
+        </section>
+
+        <section class="rounded-lg border border-stone-800 bg-stone-900/50 p-5">
             <h2 class="font-semibold text-amber-300">🙂 Happiness and gold</h2>
             <ul class="mt-2 space-y-1 text-sm text-stone-300">
                 <li>Each city keeps {{ Rules::FREE_CITIZENS }} citizens content for free and adds {{ Rules::CITY_HAPPINESS }} happiness. Monuments, temples, colosseums and courthouses add more.</li>

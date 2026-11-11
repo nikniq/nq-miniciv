@@ -38,6 +38,9 @@ final class Achievements
         if ($player->wonders()) {
             $award('first_wonder');
         }
+        if ((int) $player->great_count > 0) {
+            $award('great_person');
+        }
         if ($player->golden_age_until > 0) {
             $award('golden_age');
         }

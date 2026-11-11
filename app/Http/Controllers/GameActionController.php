@@ -254,6 +254,21 @@ class GameActionController extends Controller
         return $this->back($game, null, $request->integer('tile') ?: null);
     }
 
+    public function greatPerson(Request $request, Game $game): RedirectResponse
+    {
+        $this->own($request, $game);
+        $empire = $game->empires()->where('is_ai', false)->with('cities')->firstOrFail();
+        $city = $request->filled('city') ? City::where('game_id', $game->id)->find($request->integer('city')) : null;
+
+        try {
+            $line = $this->actions->useGreatPerson($game, $empire, (string) $request->input('kind'), $city);
+        } catch (InvalidArgumentException $e) {
+            return $this->back($game, $e->getMessage(), $request->integer('tile') ?: null);
+        }
+
+        return $this->back($game, $line, $request->integer('tile') ?: null, 'status');
+    }
+
     private function own(Request $request, Game $game): void
     {
         abort_unless($game->user_id === $request->user()->id, 403);

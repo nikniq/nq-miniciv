@@ -288,6 +288,7 @@ final class Actions
         }
         if ($rel['since'] > 0 && $game->turn - $rel['since'] < Rules::PEACE_MIN_TURNS) {
             $left = Rules::PEACE_MIN_TURNS - ($game->turn - $rel['since']);
+
             return "The peace treaty holds for another {$left} turns.";
         }
 
@@ -485,6 +486,84 @@ final class Actions
         $empire->government = $key;
         $empire->anarchy_until = $game->turn + Rules::ANARCHY_TURNS - 1;
         $empire->save();
+    }
+
+    /**
+     * Spend a great person. Scientists finish the current research, engineers
+     * the chosen city's build, merchants bring gold, artists a Golden Age plus
+     * a culture burst in the chosen city. Returns a line for the chronicle.
+     */
+    public function useGreatPerson(Game $game, Empire $empire, string $kind, ?City $city = null): string
+    {
+        $spec = Rules::GREAT_PEOPLE[$kind] ?? throw new InvalidArgumentException('Unknown great person.');
+        if (! in_array($kind, $empire->great_people ?? [], true)) {
+            throw new InvalidArgumentException("No {$spec['name']} is waiting at your court.");
+        }
+        $city ??= $empire->cities->firstWhere('is_capital', true) ?? $empire->cities->first();
+        $line = match ($kind) {
+            'scientist' => $this->greatScientist($empire),
+            'engineer' => $this->greatEngineer($city, $empire),
+            'merchant' => $this->greatMerchant($game, $empire),
+            'artist' => $this->greatArtist($game, $empire, $city),
+        };
+        $empire->takeGreatPerson($kind);
+        $empire->save();
+
+        return "{$spec['icon']} {$line}";
+    }
+
+    private function greatScientist(Empire $empire): string
+    {
+        $tech = $empire->current_tech;
+        if ($tech === null) {
+            $avail = $empire->availableTechs();
+            if (! $avail) {
+                throw new InvalidArgumentException('There is nothing left to discover.');
+            }
+            uasort($avail, fn ($a, $b) => $a['cost'] <=> $b['cost']);
+            $tech = array_key_last($avail); // the dearest available tech
+        }
+        $empire->technologies = array_values(array_unique(array_merge($empire->technologies ?? [], [$tech])));
+        $empire->current_tech = null;
+        $empire->research_progress = 0;
+
+        return 'A Great Scientist reveals '.Rules::TECHS[$tech]['name'].'.';
+    }
+
+    private function greatEngineer(?City $city, Empire $empire): string
+    {
+        if (! $city || $city->empire_id !== $empire->id) {
+            throw new InvalidArgumentException('Pick one of your cities.');
+        }
+        $key = $city->current_build;
+        $cost = $key ? Economy::buildCost($key) : null;
+        if ($key === null || $key === 'wealth' || $cost === null) {
+            throw new InvalidArgumentException("{$city->name} is not building anything to finish.");
+        }
+        $city->production_stored = max($city->production_stored, $cost);
+        $city->save();
+
+        return 'A Great Engineer hurries '.Economy::buildName($key)." in {$city->name}; it completes this turn.";
+    }
+
+    private function greatMerchant(Game $game, Empire $empire): string
+    {
+        $gold = Rules::GREAT_MERCHANT_GOLD + $game->turn;
+        $empire->gold += $gold;
+
+        return "A Great Merchant's trade mission brings {$gold} gold.";
+    }
+
+    private function greatArtist(Game $game, Empire $empire, ?City $city): string
+    {
+        if (! $city || $city->empire_id !== $empire->id) {
+            throw new InvalidArgumentException('Pick one of your cities.');
+        }
+        $city->culture += Rules::GREAT_ARTIST_CULTURE;
+        $city->save();
+        $empire->golden_age_until = max((int) $empire->golden_age_until, $game->turn) + Rules::GOLDEN_AGE_TURNS;
+
+        return "A Great Artist's masterpiece in {$city->name} begins a Golden Age.";
     }
 
     public function setFocus(City $city, string $focus): void

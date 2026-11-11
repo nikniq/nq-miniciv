@@ -212,6 +212,38 @@
             @endif
         </section>
 
+        {{-- Great people --}}
+        <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
+            <div class="flex items-baseline justify-between"><h2 class="font-semibold">🔭 Great people</h2><span class="text-xs text-stone-500">{{ $greatProgress['have'] }}/{{ $greatProgress['need'] }} points</span></div>
+            <div class="mt-2 h-1.5 w-full overflow-hidden rounded bg-stone-800"><div class="h-full bg-violet-500" style="width: {{ min(100, (int) ($greatProgress['have'] / max(1, $greatProgress['need']) * 100)) }}%"></div></div>
+            @if ($greatProgress['kinds'])
+                <p class="mt-1 text-[11px] text-stone-500">Leaning: @foreach (collect($greatProgress['kinds'])->sortDesc() as $k => $n){{ Rules::GREAT_PEOPLE[$k]['icon'] }} {{ $n }}@if (! $loop->last) · @endif @endforeach</p>
+            @else
+                <p class="mt-1 text-[11px] text-stone-500">Libraries, workshops, markets and temples earn points each turn; wonders earn more.</p>
+            @endif
+            @foreach ($greatPeople as $kind => $n)
+                @php $gp = Rules::GREAT_PEOPLE[$kind]; @endphp
+                <form method="POST" action="{{ route('games.great-person', $game) }}" class="mt-2 rounded border border-violet-700/60 bg-violet-950/30 p-2">
+                    @csrf
+                    <input type="hidden" name="kind" value="{{ $kind }}">
+                    <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                    <div class="flex items-center gap-2"><span class="text-xl">{{ $gp['icon'] }}</span><div class="min-w-0 flex-1"><div class="font-medium">{{ $gp['name'] }}@if ($n > 1) <span class="text-stone-400">×{{ $n }}</span>@endif</div><div class="text-[11px] text-stone-400">{{ $gp['blurb'] }}</div></div></div>
+                    @if ($game->isActive())
+                        <div class="mt-2 flex gap-2">
+                            @if (in_array($kind, ['engineer', 'artist'], true))
+                                <select name="city" class="min-w-0 flex-1 rounded border border-stone-700 bg-stone-900 px-2 py-1 text-xs">
+                                    @foreach ($player->cities as $c)
+                                        <option value="{{ $c->id }}" @selected($selTile && $c->tile_id === $selTile->id)>{{ $c->name }}@if ($kind === 'engineer') — {{ $c->current_build ? \App\Game\Economy::buildName($c->current_build) : 'idle' }}@endif</option>
+                                    @endforeach
+                                </select>
+                            @endif
+                            <button class="rounded bg-violet-700 px-3 py-1 text-xs font-medium hover:bg-violet-600">{{ $gp['verb'] }}</button>
+                        </div>
+                    @endif
+                </form>
+            @endforeach
+        </section>
+
         {{-- Research --}}
         <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
             <h2 class="font-semibold">Research</h2>

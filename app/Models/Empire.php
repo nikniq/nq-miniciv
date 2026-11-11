@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['game_id', 'user_id', 'name', 'color', 'is_ai', 'eliminated', 'gold', 'settlers', 'army', 'units', 'golden_age_until', 'golden_points', 'government', 'anarchy_until', 'captures', 'technologies', 'current_tech', 'research_progress', 'score'])]
+#[Fillable(['game_id', 'user_id', 'name', 'color', 'is_ai', 'eliminated', 'gold', 'settlers', 'army', 'units', 'golden_age_until', 'golden_points', 'great_progress', 'great_people', 'great_count', 'government', 'anarchy_until', 'captures', 'technologies', 'current_tech', 'research_progress', 'score'])]
 class Empire extends Model
 {
     protected function casts(): array
@@ -18,6 +18,8 @@ class Empire extends Model
             'eliminated' => 'boolean',
             'technologies' => 'array',
             'units' => 'array',
+            'great_progress' => 'array',
+            'great_people' => 'array',
         ];
     }
 
@@ -135,5 +137,52 @@ class Empire extends Model
         }
 
         return $wonders;
+    }
+
+    /** Great-person points needed for the next arrival; each one costs more. */
+    public function greatPointsNeeded(): int
+    {
+        return Rules::GREAT_POINTS_BASE + Rules::GREAT_POINTS_STEP * (int) $this->great_count;
+    }
+
+    public function greatPointsTotal(): int
+    {
+        return (int) array_sum($this->great_progress ?? []);
+    }
+
+    /** Add great-person points of one kind; returns the kind that arrives, if any. */
+    public function addGreatPoints(array $points): ?string
+    {
+        $progress = $this->great_progress ?? [];
+        foreach ($points as $kind => $n) {
+            $progress[$kind] = ($progress[$kind] ?? 0) + $n;
+        }
+        $this->great_progress = $progress;
+        if (array_sum($progress) < $this->greatPointsNeeded()) {
+            return null;
+        }
+        arsort($progress);
+        $kind = array_key_first($progress);
+        $this->great_progress = [];
+        $this->great_count = (int) $this->great_count + 1;
+        $people = $this->great_people ?? [];
+        $people[] = $kind;
+        $this->great_people = $people;
+
+        return $kind;
+    }
+
+    /** Remove one great person of a kind from the court; false if none. */
+    public function takeGreatPerson(string $kind): bool
+    {
+        $people = $this->great_people ?? [];
+        $i = array_search($kind, $people, true);
+        if ($i === false) {
+            return false;
+        }
+        unset($people[$i]);
+        $this->great_people = array_values($people);
+
+        return true;
     }
 }

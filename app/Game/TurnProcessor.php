@@ -110,6 +110,7 @@ final class TurnProcessor
                 }
 
                 $gold += Economy::tradeGold($game, $empire, $this->tiles);
+                $this->greatPeople($game, $empire);
 
                 $this->randomEvent($game, $empire);
 
@@ -285,6 +286,41 @@ final class TurnProcessor
             if ($claimed) {
                 $this->note($empire, "The borders of {$city->name} have expanded.");
             }
+        }
+    }
+
+    /** Buildings yield great-person points; an arrival is announced, and the AI spends it at once. */
+    private function greatPeople(Game $game, Empire $empire): void
+    {
+        $points = [];
+        foreach ($empire->cities as $city) {
+            foreach ($city->buildings ?? [] as $b) {
+                foreach (Rules::GREAT_SOURCES[$b] ?? [] as $kind => $n) {
+                    $points[$kind] = ($points[$kind] ?? 0) + $n;
+                }
+            }
+        }
+        if (! $points) {
+            return;
+        }
+        $kind = $empire->addGreatPoints($points);
+        if ($kind === null) {
+            return;
+        }
+        $spec = Rules::GREAT_PEOPLE[$kind];
+        if (! $empire->is_ai) {
+            $this->note($empire, "{$spec['icon']} A {$spec['name']} has arrived at your court! {$spec['blurb']}");
+
+            return;
+        }
+        // AI: engineers go to the city with the dearest unfinished build.
+        $city = $empire->cities->filter(fn ($c) => $c->current_build && $c->current_build !== 'wealth')
+            ->sortByDesc(fn ($c) => (Economy::buildCost($c->current_build) ?? 0) - $c->production_stored)->first()
+            ?? $empire->cities->first();
+        try {
+            $this->actions->useGreatPerson($game, $empire, $kind, $city);
+        } catch (\InvalidArgumentException) {
+            // Nothing sensible to spend it on; it waits.
         }
     }
 

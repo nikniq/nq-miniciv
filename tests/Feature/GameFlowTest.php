@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Game\Actions;
 use App\Game\Rules;
 use App\Models\Game;
 use App\Models\User;
@@ -71,7 +72,7 @@ class GameFlowTest extends TestCase
             ->assertSessionHas('error');
 
         // The player starts with one band of settlers: found a city on a legal tile.
-        $actions = app(\App\Game\Actions::class);
+        $actions = app(Actions::class);
         $site = $game->tiles->first(fn ($t) => $actions->foundingProblem($game, $player, $t, $game->tiles) === null);
         $this->assertNotNull($site, 'expected at least one legal city site');
 
@@ -134,7 +135,7 @@ class GameFlowTest extends TestCase
         $user = User::factory()->create();
         $game = $this->startGame($user);
         $player = $game->playerEmpire();
-        $actions = app(\App\Game\Actions::class);
+        $actions = app(Actions::class);
 
         $enemyCity = $game->cities->first(fn ($c) => $c->empire_id !== $player->id);
         $enemy = $game->empires->firstWhere('id', $enemyCity->empire_id);
@@ -404,11 +405,41 @@ class GameFlowTest extends TestCase
 
         // Founding the second city earns Settler.
         $player = $game->playerEmpire();
-        $actions = app(\App\Game\Actions::class);
+        $actions = app(Actions::class);
         $site = $game->tiles->first(fn ($t) => $actions->foundingProblem($game, $player, $t, $game->tiles) === null);
         $this->actingAs($user)->post(route('games.found', $game), ['tile' => $site->id]);
         $this->actingAs($user)->post(route('games.end-turn', $game));
         $this->assertArrayHasKey('second_city', $user->fresh()->achievements ?? []);
         $this->assertStringContainsString('Achievement unlocked', implode(' ', $game->fresh()->events));
+    }
+
+    public function test_great_people_arrive_from_buildings_and_can_be_spent(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        $capital = $player->cities->first();
+        $capital->buildings = ['library', 'university'];
+        $capital->current_build = 'monument';
+        $capital->production_stored = 0;
+        $capital->save();
+        $player->great_progress = ['scientist' => Rules::GREAT_POINTS_BASE - 1];
+        $player->current_tech = 'writing';
+        $player->technologies = [];
+        $player->save();
+
+        $this->actingAs($user)->post(route('games.end-turn', $game))->assertRedirect();
+        $player->refresh();
+        $this->assertSame(['scientist'], $player->great_people);
+        $this->assertSame(1, (int) $player->great_count);
+        $this->assertSame([], $player->great_progress ?? [], 'points reset after an arrival');
+
+        $this->actingAs($user)->post(route('games.great-person', $game), ['kind' => 'scientist'])->assertSessionHas('status');
+        $player->refresh();
+        $this->assertContains('writing', $player->technologies);
+        $this->assertSame([], $player->great_people);
+
+        $this->actingAs($user)->post(route('games.great-person', $game), ['kind' => 'merchant'])->assertSessionHas('error');
+        $this->assertArrayHasKey('great_person', $user->fresh()->achievements ?? []);
     }
 }
