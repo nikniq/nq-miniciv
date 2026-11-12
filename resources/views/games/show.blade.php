@@ -117,7 +117,7 @@
 {{-- Top bar --}}
 <div class="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-stone-800 bg-stone-900/60 px-4 py-3 text-sm">
     <div class="flex items-center gap-2 font-semibold">
-        <span class="flex h-6 w-6 items-center justify-center rounded-full text-sm ring-2" style="background: {{ $player->color }}22; --tw-ring-color: {{ $player->color }}">{{ Rules::crest($player->name) }}</span>{{ $player->name }}
+        <span class="flex h-6 w-6 items-center justify-center rounded-full text-sm ring-2" style="background: {{ $player->color }}22; --tw-ring-color: {{ $player->color }}">{{ Rules::crest($player->name) }}</span>{{ $player->name }}@if ($player->trait && isset(Rules::TRAITS[$player->trait]))<span class="ml-1 cursor-help text-sm" title="{{ Rules::TRAITS[$player->trait]['name'] }}: {{ Rules::TRAITS[$player->trait]['blurb'] }}">{{ Rules::TRAITS[$player->trait]['icon'] }}</span>@endif
     </div>
     <div>Turn <b>{{ min($game->turn, $game->max_turns) }}</b><span class="text-stone-500">/{{ $game->max_turns }}</span> <span class="hidden text-stone-500 md:inline">· {{ $era }}</span></div>
     @if ($goldenAge)
@@ -384,7 +384,7 @@
                                 <span class="truncate font-medium {{ $me ? 'text-amber-200' : '' }}">{{ Rules::crest($e->name) }} {{ $e->name }}</span>
                                 @if ($e->eliminated)<span class="text-xs text-stone-500">eliminated</span>
                                 @elseif ($r['relation'] && $r['relation']['state'] === 'war')<span class="rounded bg-red-900/60 px-1.5 text-[10px] text-red-200">at war</span>
-                                @elseif ($r['personality'])<span class="rounded bg-stone-800 px-1.5 text-[10px] {{ $r['attitude'] < -10 ? 'text-red-300' : ($r['attitude'] > 15 ? 'text-emerald-300' : 'text-stone-400') }}" title="{{ $r['personality']['trait'] }}: {{ $r['personality']['blurb'] }} Attitude {{ $r['attitude'] }}.">{{ $r['personality']['trait'] }} · {{ $r['attitudeLabel'] }}</span>@endif
+                                @elseif ($r['personality'])<span class="rounded bg-stone-800 px-1.5 text-[10px] {{ $r['attitude'] < -10 ? 'text-red-300' : ($r['attitude'] > 15 ? 'text-emerald-300' : 'text-stone-400') }}" title="{{ $r['personality']['trait'] }}: {{ $r['personality']['blurb'] }}@if ($e->trait && isset(Rules::TRAITS[$e->trait])) {{ Rules::TRAITS[$e->trait]['name'] }}: {{ Rules::TRAITS[$e->trait]['blurb'] }}@endif Attitude {{ $r['attitude'] }}.">@if ($e->trait && isset(Rules::TRAITS[$e->trait])){{ Rules::TRAITS[$e->trait]['icon'] }} @endif{{ $r['personality']['trait'] }} · {{ $r['attitudeLabel'] }}</span>@endif
                             </div>
                             <span class="shrink-0 font-semibold">{{ $e->eliminated ? '✝' : $r['score'] }}</span>
                         </div>

@@ -502,7 +502,8 @@ final class Actions
             throw new InvalidArgumentException('Your empire is already in anarchy. Wait for it to settle.');
         }
         $empire->government = $key;
-        $empire->anarchy_until = $game->turn + Rules::ANARCHY_TURNS - 1;
+        // Spiritual peoples change rulers without upheaval.
+        $empire->anarchy_until = $empire->trait === 'spiritual' ? $game->turn - 1 : $game->turn + Rules::ANARCHY_TURNS - 1;
         $empire->save();
     }
 

@@ -16,14 +16,14 @@ final class GameSetup
 {
     public function __construct(private Actions $actions) {}
 
-    public function create(User $user, string $empireName, int $rivals = 2, ?int $seed = null, string $size = 'normal', string $difficulty = 'prince'): Game
+    public function create(User $user, string $empireName, int $rivals = 2, ?int $seed = null, string $size = 'normal', string $difficulty = 'prince', ?string $trait = null): Game
     {
         $seed ??= random_int(1, 2_000_000_000);
         $map = Rules::MAP_SIZES[$size] ?? Rules::MAP_SIZES['normal'];
         $difficulty = isset(Rules::DIFFICULTIES[$difficulty]) ? $difficulty : 'prince';
         $rivals = max(1, min($map['max_rivals'], $rivals));
 
-        return DB::transaction(function () use ($user, $empireName, $rivals, $seed, $map, $difficulty) {
+        return DB::transaction(function () use ($user, $empireName, $rivals, $seed, $map, $difficulty, $trait) {
             $game = Game::create([
                 'user_id' => $user->id,
                 'name' => $empireName,
@@ -57,6 +57,7 @@ final class GameSetup
                 'technologies' => [],
                 'settlers' => 1,
                 'gold' => 30,
+                'trait' => isset(Rules::TRAITS[$trait]) ? $trait : null,
             ]);
             Fog::init($game, $empires[0]);
             for ($i = 0; $i < $rivals; $i++) {
@@ -68,7 +69,19 @@ final class GameSetup
                     'technologies' => [],
                     'settlers' => 1,
                     'gold' => 30,
+                    'trait' => Rules::TRAIT_FOR_PERSONALITY[Rules::personality($names[$i])['trait']] ?? null,
                 ]);
+            }
+            // Starting bonuses from traits.
+            foreach ($empires as $e) {
+                if ($e->trait === 'expansive') {
+                    $e->settlers += 1;
+                } elseif ($e->trait === 'militaristic') {
+                    $e->addUnit('warriors');
+                    $e->addUnit('warriors');
+                    $e->veterancy = 4;
+                }
+                $e->save();
             }
 
             $starts = $this->pickStarts($tiles, count($empires));

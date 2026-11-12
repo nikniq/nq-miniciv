@@ -53,6 +53,16 @@
         </section>
 
         <section class="rounded-lg border border-stone-800 bg-stone-900/50 p-5">
+            <h2 class="font-semibold text-amber-300">🏛️ National traits</h2>
+            <ul class="mt-2 space-y-1 text-sm text-stone-300">
+                @foreach (Rules::TRAITS as $t)
+                    <li><b>{{ $t['icon'] }} {{ $t['name'] }}</b>: {{ $t['blurb'] }}</li>
+                @endforeach
+                <li class="text-xs text-stone-500">Pick one when you found an empire. Rivals take the trait that fits their personality.</li>
+            </ul>
+        </section>
+
+        <section class="rounded-lg border border-stone-800 bg-stone-900/50 p-5">
             <h2 class="font-semibold text-amber-300">🔭 Great people</h2>
             <ul class="mt-2 space-y-1 text-sm text-stone-300">
                 <li>Libraries, workshops, markets and temples (and their upgrades) earn great-person points every turn; wonders earn the most.</li>

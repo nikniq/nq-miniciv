@@ -440,6 +440,19 @@ final class Rules
 
     public const TRADE_ROUTE_RANGE = 9;
 
+    /** National traits: one per empire, chosen at the start (rivals take theirs from their personality). */
+    public const TRAITS = [
+        'expansive' => ['name' => 'Expansive', 'icon' => '🏕️', 'blurb' => 'A second band of settlers at the start and +1 food in every city.'],
+        'industrious' => ['name' => 'Industrious', 'icon' => '⚒️', 'blurb' => '+10% production in every city.'],
+        'scientific' => ['name' => 'Scientific', 'icon' => '🔬', 'blurb' => '+10% science in every city.'],
+        'mercantile' => ['name' => 'Mercantile', 'icon' => '💰', 'blurb' => '+2 gold in every city.'],
+        'militaristic' => ['name' => 'Militaristic', 'icon' => '⚔️', 'blurb' => 'Two Warriors and a Seasoned army at the start; army upkeep halved.'],
+        'spiritual' => ['name' => 'Spiritual', 'icon' => '🕊️', 'blurb' => '+1 happiness per city, and changing government causes no anarchy.'],
+    ];
+
+    /** Rival personalities map onto traits. */
+    public const TRAIT_FOR_PERSONALITY = ['Conqueror' => 'militaristic', 'Builder' => 'industrious', 'Scholar' => 'scientific', 'Merchant' => 'mercantile', 'Expansionist' => 'expansive', 'Cultured' => 'spiritual', 'Peaceful' => 'spiritual', 'Balanced' => 'industrious'];
+
     /** Raids: a lighter act of war than a siege. */
     public const RAID_MIN_ARMY = 3;
 

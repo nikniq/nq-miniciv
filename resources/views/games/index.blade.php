@@ -85,6 +85,15 @@
                         @endforeach
                     </select>
                 </label>
+                <label class="block text-sm">
+                    <span class="text-stone-300">National trait</span>
+                    <select name="trait" class="mt-1 w-full rounded border border-stone-700 bg-stone-900 px-3 py-2 focus:border-amber-500 focus:outline-none">
+                        <option value="random" @selected(old('trait', 'random') === 'random')>🎲 Random</option>
+                        @foreach (\App\Game\Rules::TRAITS as $key => $t)
+                            <option value="{{ $key }}" @selected(old('trait') === $key)>{{ $t['icon'] }} {{ $t['name'] }} — {{ $t['blurb'] }}</option>
+                        @endforeach
+                    </select>
+                </label>
                 <p class="text-xs text-stone-500">Rivals are capped by map size: small 2, normal 4, large 6, huge and giant 7. A giant world is {{ $sizes['giant']['width'] * $sizes['giant']['height'] }} tiles; scroll the map with the mouse wheel and zoom with ⌘/Ctrl + wheel or the buttons.</p>
                 <button class="w-full rounded bg-amber-500 px-4 py-2 font-medium text-stone-950 hover:bg-amber-400">Found your empire</button>
             </form>

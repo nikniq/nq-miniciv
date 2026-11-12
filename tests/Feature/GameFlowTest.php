@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Game\Actions;
+use App\Game\Economy;
 use App\Game\Fog;
 use App\Game\Rules;
 use App\Models\Game;
@@ -23,7 +24,7 @@ class GameFlowTest extends TestCase
     private function startGame(User $user): Game
     {
         $this->actingAs($user)
-            ->post(route('games.store'), ['empire' => 'Rome', 'rivals' => 2, 'size' => 'normal', 'difficulty' => 'prince'])
+            ->post(route('games.store'), ['empire' => 'Rome', 'rivals' => 2, 'size' => 'normal', 'difficulty' => 'prince', 'trait' => 'none'])
             ->assertRedirect();
 
         return Game::with(['empires.cities', 'cities', 'tiles'])->firstOrFail();
@@ -681,5 +682,27 @@ class GameFlowTest extends TestCase
 
         $game->update(['turn' => 41]);
         $this->actingAs($user)->get(route('games.show', $game))->assertDontSee('First steps');
+    }
+
+    public function test_national_traits_shape_the_start_and_the_economy(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user)->post(route('games.store'), ['empire' => 'Rome', 'rivals' => 2, 'size' => 'normal', 'difficulty' => 'prince', 'trait' => 'militaristic'])->assertRedirect();
+        $game = Game::with(['empires.cities', 'tiles'])->latest('id')->firstOrFail();
+        $player = $game->playerEmpire();
+        $this->assertSame('militaristic', $player->trait);
+        $this->assertSame(['warriors' => 2], $player->units);
+        $this->assertSame('Seasoned', $player->rankName());
+        foreach ($game->empires->where('is_ai', true) as $ai) {
+            $this->assertNotNull($ai->trait, 'rivals take a trait from their personality');
+        }
+
+        // Spiritual: no anarchy when changing government.
+        $player->update(['trait' => 'spiritual', 'technologies' => ['agriculture', 'writing', 'code_of_laws']]);
+        $gov = array_key_first(Economy::availableGovernments($player->fresh()));
+        $this->actingAs($user)->post(route('games.government', $game), ['government' => $gov]);
+        $this->assertFalse($player->fresh()->inAnarchy($game->turn));
+
+        $this->actingAs($user)->get(route('games.show', $game))->assertSee(Rules::TRAITS['spiritual']['blurb']);
     }
 }

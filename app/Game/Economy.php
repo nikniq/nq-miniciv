@@ -73,6 +73,14 @@ final class Economy
             $total['prod'] = (int) ceil($total['prod'] * (1 + Rules::GOLDEN_AGE_BONUS));
             $total['gold'] = (int) ceil($total['gold'] * (1 + Rules::GOLDEN_AGE_BONUS));
         }
+        // National traits.
+        match ($empire->trait) {
+            'industrious' => $total['prod'] = (int) ceil($total['prod'] * 1.1),
+            'scientific' => $total['science'] = (int) ceil($total['science'] * 1.1),
+            'mercantile' => $total['gold'] += 2,
+            'expansive' => $total['food'] += 1,
+            default => null,
+        };
         // Barbarian camps nearby pillage the countryside.
         $total['food'] = max(0, $total['food'] - 2 * $pillaged);
         $total['pillaged'] = $pillaged;
@@ -152,7 +160,7 @@ final class Economy
         $demand = $weariness;
         foreach ($empire->cities as $city) {
             $demand += max(0, $city->population - Rules::FREE_CITIZENS);
-            $supply += Rules::CITY_HAPPINESS + ($effects['happy'] ?? 0);
+            $supply += Rules::CITY_HAPPINESS + ($effects['happy'] ?? 0) + ($empire->trait === 'spiritual' ? 1 : 0);
             foreach ($city->buildings ?? [] as $b) {
                 $supply += Rules::BUILDINGS[$b]['effects']['happy'] ?? 0;
             }
@@ -174,7 +182,7 @@ final class Economy
             }
         }
         $buildings = intdiv($count, Rules::BUILDINGS_PER_GOLD);
-        $army = (int) ceil($empire->army / Rules::ARMY_PER_GOLD);
+        $army = (int) ceil($empire->army / Rules::ARMY_PER_GOLD / ($empire->trait === 'militaristic' ? 2 : 1));
 
         return ['buildings' => $buildings, 'army' => $army, 'total' => $buildings + $army];
     }

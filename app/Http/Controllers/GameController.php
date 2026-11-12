@@ -34,9 +34,11 @@ class GameController extends Controller
             'rivals' => ['required', 'integer', 'min:1', 'max:7'],
             'size' => ['required', 'in:'.implode(',', array_keys(Rules::MAP_SIZES))],
             'difficulty' => ['required', 'in:'.implode(',', array_keys(Rules::DIFFICULTIES))],
+            'trait' => ['nullable', 'in:random,none,'.implode(',', array_keys(Rules::TRAITS))],
         ]);
 
-        $game = $setup->create($request->user(), trim($data['empire']), (int) $data['rivals'], null, $data['size'], $data['difficulty']);
+        $trait = match ($data['trait'] ?? 'random') { 'random' => array_rand(Rules::TRAITS), 'none' => null, default => $data['trait'] };
+        $game = $setup->create($request->user(), trim($data['empire']), (int) $data['rivals'], null, $data['size'], $data['difficulty'], $trait);
 
         return redirect()->route('games.show', $game)
             ->with('status', 'Your capital has been founded. You also have a band of settlers ready: pick a tile to found a second city.');
