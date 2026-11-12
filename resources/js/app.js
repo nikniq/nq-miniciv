@@ -15,7 +15,14 @@ if (map) {
     const full = svg.viewBox.baseVal;
     const W = full.width, H = full.height;
     let vb = { x: 0, y: 0, w: W, h: H };
-    try { const s = JSON.parse(sessionStorage.getItem(storeKey)); if (s && s.w > 0) vb = s; } catch {}
+    let stored = false;
+    try { const s = JSON.parse(sessionStorage.getItem(storeKey)); if (s && s.w > 0) { vb = s; stored = true; } } catch {}
+    if (!stored && map.dataset.known) {
+        // First look at a fogged map: frame the explored area with some margin.
+        const [kx, ky, kw, kh] = map.dataset.known.split(',').map(Number);
+        const w = Math.max(kw * 1.6, kh * 1.6 * W / H, W / 6);
+        vb = { x: kx + kw / 2 - w / 2, y: ky + kh / 2 - (w * H / W) / 2, w, h: w * H / W };
+    }
 
     const apply = () => {
         vb.w = Math.min(W, Math.max(W / 6, vb.w));

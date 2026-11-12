@@ -103,6 +103,7 @@
     <a href="#army" title="Army strength (upkeep {{ $upkeep['army'] }} gold/turn). Click for the army panel.">⚔ <b>{{ $player->army }}</b></a>
     <div title="{{ $government['blurb'] }}" class="hidden xl:block">{{ $government['icon'] }} {{ $government['name'] }}@if ($anarchy) <span class="text-red-300">(anarchy {{ $anarchy }}t)</span>@endif</div>
     <div title="Happiness: {{ $happiness['supply'] }} supplied, {{ $happiness['demand'] }} demanded">{{ $happiness['unhappy'] ? '😠' : '🙂' }} <b class="{{ $happiness['unhappy'] ? 'text-red-400' : '' }}">{{ $happiness['balance'] >= 0 ? '+' : '' }}{{ $happiness['balance'] }}</b></div>
+    @if ($explored < 100)<div title="Share of the world your empire has explored">🧭 <b>{{ $explored }}%</b></div>@endif
     <div title="Share of land">🗺️ <b>{{ $landShare }}%</b> <span class="text-stone-500">of {{ $dominationShare }}%</span></div>
     <div title="Culture toward a cultural victory">🎭 <b>{{ $culture }}</b> <span class="text-stone-500">of {{ $cultureGoal }}</span></div>
     @if ($wars)<div class="text-red-300" title="At war">⚔ at war ({{ $wars }})</div>@endif
@@ -167,7 +168,7 @@
     {{-- Map --}}
     <div class="rounded-lg border border-stone-800 bg-stone-950 p-2 shadow-inner">
         <div class="relative">
-            <div id="map" data-panel-url="{{ route('games.panel', $game) }}" data-game="{{ $game->id }}" class="overflow-hidden rounded cursor-grab touch-none" style="aspect-ratio: {{ $game->width }} / {{ $game->height }}; max-height: 78vh;">
+            <div id="map" data-panel-url="{{ route('games.panel', $game) }}" data-game="{{ $game->id }}" @if ($known) data-known="{{ $known }}" @endif class="overflow-hidden rounded cursor-grab touch-none" style="aspect-ratio: {{ $game->width }} / {{ $game->height }}; max-height: 78vh;">
                 {!! $mapSvg !!}
             </div>
             <div class="absolute left-2 top-2 flex flex-col gap-1 text-sm">

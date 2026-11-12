@@ -58,6 +58,7 @@ final class GameSetup
                 'settlers' => 1,
                 'gold' => 30,
             ]);
+            Fog::init($game, $empires[0]);
             for ($i = 0; $i < $rivals; $i++) {
                 $empires[] = Empire::create([
                     'game_id' => $game->id,
@@ -74,6 +75,8 @@ final class GameSetup
             foreach ($empires as $i => $empire) {
                 $this->actions->foundCity($game, $empire, $starts[$i], $tiles, capital: true);
             }
+            Fog::reveal($game, $empires[0], $starts[0]->x, $starts[0]->y, Rules::FOG_CITY_RADIUS + 1);
+            $empires[0]->save();
 
             // Barbarian camps: a few, well away from every capital.
             mt_srand($seed + 99);

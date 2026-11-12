@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Game\Actions;
+use App\Game\Fog;
 use App\Game\Rules;
 use App\Models\Game;
 use App\Models\User;
@@ -490,5 +491,42 @@ class GameFlowTest extends TestCase
         $this->actingAs($user)->post(route('games.end-turn', $game))->assertRedirect();
         $this->assertGreaterThan($gold - 10, $player->fresh()->gold);
         $this->assertNotSame($game->fresh()->choice['kind'] ?? null, 'prophet');
+    }
+
+    public function test_fog_of_war_hides_the_map_until_explored(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        $capital = $player->cities->first();
+        $centre = $game->tiles->firstWhere('id', $capital->tile_id);
+
+        $pct = Fog::percent($game, $player);
+        $this->assertGreaterThan(0, $pct);
+        $this->assertLessThan(60, $pct, 'most of the map starts hidden');
+        $this->assertTrue(Fog::visible($game, $player, $centre));
+        $this->assertNull($game->empires->firstWhere('is_ai', true)->explored, 'rivals see everything');
+
+        $page = $this->actingAs($user)->get(route('games.show', $game));
+        $page->assertOk()->assertSee('url(#fogp)', false)->assertSee('Unexplored');
+
+        // A hidden tile cannot be settled, even with settlers in hand.
+        $hidden = $game->tiles->first(fn ($t) => $t->canSettle() && ! $t->empire_id && ! Fog::visible($game, $player, $t) && $centre->distanceTo($t) > 8);
+        $this->assertNotNull($hidden);
+        $this->actingAs($user)->post(route('games.found', $game), ['tile' => $hidden->id])->assertSessionHas('error');
+
+        // Scouts reveal, cost gold, and refuse when nothing is left to see.
+        $player->update(['gold' => 100]);
+        $this->actingAs($user)->post(route('games.scout', [$game, $capital]))->assertSessionHas('status');
+        $player->refresh();
+        $this->assertSame(100 - Rules::SCOUT_COST, $player->gold);
+        $this->assertGreaterThan($pct, Fog::percent($game, $player));
+        $this->actingAs($user)->post(route('games.scout', [$game, $capital]))->assertSessionHas('error');
+
+        // Borders push the fog back each turn.
+        $before = Fog::percent($game, $player);
+        $player->update(['explored' => str_repeat('0', $game->width * $game->height)]);
+        $this->actingAs($user)->post(route('games.end-turn', $game))->assertRedirect();
+        $this->assertGreaterThan(0, Fog::percent($game, $player->fresh()));
     }
 }

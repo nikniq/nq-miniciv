@@ -32,6 +32,9 @@ final class Actions
         if ($tile->camp) {
             return 'A barbarian camp occupies this tile. Clear it first.';
         }
+        if (! Fog::visible($game, $empire, $tile)) {
+            return 'That land is unexplored. Send scouts from a nearby city or let your borders grow toward it.';
+        }
         if ($tile->empire_id && $tile->empire_id !== $empire->id) {
             return 'That land belongs to another empire.';
         }
@@ -78,6 +81,9 @@ final class Actions
         $tile->save();
 
         $this->expandBorders($city, $tile, $tiles, Rules::borderRadiusSq(0));
+        if (Fog::reveal($game, $empire, $tile->x, $tile->y, Rules::FOG_CITY_RADIUS) > 0) {
+            $empire->save();
+        }
 
         $game->cities->push($city);
         $empire->setRelation('cities', $empire->cities->push($city));
@@ -649,6 +655,26 @@ final class Actions
         $game->save();
 
         return $line;
+    }
+
+    /** Pay scouts to reveal the land around a city. Returns the number of new tiles. */
+    public function sendScouts(Game $game, Empire $empire, City $city, Collection $tiles): int
+    {
+        if ($city->empire_id !== $empire->id) {
+            throw new InvalidArgumentException('Scouts set out from your own cities.');
+        }
+        $centre = $tiles->firstWhere('id', $city->tile_id);
+        if (! $centre || Fog::wouldReveal($game, $empire, $centre->x, $centre->y, Rules::SCOUT_RADIUS) === 0) {
+            throw new InvalidArgumentException("The land around {$city->name} is already known.");
+        }
+        if ($empire->gold < Rules::SCOUT_COST) {
+            throw new InvalidArgumentException('Scouts cost '.Rules::SCOUT_COST.' gold.');
+        }
+        $empire->gold -= Rules::SCOUT_COST;
+        $new = Fog::reveal($game, $empire, $centre->x, $centre->y, Rules::SCOUT_RADIUS);
+        $empire->save();
+
+        return $new;
     }
 
     public function setFocus(City $city, string $focus): void

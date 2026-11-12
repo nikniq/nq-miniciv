@@ -14,6 +14,30 @@ final class Presenter
     public function __construct(private Actions $actions, private MapSvg $mapSvg) {}
 
     /** Inline SVG line chart of score per empire over time. */
+    /** "x,y,w,h" in map units around the explored tiles, or null when all is known. */
+    private function knownBox($tiles, ?array $visible): ?string
+    {
+        if ($visible === null) {
+            return null;
+        }
+        $minX = $minY = PHP_INT_MAX;
+        $maxX = $maxY = -1;
+        foreach ($tiles as $t) {
+            if (isset($visible[$t->id])) {
+                $minX = min($minX, $t->x);
+                $maxX = max($maxX, $t->x);
+                $minY = min($minY, $t->y);
+                $maxY = max($maxY, $t->y);
+            }
+        }
+        if ($maxX < 0) {
+            return null;
+        }
+        $s = MapSvg::TILE;
+
+        return implode(',', [$minX * $s, $minY * $s, ($maxX - $minX + 1) * $s, ($maxY - $minY + 1) * $s]);
+    }
+
     private function chart(Game $game, $empiresById): ?string
     {
         $history = $game->history ?? [];
@@ -49,6 +73,7 @@ final class Presenter
         $game->load(['empires.cities', 'cities', 'tiles']);
         $tiles = $game->tiles;
         $player = $game->playerEmpire();
+        $visible = Fog::visibleIds($game, $player, $tiles);
         $effects = Economy::empireEffects($player);
         $difficultySpec = Rules::DIFFICULTIES[$game->difficulty ?? 'prince'];
         $happiness = Economy::happiness($player, Economy::warsCount($game, $player), $difficultySpec['player_happy']);
@@ -97,7 +122,7 @@ final class Presenter
         $selectedInfo = null;
         if ($selected) {
             $owner = $selected->empire_id ? $empiresById->get($selected->empire_id) : null;
-            $selectedInfo = [
+            $selectedInfo = $visible !== null && ! isset($visible[$selected->id]) ? ['tile' => $selected, 'city' => null, 'unexplored' => true] : [
                 'tile' => $selected,
                 'terrain' => Rules::TERRAIN[$selected->terrain],
                 'resource' => $selected->resource ? Rules::RESOURCES[$selected->resource] : null,
@@ -111,6 +136,9 @@ final class Presenter
                 'city' => $selectedCity,
                 'foundingProblem' => $selectedCity ? null : $this->actions->foundingProblem($game, $player, $selected, $tiles),
             ];
+            if (isset($selectedInfo['unexplored'])) {
+                $selectedCity = null;
+            }
             if ($selectedCity && $selectedCity->empire_id !== $player->id && $owner) {
                 $selectedInfo['skyline'] = CitySvg::render($selectedCity, $owner);
                 $defense = Rules::cityDefense($selectedCity, $this->actions->garrison($owner), Economy::empireEffects($owner)['defense'] ?? 0);
@@ -129,6 +157,7 @@ final class Presenter
                 $selectedInfo['cityYields'] = $y;
                 $selectedInfo['skyline'] = CitySvg::render($selectedCity, $player);
                 $selectedInfo['sizeCap'] = Economy::sizeCap($selectedCity);
+                $selectedInfo['scoutable'] = Fog::wouldReveal($game, $player, $selected->x, $selected->y, Rules::SCOUT_RADIUS);
                 $selectedInfo['buildOptions'] = Economy::buildOptions($selectedCity, $player, $wondersBuilt);
                 $selectedInfo['buildCost'] = $cost;
                 $selectedInfo['turnsToBuild'] = ($remaining !== null && $y['prod'] > 0) ? (int) ceil($remaining / $y['prod']) : null;
@@ -217,14 +246,16 @@ final class Presenter
             $bestSite = $this->actions->bestSite($game, $player, $tiles, 8);
         }
 
-        $mapSvg = $this->mapSvg->render($game, $tiles, $empiresById, $citiesByTile, array_flip($worked), $selected?->id, route('games.show', $game), $foundable, $bestSite?->id);
+        $mapSvg = $this->mapSvg->render($game, $tiles, $empiresById, $citiesByTile, array_flip($worked), $selected?->id, route('games.show', $game), $foundable, $bestSite?->id, $visible);
 
         return [
             'game' => $game,
             'player' => $player,
             'grid' => $grid,
             'mapSvg' => $mapSvg,
-            'minimap' => $this->mapSvg->minimap($game, $tiles, $empiresById, $citiesByTile),
+            'minimap' => $this->mapSvg->minimap($game, $tiles, $empiresById, $citiesByTile, $visible),
+            'explored' => Fog::percent($game, $player),
+            'known' => $this->knownBox($tiles, $visible),
             'empiresById' => $empiresById,
             'citiesByTile' => $citiesByTile,
             'worked' => array_flip($worked),

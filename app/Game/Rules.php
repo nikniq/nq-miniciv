@@ -349,6 +349,7 @@ final class Rules
         'second_city' => ['name' => 'Settler', 'icon' => '🏕️', 'blurb' => 'Found a second city.'],
         'five_cities' => ['name' => 'Empire Builder', 'icon' => '🏙️', 'blurb' => 'Rule five cities at once.'],
         'first_wonder' => ['name' => 'Wonder of the World', 'icon' => '🔺', 'blurb' => 'Complete a wonder.'],
+        'cartographer' => ['name' => 'Cartographer', 'icon' => '🧭', 'blurb' => 'Explore the whole map.'],
         'great_person' => ['name' => 'Patron', 'icon' => '🔭', 'blurb' => 'A great person arrives at your court.'],
         'golden_age' => ['name' => 'Golden Age', 'icon' => '✦', 'blurb' => 'Enter a Golden Age.'],
         'conqueror' => ['name' => 'Conqueror', 'icon' => '⚔', 'blurb' => 'Capture a city.'],
@@ -395,6 +396,15 @@ final class Rules
     public const TECH_TRADE_COOLDOWN = 6;
 
     public const TECH_GOLD_RATE = 1.5;
+
+    /** Fog of war: what a new city reveals, what borders reveal each turn, and what scouts reveal. */
+    public const FOG_CITY_RADIUS = 3;
+
+    public const FOG_BORDER_RADIUS = 2;
+
+    public const SCOUT_RADIUS = 5;
+
+    public const SCOUT_COST = 25;
 
     /** Raids: a lighter act of war than a siege. */
     public const RAID_MIN_ARMY = 3;

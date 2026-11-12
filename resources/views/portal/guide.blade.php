@@ -34,6 +34,7 @@
             <h2 class="font-semibold text-amber-300">🏕️ Cities and land</h2>
             <ul class="mt-2 space-y-1 text-sm text-stone-300">
                 <li>Build <b>Settlers</b> (city must be size 2+), then click a tile at least {{ Rules::MIN_CITY_DISTANCE }} tiles from any city and <b>Found city</b>.</li>
+                <li>The world starts hidden in <b>fog</b>. Your borders reveal {{ Rules::FOG_BORDER_RADIUS }} tiles around them every turn, a new city reveals {{ Rules::FOG_CITY_RADIUS }}, and a city can <b>send scouts</b> ({{ Rules::SCOUT_COST }} gold) to map {{ Rules::SCOUT_RADIUS }} tiles around it. You can only found cities on land you have seen.</li>
                 <li>Citizens automatically work the best tiles inside your borders. Change a city's <b>Focus</b> to favour food, production, gold or science.</li>
                 <li>Culture pushes borders outward. Monuments and temples speed it up.</li>
                 <li>Food beyond 2 per citizen grows the city; a deficit shrinks it. Cities stop at size {{ Rules::SIZE_CAP }} without an Aqueduct ({{ Rules::SIZE_CAP_AQUEDUCT }} with one).</li>

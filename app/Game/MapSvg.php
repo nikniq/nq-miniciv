@@ -32,6 +32,9 @@ final class MapSvg
     /** @var array<int, array<int, Tile>> */
     private array $grid = [];
 
+    /** @var array<int, true>|null tile ids the viewer can see; null = all */
+    private ?array $visible = null;
+
     /** @var array<int, int> empire id => garrison per city */
     private array $garrisons = [];
 
@@ -40,8 +43,9 @@ final class MapSvg
      * @param  Collection<int, City>  $citiesByTile
      * @param  array<int, true>  $worked
      */
-    public function render(Game $game, Collection $tiles, Collection $empiresById, Collection $citiesByTile, array $worked, ?int $selectedId, string $tileUrlBase, array $foundable = [], ?int $bestSiteId = null): string
+    public function render(Game $game, Collection $tiles, Collection $empiresById, Collection $citiesByTile, array $worked, ?int $selectedId, string $tileUrlBase, array $foundable = [], ?int $bestSiteId = null, ?array $visible = null): string
     {
+        $this->visible = $visible;
         $this->garrisons = [];
         foreach ($empiresById as $e) {
             $this->garrisons[$e->id] = intdiv($e->army, max(1, $e->cities->count()));
@@ -56,11 +60,12 @@ final class MapSvg
         $out = [];
         $out[] = '<svg id="map-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '.$w.' '.$h.'" class="block h-auto w-full select-none" style="min-width:'.($game->width * 30).'px" role="img" aria-label="World map">';
         $out[] = $this->defs();
+        $out[] = '<pattern id="fogp" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(35)"><rect width="10" height="10" fill="#0b0f15"/><rect width="10" height="3" fill="#121922"/></pattern>';
 
-        // Layer 1: terrain
+        // Layer 1: terrain (unexplored tiles are fog)
         $out[] = '<g id="terrain">';
         foreach ($tiles as $t) {
-            $out[] = $this->terrainTile($t, $s);
+            $out[] = $this->fogged($t) ? sprintf('<rect x="%d" y="%d" width="%d" height="%d" fill="url(#fogp)"/>', $t->x * $s, $t->y * $s, $s, $s) : $this->terrainTile($t, $s);
         }
         $out[] = '</g>';
 
@@ -68,7 +73,7 @@ final class MapSvg
         $out[] = '<g id="rivers" fill="none" stroke-linecap="round" stroke-linejoin="round">';
         $segments = [];
         foreach ($tiles as $t) {
-            if (! $t->river) {
+            if (! $t->river || $this->fogged($t)) {
                 continue;
             }
             $cx = $t->x * $s + $s / 2;
@@ -103,7 +108,7 @@ final class MapSvg
         // Layer 2: territory tint
         $out[] = '<g id="territory" opacity="0.22">';
         foreach ($tiles as $t) {
-            if ($t->empire_id && ($e = $empiresById->get($t->empire_id))) {
+            if ($t->empire_id && ! $this->fogged($t) && ($e = $empiresById->get($t->empire_id))) {
                 $out[] = sprintf('<rect x="%d" y="%d" width="%d" height="%d" fill="%s"/>', $t->x * $s, $t->y * $s, $s, $s, e($e->color));
             }
         }
@@ -112,7 +117,7 @@ final class MapSvg
         // Layer 3: borders on edges between different owners
         $out[] = '<g id="borders" stroke-width="3" stroke-linecap="square" fill="none">';
         foreach ($tiles as $t) {
-            if (! $t->empire_id) {
+            if (! $t->empire_id || $this->fogged($t)) {
                 continue;
             }
             $color = e($empiresById->get($t->empire_id)?->color ?? '#fff');
@@ -140,6 +145,9 @@ final class MapSvg
         // Layer 4: worked markers, resources, cities
         $out[] = '<g id="features">';
         foreach ($tiles as $t) {
+            if ($this->fogged($t)) {
+                continue;
+            }
             $cx = $t->x * $s + $s / 2;
             $cy = $t->y * $s + $s / 2;
             $city = $citiesByTile->get($t->id);
@@ -164,6 +172,27 @@ final class MapSvg
         }
         $out[] = '</g>';
 
+        // Layer 4a: the edge of the known world, shaded so the fog reads as distance
+        if ($this->visible !== null) {
+            $out[] = '<g id="fog-edge" style="pointer-events:none">';
+            foreach ($tiles as $t) {
+                if ($this->fogged($t)) {
+                    continue;
+                }
+                $near = 0;
+                foreach ([[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]] as [$dx, $dy]) {
+                    $n = $this->grid[$t->y + $dy][$t->x + $dx] ?? null;
+                    if ($n && $this->fogged($n)) {
+                        $near++;
+                    }
+                }
+                if ($near) {
+                    $out[] = sprintf('<rect x="%d" y="%d" width="%d" height="%d" fill="#0b0f15" opacity="%s"/>', $t->x * $s, $t->y * $s, $s, $s, min(0.55, 0.12 + 0.07 * $near));
+                }
+            }
+            $out[] = '</g>';
+        }
+
         // Layer 4b: where settlers may found a city, and the best spot
         if ($foundable) {
             $out[] = '<g id="founding" style="pointer-events:none">';
@@ -184,7 +213,7 @@ final class MapSvg
         foreach ($tiles as $t) {
             $city = $citiesByTile->get($t->id);
             $e = $t->empire_id ? $empiresById->get($t->empire_id) : null;
-            $title = Rules::TERRAIN[$t->terrain]['name']
+            $title = $this->fogged($t) ? 'Unexplored' : Rules::TERRAIN[$t->terrain]['name']
                 .($t->resource ? ', '.Rules::RESOURCES[$t->resource]['name'] : '')
                 .($t->camp ? ' · Barbarian camp' : '')
                 .($t->river && $t->isLand() ? ' · River' : '')
@@ -219,19 +248,22 @@ final class MapSvg
     }
 
     /** A tiny overview: one rect per tile with owner or terrain colour. */
-    public function minimap(Game $game, Collection $tiles, Collection $empiresById, Collection $citiesByTile): string
+    public function minimap(Game $game, Collection $tiles, Collection $empiresById, Collection $citiesByTile, ?array $visible = null): string
     {
+        $this->visible = $visible;
         $out = ['<svg id="minimap-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '.$game->width.' '.$game->height.'" shape-rendering="crispEdges" class="block h-auto w-full rounded border border-stone-700 bg-stone-950">'];
         foreach ($tiles as $t) {
             $fill = $t->isLand() ? ($t->terrain === 'mountain' ? '#57534e' : '#6b8f3a') : '#1e3a8a';
-            if ($t->empire_id && ($e = $empiresById->get($t->empire_id))) {
+            if ($this->fogged($t)) {
+                $fill = '#0b0f15';
+            } elseif ($t->empire_id && ($e = $empiresById->get($t->empire_id))) {
                 $fill = $e->color;
             }
             $out[] = sprintf('<rect x="%d" y="%d" width="1" height="1" fill="%s"/>', $t->x, $t->y, e($fill));
         }
         foreach ($citiesByTile as $city) {
             $t = $tiles->firstWhere('id', $city->tile_id);
-            if ($t) {
+            if ($t && ! $this->fogged($t)) {
                 $out[] = sprintf('<rect x="%s" y="%s" width="0.6" height="0.6" fill="#fff"/>', $t->x + 0.2, $t->y + 0.2);
             }
         }
@@ -239,6 +271,11 @@ final class MapSvg
         $out[] = '</svg>';
 
         return implode('', $out);
+    }
+
+    private function fogged(Tile $t): bool
+    {
+        return $this->visible !== null && ! isset($this->visible[$t->id]);
     }
 
     private function ownerAt(int $x, int $y): ?int

@@ -38,6 +38,9 @@ final class Achievements
         if ($player->wonders()) {
             $award('first_wonder');
         }
+        if ($player->explored !== null && Fog::percent($game, $player) >= 100) {
+            $award('cartographer');
+        }
         if ((int) $player->great_count > 0) {
             $award('great_person');
         }

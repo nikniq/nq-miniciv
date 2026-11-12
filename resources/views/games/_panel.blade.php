@@ -6,6 +6,10 @@
 @if (! $selected)
     <h2 class="font-semibold">Select a tile</h2>
     <p class="mt-1 text-stone-400">Click any tile on the map to inspect it, manage a city, found a new one, or attack a neighbour.</p>
+@elseif ($selected['unexplored'] ?? false)
+    <h2 class="font-semibold">🌫️ Unexplored</h2>
+    <div class="text-xs text-stone-500">({{ $selected['tile']->x }}, {{ $selected['tile']->y }})</div>
+    <p class="mt-2 text-stone-400">No one from your empire has seen this land. Borders reveal {{ Rules::FOG_BORDER_RADIUS }} tiles around your territory each turn, a new city reveals {{ Rules::FOG_CITY_RADIUS }}, and <b>Send scouts</b> from a city reveals {{ Rules::SCOUT_RADIUS }} for {{ Rules::SCOUT_COST }} gold.</p>
 @else
     @php $tile = $selected['tile']; $city = $selected['city']; @endphp
     <div class="flex items-start justify-between gap-2">
@@ -122,6 +126,12 @@
                     @csrf
                     <input type="hidden" name="build" value="settlers">
                     <button class="w-full rounded border border-emerald-800 px-3 py-1.5 text-xs text-emerald-200 hover:bg-emerald-950" title="Settlers found a new city. Costs {{ Rules::SETTLER_COST }} production and 1 population when complete (city must be size 2+).">🏕️ Train settlers to found a new city ({{ Rules::SETTLER_COST }} ⚒{{ $city->population < 2 ? ', needs size 2' : '' }})</button>
+                </form>
+            @endif
+            @if ($selected['scoutable'] ?? 0)
+                <form method="POST" action="{{ route('games.scout', [$game, $city]) }}" class="mt-2">
+                    @csrf
+                    <button class="w-full rounded border px-3 py-1.5 text-xs {{ $player->gold >= Rules::SCOUT_COST ? 'border-sky-800 text-sky-200 hover:bg-sky-950' : 'cursor-not-allowed border-stone-800 text-stone-500' }}" @disabled($player->gold < Rules::SCOUT_COST) title="Reveal the land within {{ Rules::SCOUT_RADIUS }} tiles of {{ $city->name }}">🧭 Send scouts: map {{ $selected['scoutable'] }} unexplored tiles ({{ Rules::SCOUT_COST }} gold)</button>
                 </form>
             @endif
             @if ($selected['buyPrice'])

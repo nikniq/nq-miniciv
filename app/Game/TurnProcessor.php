@@ -135,6 +135,7 @@ final class TurnProcessor
                 $empire->save();
             }
 
+            $this->revealBorders($game, $player);
             $this->attitudeDrift($game);
             $this->aiTechSwaps($game);
             $this->culturalPressure($game);
@@ -323,6 +324,34 @@ final class TurnProcessor
             $this->actions->useGreatPerson($game, $empire, $kind, $city);
         } catch (\InvalidArgumentException) {
             // Nothing sensible to spend it on; it waits.
+        }
+    }
+
+    /** The player's borders push back the fog a little every turn. */
+    private function revealBorders(Game $game, ?Empire $player): void
+    {
+        if (! $player || $player->explored === null) {
+            return;
+        }
+        $wondersBefore = $this->tiles->filter(fn (Tile $t) => $t->feature && Fog::visible($game, $player, $t))->pluck('feature')->all();
+        $new = 0;
+        foreach ($this->tiles as $t) {
+            if ($t->empire_id === $player->id) {
+                $new += Fog::reveal($game, $player, $t->x, $t->y, Rules::FOG_BORDER_RADIUS);
+            }
+        }
+        if ($new === 0) {
+            return;
+        }
+        $player->save();
+        foreach ($this->tiles as $t) {
+            if ($t->feature && ! in_array($t->feature, $wondersBefore, true) && Fog::visible($game, $player, $t)) {
+                $nw = Rules::NATURAL_WONDERS[$t->feature];
+                $this->events[] = "{$nw['glyph']} Your explorers discover {$nw['name']}, a natural wonder.";
+            }
+        }
+        if (Fog::percent($game, $player) >= 100) {
+            $this->events[] = '🧭 The whole world is mapped.';
         }
     }
 
