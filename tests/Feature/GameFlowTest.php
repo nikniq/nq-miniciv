@@ -394,7 +394,10 @@ class GameFlowTest extends TestCase
         $capital->update(['population' => Rules::SIZE_CAP, 'food_stored' => 999, 'focus' => 'food']);
 
         $this->actingAs($user)->post(route('games.end-turn', $game));
-        $this->assertSame(Rules::SIZE_CAP, $capital->fresh()->population);
+        // 999 stored food would grow any uncapped city; a random plague may
+        // also take one citizen the same turn, so only the ceiling is exact.
+        $this->assertLessThanOrEqual(Rules::SIZE_CAP, $capital->fresh()->population);
+        $this->assertGreaterThanOrEqual(Rules::SIZE_CAP - 1, $capital->fresh()->population);
         $this->assertStringContainsString('Aqueduct', implode(' ', $game->fresh()->events));
     }
 
@@ -458,7 +461,8 @@ class GameFlowTest extends TestCase
         $game->save();
         $this->actingAs($user)->get(route('games.show', $game))->assertOk()->assertDontSee('🔁 techs');
 
-        $game->adjustAttitude($player->id, $rival->id, 30);
+        // Devoted, so even a Scholar (who asks more) accepts a cheap tech.
+        $game->adjustAttitude($player->id, $rival->id, 65);
         $game->save();
         $this->actingAs($user)->get(route('games.show', $game))->assertOk()->assertSee('🔁 techs');
 

@@ -164,7 +164,7 @@
     </div>
 @endif
 
-<div class="grid gap-4 lg:grid-cols-[1fr_22rem]">
+<div id="game-grid" class="grid gap-4 lg:grid-cols-[1fr_22rem]">
     {{-- Map --}}
     <div class="rounded-lg border border-stone-800 bg-stone-950 p-2 shadow-inner">
         <div class="relative">
@@ -176,6 +176,7 @@
                 <button type="button" data-zoom="out" class="h-7 w-7 rounded bg-stone-900/90 text-stone-200 shadow hover:bg-stone-800" title="Zoom out">−</button>
                 <button type="button" data-zoom="reset" class="h-7 w-7 rounded bg-stone-900/90 text-xs text-stone-200 shadow hover:bg-stone-800" title="Fit whole map">⤢</button>
                 <button type="button" data-zoom="home" class="h-7 w-7 rounded bg-stone-900/90 text-xs text-stone-200 shadow hover:bg-stone-800" title="Centre on capital" data-tile="{{ $player->cities->firstWhere('is_capital', true)?->tile_id ?? $player->cities->first()?->tile_id }}">⌂</button>
+                <button type="button" data-zoom="wide" class="h-7 w-7 rounded bg-stone-900/90 text-xs text-stone-200 shadow hover:bg-stone-800" title="Big map: full width, panels below (B)">⛶</button>
             </div>
             <div id="minimap" class="absolute bottom-2 right-2 w-24 cursor-crosshair opacity-70 transition hover:opacity-100 sm:w-32" title="Click to pan">
                 {!! $minimap !!}
@@ -185,7 +186,7 @@
             @foreach ($rivals as $r)
                 <span class="{{ $r['empire']->eliminated ? 'line-through opacity-50' : '' }}"><span class="mr-1 inline-block h-2.5 w-2.5 rounded-sm" style="background: {{ $r['empire']->color }}"></span>{{ $r['empire']->name }}</span>
             @endforeach
-            <span class="ml-auto hidden sm:inline">drag to pan · scroll to zoom · circle = city (population) · ★ capital · dashed ring = walls · gold ring = wonder</span>
+            <span class="ml-auto hidden sm:inline">drag or scroll to pan · ⌘/Ctrl+scroll or buttons to zoom · WASD pans, arrows move the selection · circle = city (population) · ★ capital · dashed ring = walls · gold ring = wonder</span>
         </div>
     </div>
 
@@ -288,42 +289,28 @@
                     <button class="rounded border border-stone-600 px-3 py-1.5 text-xs hover:bg-stone-800">{{ $research ? 'Switch' : 'Research' }}</button>
                 </form>
             @endif
-            <details class="mt-3 text-xs">
+            <details class="mt-3 text-xs" @if ($researchUnset) open @endif>
                 <summary class="cursor-pointer text-stone-400 hover:text-white">Tech tree ({{ count($player->technologies ?? []) }}/{{ count(Rules::TECHS) }} known)</summary>
-                <div class="mt-2 space-y-2">
-                    @foreach ($techTiers as $tier => $keys)
-                        <div class="grid grid-cols-2 gap-1">
-                            <div class="col-span-2 text-[10px] uppercase tracking-wide text-stone-600">Tier {{ $tier + 1 }}</div>
-                            @foreach ($keys as $key)
-                                @php
-                                    $t = Rules::TECHS[$key];
-                                    $state = $player->knows($key) ? 'known' : (isset($availableTechs[$key]) ? 'available' : 'locked');
-                                    $cls = ['known' => 'border-emerald-800 bg-emerald-950/40 text-emerald-200', 'available' => 'border-sky-700 bg-sky-950/40 text-sky-100', 'locked' => 'border-stone-800 text-stone-500'][$state];
-                                @endphp
-                                @if ($state === 'available' && $game->isActive())
-                                    <form method="POST" action="{{ route('games.research', $game) }}">
-                                        @csrf
-                                        <input type="hidden" name="tech" value="{{ $key }}">
-                                        <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
-                                        <button class="w-full rounded border px-2 py-1 text-left {{ $cls }} {{ $key === $player->current_tech ? 'ring-1 ring-sky-400' : 'hover:bg-sky-900/40' }}" title="{{ $t['unlocks'] }}">
-                                            <div class="font-medium">{{ $t['name'] }}</div><div class="opacity-70">{{ $t['cost'] }} 🔬 · {{ $t['unlocks'] }}</div>
-                                        </button>
-                                    </form>
-                                @else
-                                    <div class="rounded border px-2 py-1 {{ $cls }}" title="{{ $t['unlocks'] }}@if ($t['requires']) · needs {{ collect($t['requires'])->map(fn ($r) => Rules::TECHS[$r]['name'])->join(', ') }}@endif">
-                                        <div class="font-medium">{{ $t['name'] }}</div><div class="opacity-70 truncate">{{ $t['unlocks'] }}</div>
-                                    </div>
-                                @endif
-                            @endforeach
-                        </div>
-                    @endforeach
-                </div>
+                <p class="mt-1 text-[10px] text-stone-500"><span class="text-emerald-300">✓ known</span> · <span class="text-sky-300">○ available, click to research</span> · <span class="text-amber-300">gold frame = current</span> · 🔒 locked. Arrows show what each discovery needs. Scroll sideways.</p>
+                <div class="mt-2 overflow-x-auto rounded border border-stone-800 bg-stone-950/60 p-2">{!! $techTreeSvg !!}</div>
+                @if ($game->isActive())
+                    <form method="POST" action="{{ route('games.research', $game) }}" id="research-pick" class="hidden">
+                        @csrf
+                        <input type="hidden" name="tech" value="">
+                        <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                    </form>
+                @endif
             </details>
         </section>
 
         {{-- Empires --}}
         <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
             <h2 class="font-semibold">Empires</h2>
+            <details class="mt-2 text-xs" open>
+                <summary class="cursor-pointer text-stone-400 hover:text-white">Relations web</summary>
+                <div class="mx-auto mt-1 max-w-xs">{!! $relationsSvg !!}</div>
+                <p class="text-[10px] text-stone-500"><span class="text-red-400">red dashes = war</span> · <span class="text-emerald-300">green = friendly</span>, thicker the warmer · <span class="text-orange-300">orange dots = wary</span> · grey = neutral. Numbers are attitudes toward you. Hover a line for details.</p>
+            </details>
             <ul class="mt-2 divide-y divide-stone-800/80">
                 @foreach ($rivals as $r)
                     @php $e = $r['empire']; $me = $e->id === $player->id; @endphp

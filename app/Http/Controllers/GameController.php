@@ -31,7 +31,7 @@ class GameController extends Controller
     {
         $data = $request->validate([
             'empire' => ['required', 'string', 'max:30', 'regex:/^[\pL\pN \'\-]+$/u'],
-            'rivals' => ['required', 'integer', 'min:1', 'max:5'],
+            'rivals' => ['required', 'integer', 'min:1', 'max:7'],
             'size' => ['required', 'in:'.implode(',', array_keys(Rules::MAP_SIZES))],
             'difficulty' => ['required', 'in:'.implode(',', array_keys(Rules::DIFFICULTIES))],
         ]);

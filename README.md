@@ -27,7 +27,7 @@ capital bonus, garrison). Capturing takes the city and its land. Happiness
 (base + per city + monuments/temples) must cover citizens beyond the first
 two in each city or growth stops; buildings and the army cost gold upkeep.
 
-Options when starting a game: map size (small to huge, 18×12 up to 44×28), number of
+Options when starting a game: map size (small 20×13 up to a giant 72×46 world; scroll to pan, ⌘/Ctrl+scroll to zoom, ⛶ or B for a full-width map), number of
 rivals, and difficulty (Settler to Emperor, which scales AI production and
 science). Diplomacy is war or peace between each pair of empires; AI rivals
 declare war a turn before attacking and sue for peace when losing or tired.

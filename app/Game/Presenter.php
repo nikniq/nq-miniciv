@@ -282,6 +282,8 @@ final class Presenter
             'anarchy' => $player->inAnarchy($game->turn) ? $player->anarchy_until - $game->turn + 1 : 0,
             'achievements' => $game->user?->achievements ?? [],
             'techTiers' => Economy::techTiers(),
+            'techTreeSvg' => DiagramSvg::techTree($player, Economy::techTiers(), $player->availableTechs(), $game->isActive()),
+            'relationsSvg' => DiagramSvg::relations($game, $game->empires, $player),
             'cityYields' => $cityYields,
             'settlersWaiting' => $player->settlers > 0,
             'bestSite' => $bestSite,

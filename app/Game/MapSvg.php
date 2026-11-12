@@ -58,7 +58,7 @@ final class MapSvg
         }
 
         $out = [];
-        $out[] = '<svg id="map-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '.$w.' '.$h.'" class="block h-auto w-full select-none" style="min-width:'.($game->width * 30).'px" role="img" aria-label="World map">';
+        $out[] = '<svg id="map-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '.$w.' '.$h.'" class="block h-full w-full select-none" preserveAspectRatio="xMidYMid meet" role="img" aria-label="World map">';
         $out[] = $this->defs();
         $out[] = '<pattern id="fogp" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(35)"><rect width="10" height="10" fill="#0b0f15"/><rect width="10" height="3" fill="#121922"/></pattern>';
 
@@ -283,6 +283,19 @@ final class MapSvg
         return isset($this->grid[$y][$x]) ? $this->grid[$y][$x]->empire_id : null;
     }
 
+    private function landWithin(int $x, int $y, int $r): bool
+    {
+        for ($dy = -$r; $dy <= $r; $dy++) {
+            for ($dx = -$r; $dx <= $r; $dx++) {
+                if (($dx || $dy) && $this->isLandAt($x + $dx, $y + $dy)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     private function isLandAt(int $x, int $y): bool
     {
         return isset($this->grid[$y][$x]) && $this->grid[$y][$x]->isLand();
@@ -303,6 +316,9 @@ final class MapSvg
             $coast = $this->isLandAt($t->x - 1, $t->y) || $this->isLandAt($t->x + 1, $t->y) || $this->isLandAt($t->x, $t->y - 1) || $this->isLandAt($t->x, $t->y + 1);
             if ($coast) {
                 $fill = self::PALETTE['coast'];
+            } elseif (! $this->landWithin($t->x, $t->y, 2)) {
+                // Open sea darkens with distance from land.
+                $fill = $this->adjust($this->landWithin($t->x, $t->y, 4) ? '#0f3666' : '#0a2a55', $shade * 2);
             }
             // deterministic wave placement
             $k = ($t->x * 7 + $t->y * 13) % 3;

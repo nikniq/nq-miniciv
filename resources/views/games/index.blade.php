@@ -71,7 +71,7 @@
                     <label class="block text-sm">
                         <span class="text-stone-300">Rivals</span>
                         <select name="rivals" class="mt-1 w-full rounded border border-stone-700 bg-stone-900 px-3 py-2 focus:border-amber-500 focus:outline-none">
-                            @foreach ([1, 2, 3, 4, 5] as $n)
+                            @foreach ([1, 2, 3, 4, 5, 6, 7] as $n)
                                 <option value="{{ $n }}" @selected(old('rivals', 2) == $n)>{{ $n }}</option>
                             @endforeach
                         </select>
@@ -85,7 +85,7 @@
                         @endforeach
                     </select>
                 </label>
-                <p class="text-xs text-stone-500">A small map allows up to 2 rivals, normal 4, large 5; extra rivals are trimmed.</p>
+                <p class="text-xs text-stone-500">Rivals are capped by map size: small 2, normal 4, large 6, huge and giant 7. A giant world is {{ $sizes['giant']['width'] * $sizes['giant']['height'] }} tiles; scroll the map with the mouse wheel and zoom with ⌘/Ctrl + wheel or the buttons.</p>
                 <button class="w-full rounded bg-amber-500 px-4 py-2 font-medium text-stone-950 hover:bg-amber-400">Found your empire</button>
             </form>
             <p class="mt-4 text-xs text-stone-500">

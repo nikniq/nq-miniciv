@@ -21,10 +21,11 @@ final class Rules
 
     /** Map sizes: width, height, rivals allowed. */
     public const MAP_SIZES = [
-        'small' => ['name' => 'Small', 'width' => 18, 'height' => 12, 'max_rivals' => 2],
-        'normal' => ['name' => 'Normal', 'width' => 26, 'height' => 17, 'max_rivals' => 4],
-        'large' => ['name' => 'Large', 'width' => 34, 'height' => 22, 'max_rivals' => 6],
-        'huge' => ['name' => 'Huge', 'width' => 44, 'height' => 28, 'max_rivals' => 7],
+        'small' => ['name' => 'Small', 'width' => 20, 'height' => 13, 'max_rivals' => 2],
+        'normal' => ['name' => 'Normal', 'width' => 30, 'height' => 20, 'max_rivals' => 4],
+        'large' => ['name' => 'Large', 'width' => 40, 'height' => 26, 'max_rivals' => 6],
+        'huge' => ['name' => 'Huge', 'width' => 52, 'height' => 34, 'max_rivals' => 7],
+        'giant' => ['name' => 'Giant world', 'width' => 72, 'height' => 46, 'max_rivals' => 7],
     ];
 
     /** River bonus on land tiles; deserts by a river become flood plains. */

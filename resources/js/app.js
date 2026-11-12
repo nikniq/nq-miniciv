@@ -53,15 +53,40 @@ if (map) {
     };
     const centerOn = (x, y, w) => { if (w) vb.w = w; vb.x = x - vb.w / 2; vb.y = y - (vb.w * H / W) / 2; apply(); };
 
-    map.addEventListener('wheel', (e) => { e.preventDefault(); zoomAt(e.deltaY > 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY); }, { passive: false });
+    // Big map: the map takes the full width and more height; panels flow below it.
+    const grid = document.getElementById('game-grid');
+    const aside = grid?.querySelector('aside');
+    let wide = false;
+    const setWide = (on) => {
+        wide = on;
+        if (grid) grid.style.gridTemplateColumns = on ? '1fr' : '';
+        map.style.maxHeight = on ? '86vh' : '78vh';
+        if (aside) Object.assign(aside.style, on
+            ? { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(20rem, 1fr))', alignItems: 'start', gap: '1rem' }
+            : { display: '', gridTemplateColumns: '', alignItems: '', gap: '' });
+        document.querySelector('[data-zoom="wide"]')?.classList.toggle('ring-1', on);
+        try { localStorage.setItem('miniciv.wide', on ? '1' : '0'); } catch {}
+    };
+    try { if (localStorage.getItem('miniciv.wide') === '1') setWide(true); } catch {}
+
+    // Wheel scrolls the map like a page; hold ⌘/Ctrl (or pinch on a trackpad) to zoom.
+    map.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        if (e.ctrlKey || e.metaKey) { zoomAt(e.deltaY > 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY); return; }
+        const r = svg.getBoundingClientRect();
+        const k = vb.w / r.width;
+        const dx = (e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX) * k, dy = (e.shiftKey && !e.deltaX ? 0 : e.deltaY) * k;
+        vb.x += dx; vb.y += dy; apply();
+    }, { passive: false });
     document.querySelectorAll('[data-zoom]').forEach((b) => b.addEventListener('click', () => {
         const z = b.dataset.zoom;
         if (z === 'in') zoomAt(1 / 1.3);
         else if (z === 'out') zoomAt(1.3);
         else if (z === 'reset') { vb = { x: 0, y: 0, w: W, h: H }; apply(); }
+        else if (z === 'wide') setWide(!wide);
         else if (z === 'home' && b.dataset.tile) {
             const r = map.querySelector(`.map-tile[data-tile="${b.dataset.tile}"] rect`);
-            if (r) centerOn(+r.getAttribute('x') + +r.getAttribute('width') / 2, +r.getAttribute('y') + +r.getAttribute('width') / 2, W / 2.5);
+            if (r) centerOn(+r.getAttribute('x') + +r.getAttribute('width') / 2, +r.getAttribute('y') + +r.getAttribute('width') / 2, Math.min(W, 16 * +r.getAttribute('width')));
         }
     }));
 
@@ -224,6 +249,12 @@ if (map) {
         if (['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(document.activeElement?.tagName)) return;
         if (e.key === 'Enter') document.getElementById('end-turn-form')?.requestSubmit();
         // Arrow keys move the selection one tile.
+        if (e.key?.toLowerCase() === 'b' && !e.metaKey && !e.ctrlKey && !e.altKey) { setWide(!wide); e.preventDefault(); return; }
+        const pans = { w: [0, -1], a: [-1, 0], s: [0, 1], d: [1, 0] };
+        if (pans[e.key?.toLowerCase()] && !e.metaKey && !e.ctrlKey && !e.altKey) {
+            const [px, py] = pans[e.key.toLowerCase()];
+            vb.x += px * vb.w / 8; vb.y += py * vb.w / 8; apply(); e.preventDefault(); return;
+        }
         const dirs = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
         if (dirs[e.key]) {
             const cur = map.querySelector('.map-tile.is-selected') || map.querySelector(`.map-tile[data-tile="${new URL(window.location).searchParams.get('tile')}"]`);
@@ -241,5 +272,15 @@ if (map) {
         if (e.key === '+' || e.key === '=') zoomAt(1 / 1.3);
         if (e.key === '-') zoomAt(1.3);
         if (e.key === '0') { vb = { x: 0, y: 0, w: W, h: H }; apply(); }
+    });
+}
+
+// Tech tree diagram: clicking an available node submits the research form.
+const researchForm = document.getElementById('research-pick');
+if (researchForm) {
+    const go = (node) => { researchForm.querySelector('input[name=tech]').value = node.dataset.research; researchForm.submit(); };
+    document.querySelectorAll('[data-research]').forEach((node) => {
+        node.addEventListener('click', () => go(node));
+        node.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(node); } });
     });
 }
