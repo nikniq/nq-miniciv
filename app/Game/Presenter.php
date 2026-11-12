@@ -145,11 +145,17 @@ final class Presenter
         $landTotal = max(1, $tiles->filter(fn (Tile $t) => $t->isLand())->count());
         $ownedBy = $tiles->filter(fn (Tile $t) => $t->isLand() && $t->empire_id)->countBy('empire_id');
 
-        // Map rows.
+        // Map rows, row-major. Keys are sorted afterwards: far cheaper than
+        // sorting thousands of models with a two-key comparator.
         $grid = [];
-        foreach ($tiles->sortBy([['y', 'asc'], ['x', 'asc']]) as $t) {
+        foreach ($tiles as $t) {
             $grid[$t->y][$t->x] = $t;
         }
+        ksort($grid);
+        foreach ($grid as &$row) {
+            ksort($row);
+        }
+        unset($row);
 
         // Selected tile details.
         $selected = $selectedTileId ? $tiles->firstWhere('id', $selectedTileId) : null;
