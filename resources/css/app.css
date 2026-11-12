@@ -25,7 +25,12 @@
     #map-svg .wave.w2 { animation-delay: -4s; }
     #map-svg .river-shimmer { animation: shimmer 3s linear infinite; }
     #map-svg .city { transition: transform 150ms; }
+    #map-svg .trade-route { animation: caravan 1.4s linear infinite; }
+    #map-svg .raid-path { animation: march 0.9s linear infinite; }
+    #map-svg .foam { animation: shimmer 5s linear infinite; }
 }
+@keyframes caravan { to { stroke-dashoffset: -7.1; } }
+@keyframes march { to { stroke-dashoffset: -13; } }
 @keyframes drift { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(3px); } }
 @keyframes shimmer { to { stroke-dashoffset: -32; } }
 
