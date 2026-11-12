@@ -366,3 +366,34 @@ document.querySelector('.share-result')?.addEventListener('click', async (e) => 
     } catch { b.textContent = '✕ Could not share'; }
     setTimeout(() => { b.textContent = '📣 Share'; }, 2500);
 });
+
+// Collapsible sidebar panels: click a panel's heading to fold it away; the
+// choice is remembered per browser. The city panel and checklist keep their own behaviour.
+(() => {
+    const aside = document.querySelector('#game-grid aside');
+    if (!aside) return;
+    const KEY = 'miniciv.collapsed';
+    let folded = [];
+    try { folded = JSON.parse(localStorage.getItem(KEY)) || []; } catch {}
+    const save = () => { try { localStorage.setItem(KEY, JSON.stringify(folded)); } catch {} };
+    aside.querySelectorAll(':scope > section').forEach((section) => {
+        if (section.id === 'tile-panel' || section.classList.contains('advisor-tip')) return;
+        const head = section.firstElementChild;
+        const h2 = head?.matches('h2') ? head : head?.querySelector('h2');
+        if (!h2) return;
+        // Headings carry live numbers ("Army · strength 10"); key on the words only.
+        const key = h2.textContent.split('·')[0].replace(/[0-9/()%+−-]/g, '').trim();
+        if (!key) return;
+        section.classList.add('foldable');
+        h2.classList.add('cursor-pointer', 'select-none');
+        h2.title = 'Click to fold or unfold';
+        const set = (on) => section.classList.toggle('folded', on);
+        set(folded.includes(key));
+        h2.addEventListener('click', () => {
+            const on = !section.classList.contains('folded');
+            set(on);
+            folded = on ? [...new Set([...folded, key])] : folded.filter((k) => k !== key);
+            save();
+        });
+    });
+})();
