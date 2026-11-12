@@ -22,6 +22,8 @@ final class TurnProcessor
     private Collection $tiles;
 
     /** @var array<int, array<int, Tile>> y => x => tile */
+    private array $byId = [];
+
     private array $grid = [];
 
     public function __construct(private Actions $actions, private AiPlayer $ai) {}
@@ -33,8 +35,10 @@ final class TurnProcessor
             $this->tiles = $game->tiles;
             $this->events = [];
             $this->grid = [];
+            $this->byId = [];
             foreach ($this->tiles as $t) {
                 $this->grid[$t->y][$t->x] = $t;
+                $this->byId[$t->id] = $t;
             }
             $player = $game->playerEmpire();
 
@@ -86,7 +90,7 @@ final class TurnProcessor
                 $index = new TileIndex($this->tiles);
                 foreach ($empire->cities as $city) {
                     $cityTiles = collect($index->cityTiles($city->id));
-                    $centre = $this->tiles->firstWhere('id', $city->tile_id);
+                    $centre = ($this->byId[$city->tile_id] ?? null);
                     $pillaged = $centre ? $this->campsNear($centre) : 0;
                     if ($pillaged) {
                         $this->note($empire, "Barbarians are pillaging around {$city->name} (−".(2 * $pillaged).' food). Clear the camp with your army.');
@@ -297,7 +301,7 @@ final class TurnProcessor
         $city->culture += $y['culture'];
         $after = Rules::borderRadiusSq($city->culture);
         if ($after > $before) {
-            $centre = $this->tiles->firstWhere('id', $city->tile_id);
+            $centre = ($this->byId[$city->tile_id] ?? null);
             $claimed = $this->actions->expandBorders($city, $centre, $this->tiles, $after, $this->grid);
             if ($claimed) {
                 $this->note($empire, "The borders of {$city->name} have expanded.");
@@ -413,7 +417,7 @@ final class TurnProcessor
     {
         $gold = 0;
         $allCities = $game->empires->flatMap->cities->keyBy('id');
-        $byId = $this->tiles->keyBy('id');
+        $byId = collect($this->byId);
         foreach ($empire->cities as $city) {
             if (! $city->trade_to) {
                 continue;
@@ -705,7 +709,7 @@ final class TurnProcessor
             if ($city->culture < 30) {
                 continue;
             }
-            $centre = $this->tiles->firstWhere('id', $city->tile_id);
+            $centre = ($this->byId[$city->tile_id] ?? null);
             if (! $centre) {
                 continue;
             }
@@ -720,7 +724,7 @@ final class TurnProcessor
                     if (! $owner || $owner->tile_id === $t->id) {
                         continue;
                     }
-                    $ownerCentre = $this->tiles->firstWhere('id', $owner->tile_id);
+                    $ownerCentre = ($this->byId[$owner->tile_id] ?? null);
                     if ($ownerCentre && $ownerCentre->distanceTo($t) <= 1) {
                         continue;
                     }
@@ -837,7 +841,7 @@ final class TurnProcessor
     {
         $cities = $game->empires->flatMap->cities->keyBy('id');
         $empires = $game->empires->keyBy('id');
-        $byId = $this->tiles->keyBy('id');
+        $byId = collect($this->byId);
         $pending = [];
         foreach ($game->raids ?? [] as $r) {
             $camp = $byId->get($r['camp']);
