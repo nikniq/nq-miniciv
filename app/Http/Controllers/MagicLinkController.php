@@ -46,7 +46,11 @@ class MagicLinkController extends Controller
             return redirect()->route('login')->withErrors(['email' => 'That link has expired or was already used. Request a new one.']);
         }
         $email = Str::lower((string) $request->query('email'));
-        $guest = $request->filled('guest') ? User::where('is_guest', true)->find($request->integer('guest')) : null;
+        // Only the guest who asked for the link, opening it in the same browser,
+        // may attach their games to the address. Anyone else just signs in.
+        $guestId = $request->filled('guest') ? $request->integer('guest') : null;
+        $current = $request->user();
+        $guest = ($guestId && $current && $current->isGuest() && $current->id === $guestId) ? $current : null;
         $user = User::where('email', $email)->first();
 
         if ($user && $guest && $guest->isNot($user)) {
@@ -55,7 +59,7 @@ class MagicLinkController extends Controller
             $user->achievements = ($user->achievements ?? []) + ($guest->achievements ?? []);
             $guest->delete();
         } elseif (! $user && $guest) {
-            $guest->forceFill(['email' => $email, 'name' => $this->nameFor($email), 'is_guest' => false])->save();
+            $guest->forceFill(['email' => $email, 'name' => $this->nameFor($email), 'is_guest' => false, 'remember_token' => Str::random(60)])->save();
             $user = $guest;
         } elseif (! $user) {
             $user = User::create(['name' => $this->nameFor($email), 'email' => $email, 'password' => null]);

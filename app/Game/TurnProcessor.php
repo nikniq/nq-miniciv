@@ -24,6 +24,9 @@ final class TurnProcessor
     /** @var array<int, array<int, Tile>> y => x => tile */
     private array $byId = [];
 
+    /** The empire and city that completed the Grand Expedition this turn, if any. */
+    private ?array $expedition = null;
+
     private array $grid = [];
 
     public function __construct(private Actions $actions, private AiPlayer $ai) {}
@@ -34,6 +37,7 @@ final class TurnProcessor
             $game->load(['empires.cities', 'cities', 'tiles']);
             $this->tiles = $game->tiles;
             $this->events = [];
+            $this->expedition = null;
             $this->grid = [];
             $this->byId = [];
             foreach ($this->tiles as $t) {
@@ -148,8 +152,12 @@ final class TurnProcessor
                 $empire->save();
             }
 
+            // Snapshot known wonders before any of this turn's reveals (allies' maps included).
+            $wondersBefore = ($player && $player->explored !== null)
+                ? $this->tiles->filter(fn (Tile $t) => $t->feature && Fog::visible($game, $player, $t))->pluck('feature')->all()
+                : [];
             $this->alliances($game, $player);
-            $this->revealBorders($game, $player);
+            $this->revealBorders($game, $player, $wondersBefore);
             $this->attitudeDrift($game);
             $this->aiTechSwaps($game);
             $this->aiAlliances($game);
@@ -262,6 +270,9 @@ final class TurnProcessor
             $city->buildings = array_values(array_unique(array_merge($city->buildings ?? [], [$key])));
             if (Rules::isWonder($key)) {
                 $wondersBuilt[] = $key;
+                if ($key === 'grand_expedition') {
+                    $this->expedition ??= ['empire' => $empire->id, 'city' => $city->name];
+                }
                 $this->events[] = "{$empire->name} completed the ".Economy::buildName($key).' in '.$city->name.'!';
             } else {
                 $this->note($empire, "{$city->name} finished a ".Economy::buildName($key).'.');
@@ -348,7 +359,7 @@ final class TurnProcessor
             return;
         }
         // AI: engineers go to the city with the dearest unfinished build.
-        $city = $empire->cities->filter(fn ($c) => $c->current_build && $c->current_build !== 'wealth')
+        $city = $empire->cities->filter(fn ($c) => $c->current_build && $c->current_build !== 'wealth' && ! in_array($c->current_build, Rules::NO_HURRY, true))
             ->sortByDesc(fn ($c) => (Economy::buildCost($c->current_build) ?? 0) - $c->production_stored)->first()
             ?? $empire->cities->first();
         try {
@@ -396,22 +407,20 @@ final class TurnProcessor
     }
 
     /** The player's borders push back the fog a little every turn. */
-    private function revealBorders(Game $game, ?Empire $player): void
+    private function revealBorders(Game $game, ?Empire $player, array $wondersBefore = []): void
     {
         if (! $player || $player->explored === null) {
             return;
         }
-        $wondersBefore = $this->tiles->filter(fn (Tile $t) => $t->feature && Fog::visible($game, $player, $t))->pluck('feature')->all();
         $new = 0;
         foreach ($this->tiles as $t) {
             if ($t->empire_id === $player->id) {
                 $new += Fog::reveal($game, $player, $t->x, $t->y, Rules::FOG_BORDER_RADIUS);
             }
         }
-        if ($new === 0) {
-            return;
+        if ($new > 0) {
+            $player->save();
         }
-        $player->save();
         foreach ($this->tiles as $t) {
             if ($t->feature && ! in_array($t->feature, $wondersBefore, true) && Fog::visible($game, $player, $t)) {
                 $nw = Rules::NATURAL_WONDERS[$t->feature];
@@ -530,8 +539,17 @@ final class TurnProcessor
                 }
                 uasort($aGets, fn ($x, $y) => $x['cost'] <=> $y['cost']);
                 uasort($bGets, fn ($x, $y) => $x['cost'] <=> $y['cost']);
-                $a->technologies = array_values(array_unique(array_merge($a->technologies ?? [], [array_key_first($aGets)])));
-                $b->technologies = array_values(array_unique(array_merge($b->technologies ?? [], [array_key_first($bGets)])));
+                $aKey = array_key_first($aGets);
+                $bKey = array_key_first($bGets);
+                $a->technologies = array_values(array_unique(array_merge($a->technologies ?? [], [$aKey])));
+                $b->technologies = array_values(array_unique(array_merge($b->technologies ?? [], [$bKey])));
+                // Research already gained by trade must not keep soaking up science.
+                if ($a->current_tech === $aKey) {
+                    $a->current_tech = $this->ai->chooseTech($a);
+                }
+                if ($b->current_tech === $bKey) {
+                    $b->current_tech = $this->ai->chooseTech($b);
+                }
                 $a->save();
                 $b->save();
                 $game->adjustAttitude($a->id, $b->id, 3);
@@ -577,24 +595,23 @@ final class TurnProcessor
             return;
         }
 
-        // Science victory: the Grand Expedition has sailed. Read the empires'
-        // own city models: they carry buildings completed this turn.
-        foreach ($game->empires->flatMap->cities as $c) {
-            if ($c->has('grand_expedition')) {
-                $launcher = $game->empires->firstWhere('id', $c->empire_id);
-                if ($launcher && ! $launcher->eliminated) {
-                    $game->status = $launcher->is_ai ? 'lost' : 'won';
-                    $game->winner_empire_id = $launcher->id;
-                    array_unshift($this->events, $launcher->is_ai
-                        ? "The Grand Expedition of {$launcher->name} sails from {$c->name} into a new age. Their science has won the world."
-                        : "Your Grand Expedition sails from {$c->name} into a new age. Science victory!");
-                    foreach ($game->empires as $e) {
-                        $e->score = $e->eliminated ? 0 : Economy::score($e, $ownedBy[$e->id] ?? 0);
-                        $e->save();
-                    }
-
-                    return;
+        // Science victory: the Grand Expedition has sailed. It belongs to the
+        // empire that completed it this turn, even if the city fell afterwards.
+        if ($this->expedition) {
+            $launcher = $game->empires->firstWhere('id', $this->expedition['empire']);
+            $from = $this->expedition['city'];
+            if ($launcher && ! $launcher->eliminated) {
+                $game->status = $launcher->is_ai ? 'lost' : 'won';
+                $game->winner_empire_id = $launcher->id;
+                array_unshift($this->events, $launcher->is_ai
+                    ? "The Grand Expedition of {$launcher->name} sails from {$from} into a new age. Their science has won the world."
+                    : "Your Grand Expedition sails from {$from} into a new age. Science victory!");
+                foreach ($game->empires as $e) {
+                    $e->score = $e->eliminated ? 0 : Economy::score($e, $ownedBy[$e->id] ?? 0);
+                    $e->save();
                 }
+
+                return;
             }
         }
 

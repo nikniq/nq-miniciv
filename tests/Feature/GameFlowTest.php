@@ -949,4 +949,29 @@ class GameFlowTest extends TestCase
         $this->assertContains('mining', $player->fresh()->technologies);
         $this->assertContains('agriculture', $rival->fresh()->technologies);
     }
+
+    public function test_a_repeated_end_turn_submit_does_not_play_two_turns(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $turn = $game->turn;
+        $this->actingAs($user)->post(route('games.end-turn', $game), ['turn' => $turn]);
+        $this->actingAs($user)->post(route('games.end-turn', $game), ['turn' => $turn]);
+        $this->assertSame($turn + 1, $game->fresh()->turn);
+    }
+
+    public function test_bought_production_does_not_move_onto_the_grand_expedition(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        $capital = $player->cities->first();
+        $player->update(['technologies' => array_keys(Rules::TECHS)]);
+        $capital->update(['buildings' => ['library', 'university'], 'current_build' => 'pyramids', 'production_stored' => 300]);
+
+        $this->actingAs($user)->post(route('games.build', [$game, $capital]), ['build' => 'grand_expedition']);
+        $capital->refresh();
+        $this->assertSame('grand_expedition', $capital->current_build);
+        $this->assertSame(0, $capital->production_stored);
+    }
 }

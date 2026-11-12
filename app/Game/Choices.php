@@ -128,8 +128,12 @@ final class Choices
                 : 'You keep your knowledge to yourselves.',
             'alliance' => $a
                 ? (function () use ($game, $player, $rival) {
-                    if (! $rival || $rival->eliminated || $game->atWar($player->id, $rival->id)) {
+                    if (! $rival || $rival->eliminated || $game->atWar($player->id, $rival->id) || $game->allied($player->id, $rival->id)) {
                         return 'The offer has lapsed.';
+                    }
+                    $others = $game->empires->filter(fn ($o) => ! $o->eliminated && $o->id !== $rival->id && $o->id !== $player->id);
+                    if ($others->isNotEmpty() && $others->every(fn ($o) => $game->allied($rival->id, $o->id))) {
+                        return "Accepting now would complete {$rival->name}'s Grand Alliance and hand them victory. The offer lapses.";
                     }
                     $game->setAllied($player->id, $rival->id, true);
                     $game->adjustAttitude($player->id, $rival->id, 5);
@@ -161,6 +165,12 @@ final class Choices
                 })(),
             'caravan' => $a
                 ? (function () use ($player, $city, $gold) {
+                    // The Grand Expedition must be earned with production, not bought.
+                    if (in_array($city->current_build, Rules::NO_HURRY, true)) {
+                        $player->research_progress += 8;
+
+                        return 'The merchants will not supply the Expedition, but they share news of far-off inventions.';
+                    }
                     $player->gold -= $gold;
                     $city->production_stored += 2 * $gold;
 

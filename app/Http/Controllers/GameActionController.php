@@ -25,6 +25,10 @@ class GameActionController extends Controller
         if (! $game->isActive()) {
             return $this->back($game, 'This game is over.');
         }
+        // A repeated submit (double press, resent form) must not play a second turn.
+        if ($request->filled('turn') && $request->integer('turn') !== $game->turn) {
+            return redirect()->route('games.show', ['game' => $game, 'tile' => $request->integer('tile') ?: null]);
+        }
 
         $turns->endTurn($game);
 

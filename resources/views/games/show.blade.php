@@ -184,6 +184,7 @@
                   data-warn="{{ collect([$researchUnset ? 'no research is selected' : null, $settlersWaiting ? 'settlers are waiting to found a city' : null, $idleCities->isNotEmpty() ? 'cities are idling on Wealth' : null])->filter()->join('; ') }}">
                 @csrf
                 <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                <input type="hidden" name="turn" value="{{ $game->turn }}">
                 <button class="rounded bg-amber-500 px-5 py-1.5 font-semibold text-stone-950 shadow hover:bg-amber-400" title="Enter">End turn ▶</button>
             </form>
         @endif
@@ -493,7 +494,7 @@
                                                 <button class="rounded border border-blue-700 px-1.5 py-0.5 text-[10px] text-blue-200 hover:bg-blue-950" title="They are devoted to you: form an alliance">🤝 ally</button>
                                             </form>
                                         @elseif ($r['allied'])
-                                            <form method="POST" action="{{ route('games.alliance', [$game, $e]) }}" class="inline" onsubmit="return confirm('End the alliance with {{ $e->name }}? They will resent it.')">
+                                            <form method="POST" action="{{ route('games.alliance', [$game, $e]) }}" class="inline" onsubmit="return confirm(@js('End the alliance with '.$e->name.'? They will resent it.'))">
                                                 @csrf
                                                 <input type="hidden" name="dissolve" value="1">
                                                 <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
@@ -511,7 +512,7 @@
                                             </form>
                                         @endif
                                         @if ($r['warProblem'] === null)
-                                            <form method="POST" action="{{ route('games.war', [$game, $e]) }}" class="inline" onsubmit="return confirm('Declare war on {{ $e->name }}?{{ $r['theirAllies'] ? ' Their allies will join them: '.implode(', ', $r['theirAllies']).'.' : '' }}{{ $r['allied'] ? ' They are your ally: this is a betrayal the world will remember.' : '' }}')">
+                                            <form method="POST" action="{{ route('games.war', [$game, $e]) }}" class="inline" onsubmit="return confirm(@js('Declare war on '.$e->name.'?'.($r['theirAllies'] ? ' Their allies will join them: '.implode(', ', $r['theirAllies']).'.' : '').($r['allied'] ? ' They are your ally: this is a betrayal the world will remember.' : '')))">
                                                 @csrf
                                                 <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
                                                 <button class="rounded border border-stone-700 px-1.5 py-0.5 text-[10px] text-stone-400 hover:border-red-800 hover:text-red-200">⚔ war</button>

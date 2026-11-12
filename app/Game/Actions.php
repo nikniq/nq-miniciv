@@ -142,6 +142,11 @@ final class Actions
             $queue[] = $key;
             $city->queue = $queue;
         } else {
+            // Stock carried over from another build (bought, hurried or gifted)
+            // does not transfer to a build that must be earned with production.
+            if (in_array($key, Rules::NO_HURRY, true) && $key !== $city->current_build) {
+                $city->production_stored = 0;
+            }
             $city->current_build = $key;
         }
         $city->save();
@@ -605,8 +610,7 @@ final class Actions
             $tech = array_key_last($avail); // the dearest available tech
         }
         $empire->technologies = array_values(array_unique(array_merge($empire->technologies ?? [], [$tech])));
-        $empire->current_tech = null;
-        $empire->research_progress = 0;
+        $empire->current_tech = null; // banked progress carries over to the next target
 
         return 'A Great Scientist reveals '.Rules::TECHS[$tech]['name'].'.';
     }
@@ -719,8 +723,7 @@ final class Actions
         }
         $player->technologies = array_values(array_unique(array_merge($player->technologies ?? [], [$get])));
         if ($player->current_tech === $get) {
-            $player->current_tech = null;
-            $player->research_progress = 0;
+            $player->current_tech = null; // banked progress carries over to the next target
         }
         $player->save();
         $rival->save();

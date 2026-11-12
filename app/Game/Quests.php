@@ -49,7 +49,8 @@ final class Quests
             $options[] = ['kind' => 'camp', 'target' => $camp->id, 'amount' => 0];
         }
         $options[] = ['kind' => 'gold', 'target' => null, 'amount' => $game->turn >= 50 ? 100 : 50];
-        if ($player->knows('currency') && $asker->cities->isNotEmpty()) {
+        $hasRoute = $player->cities->contains(fn ($c) => $c->trade_to && $asker->cities->contains('id', $c->trade_to));
+        if ($player->knows('currency') && $asker->cities->isNotEmpty() && ! $hasRoute) {
             $options[] = ['kind' => 'route', 'target' => null, 'amount' => 0];
         }
         $enemy = $game->empires->first(fn ($e) => $e->id !== $player->id && $e->id !== $asker->id && ! $e->eliminated

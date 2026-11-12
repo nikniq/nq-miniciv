@@ -225,7 +225,7 @@
             <div class="mt-3">
                 @if (! $selected['atWar'])
                     @if ($selected['warProblem'] === null)
-                        <form method="POST" action="{{ route('games.war', [$game, $selected['owner']]) }}" onsubmit="return confirm('Declare war on {{ $selected['owner']->name }}? War costs {{ Rules::WAR_WEARINESS }} happiness per turn and they may strike back.{{ ($al = $game->alliesOf($selected['owner']->id, $player->id)) ? ' Their allies will join them: '.implode(', ', $al).'.' : '' }}')">
+                        <form method="POST" action="{{ route('games.war', [$game, $selected['owner']]) }}" onsubmit="return confirm(@js('Declare war on '.$selected['owner']->name.'? War costs '.Rules::WAR_WEARINESS.' happiness per turn and they may strike back.'.(($al = $game->alliesOf($selected['owner']->id, $player->id)) ? ' Their allies will join them: '.implode(', ', $al).'.' : '')))">
                             @csrf
                             <input type="hidden" name="tile" value="{{ $tile->id }}">
                             <button class="w-full rounded border border-red-800 px-3 py-1.5 text-sm text-red-200 hover:bg-red-950">Declare war on {{ $selected['owner']->name }}</button>
@@ -239,7 +239,7 @@
                         $oddsText = ['win' => 'Likely to fall.', 'close' => 'Too close to call: an attack that fails costs half your army.', 'lose' => 'You would be repelled and lose half your army.'][$selected['attackOdds']];
                         $oddsClass = ['win' => 'bg-red-600 hover:bg-red-500', 'close' => 'bg-amber-700 hover:bg-amber-600', 'lose' => 'bg-stone-700 hover:bg-stone-600'][$selected['attackOdds']];
                     @endphp
-                    <form method="POST" action="{{ route('games.attack', [$game, $city]) }}" onsubmit="return confirm('Attack {{ $city->name }}? {{ $oddsText }}')">
+                    <form method="POST" action="{{ route('games.attack', [$game, $city]) }}" onsubmit="return confirm(@js('Attack '.$city->name.'? '.$oddsText))">
                         @csrf
                         <button class="w-full rounded px-3 py-1.5 text-sm font-medium text-white {{ $oddsClass }}">⚔ Attack {{ $city->name }}</button>
                     </form>

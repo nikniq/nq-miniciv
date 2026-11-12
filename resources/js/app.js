@@ -260,7 +260,17 @@ if (map) {
 
     document.addEventListener('keydown', (e) => {
         if (['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(document.activeElement?.tagName)) return;
-        if (e.key === 'Enter') document.getElementById('end-turn-form')?.requestSubmit();
+        if (e.defaultPrevented) return;
+        if (e.key === 'Enter') {
+            // Only from the page itself: a focused link, summary or widget keeps its own Enter.
+            const ae = document.activeElement;
+            if (ae && ae !== document.body && ae.closest('a, summary, button, input, select, textarea, [tabindex], [contenteditable]')) return;
+            const f = document.getElementById('end-turn-form');
+            if (e.repeat || !f || f.querySelector('button')?.disabled) return;
+            e.preventDefault();
+            f.requestSubmit();
+            return;
+        }
         if (e.key === '?') { const d = document.getElementById('keys-dialog'); d?.open ? d.close() : d?.showModal(); e.preventDefault(); return; }
         // Arrow keys move the selection one tile.
         if (e.key?.toLowerCase() === 'b' && !e.metaKey && !e.ctrlKey && !e.altKey) { setWide(!wide); e.preventDefault(); return; }
@@ -295,7 +305,7 @@ if (researchForm) {
     const go = (node) => { researchForm.querySelector('input[name=tech]').value = node.dataset.research; researchForm.submit(); };
     document.querySelectorAll('[data-research]').forEach((node) => {
         node.addEventListener('click', () => go(node));
-        node.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(node); } });
+        node.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); go(node); } });
     });
 }
 
@@ -346,7 +356,13 @@ document.getElementById('keys-open')?.addEventListener('click', () => document.g
 // city panel is swapped in by fetch.
 document.addEventListener('click', (e) => {
     const card = e.target.closest('.build-cards button[name="build"]');
-    if (card) card.form.querySelector('.queue-flag').value = e.shiftKey ? '1' : '0';
+    if (!card) return;
+    card.form.querySelector('.queue-flag').value = e.shiftKey ? '1' : '0';
+    if (e.shiftKey) {
+        // A Shift-modified submit opens a new window in Chromium: resubmit outside the click.
+        e.preventDefault();
+        setTimeout(() => card.form.requestSubmit(card), 0);
+    }
 });
 
 // Coming back via the back/forward cache: undo the "world turns" state.
@@ -363,7 +379,7 @@ document.querySelector('.share-result')?.addEventListener('click', async (e) => 
         if (navigator.share) { await navigator.share({ text, url }); return; }
         await navigator.clipboard.writeText(`${text} ${url}`);
         b.textContent = '✓ Copied';
-    } catch { b.textContent = '✕ Could not share'; }
+    } catch (err) { if (err?.name === 'AbortError') return; b.textContent = '✕ Could not share'; }
     setTimeout(() => { b.textContent = '📣 Share'; }, 2500);
 });
 

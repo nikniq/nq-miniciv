@@ -131,4 +131,20 @@ class AuthTest extends TestCase
         config(['services.google.client_id' => null]);
         $this->get(route('google.redirect'))->assertRedirect(route('login'));
     }
+
+    public function test_a_link_cannot_attach_someone_elses_guest_account(): void
+    {
+        // The attacker plays as a guest and requests a link for a victim's address.
+        $this->post(route('play'))->assertRedirect();
+        $attacker = auth()->user();
+        $url = URL::temporarySignedRoute('magic.verify', now()->addMinutes(30), ['email' => 'victim@example.com', 'guest' => $attacker->id]);
+        auth()->logout();
+
+        // The victim opens it in their own browser: they get a fresh account, not the attacker's.
+        $this->get($url)->assertRedirect(route('games.index'));
+        $victim = User::where('email', 'victim@example.com')->firstOrFail();
+        $this->assertNotSame($attacker->id, $victim->id);
+        $this->assertTrue($attacker->fresh()->isGuest());
+        $this->assertAuthenticatedAs($victim);
+    }
 }
