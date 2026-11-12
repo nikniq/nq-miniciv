@@ -4,6 +4,7 @@ namespace App\Game;
 
 use App\Models\City;
 use App\Models\Empire;
+use App\Models\Game;
 use App\Models\Tile;
 use Illuminate\Support\Collection;
 
@@ -234,7 +235,7 @@ final class Economy
     }
 
     /** Number of empires $empire is at war with (ignoring the eliminated). */
-    public static function warsCount(\App\Models\Game $game, Empire $empire): int
+    public static function warsCount(Game $game, Empire $empire): int
     {
         $n = 0;
         foreach ($game->empires as $other) {
@@ -252,7 +253,27 @@ final class Economy
      *
      * @return array<int> partner empire ids
      */
-    public static function tradeGold(\App\Models\Game $game, Empire $empire, Collection $tiles): int
+    /**
+     * What a trade route pays each turn. Foreign routes earn science and pay
+     * the partner a share; domestic routes feed the origin city instead.
+     *
+     * @return array{gold:int,science:int,food:int,partner:int}
+     */
+    public static function routeYield(City $from, City $to, Tile $a, Tile $b): array
+    {
+        $dist = $a->distanceTo($b);
+        $foreign = $from->empire_id !== $to->empire_id;
+        $gold = 1 + intdiv($dist, 2) + intdiv($to->population, 2) + ($from->has('market') ? 1 : 0) + ($foreign ? 1 : 0);
+
+        return [
+            'gold' => $gold,
+            'science' => $foreign ? 1 + intdiv($dist, 3) : 0,
+            'food' => $foreign ? 0 : 2,
+            'partner' => $foreign ? intdiv($gold, 2) : 0,
+        ];
+    }
+
+    public static function tradeGold(Game $game, Empire $empire, Collection $tiles): int
     {
         $n = count(self::tradePartners($game, $empire, $tiles));
         $mult = ($empire->government ?? '') === 'merchant_republic' ? 2 : 1;
@@ -260,7 +281,7 @@ final class Economy
         return $n * Rules::TRADE_GOLD_PER_PARTNER * $mult;
     }
 
-    public static function tradePartners(\App\Models\Game $game, Empire $empire, Collection $tiles): array
+    public static function tradePartners(Game $game, Empire $empire, Collection $tiles): array
     {
         if (! $empire->knows('currency')) {
             return [];

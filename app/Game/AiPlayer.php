@@ -241,6 +241,18 @@ final class AiPlayer
             $city->save();
         }
 
+        // One new caravan a turn when the treasury allows.
+        if ($empire->knows('currency') && $empire->gold >= 80) {
+            $idle = $empire->cities->first(fn ($c) => ! $c->trade_to);
+            if ($idle && ($best = $this->actions->routeOptions($game, $empire, $idle, $tiles, 1))) {
+                try {
+                    $this->actions->setTradeRoute($game, $empire, $idle, $best[0]['city'], $tiles);
+                } catch (InvalidArgumentException) {
+                    // no longer possible; try again next turn
+                }
+            }
+        }
+
         // Modernise the army when there is gold to spare.
         foreach ($empire->upgrades() as $from => $up) {
             if ($empire->gold - $up['gold'] >= 120) {

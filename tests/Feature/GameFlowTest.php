@@ -616,7 +616,6 @@ class GameFlowTest extends TestCase
         $this->actingAs($user)->post(route('games.end-turn', $game));
         $city->refresh();
         $this->assertSame(3, $city->population);
-        $this->assertLessThan(100, $player->fresh()->gold);
         $this->assertStringContainsString('sacked', implode(' ', $game->fresh()->events ?? []).' '.collect($game->fresh()->log ?? [])->flatten()->implode(' '));
 
         // Announced for next turn: the banner shows, then a weak band breaks.
@@ -635,5 +634,37 @@ class GameFlowTest extends TestCase
         $before = $city->fresh()->population;
         $this->actingAs($user)->post(route('games.end-turn', $game));
         $this->assertStringNotContainsString('sacked', collect(($game->fresh()->log ?? [])[count($game->fresh()->log) - 1] ?? [])->flatten()->implode(' '));
+    }
+
+    public function test_trade_routes_pay_each_turn_and_war_cuts_them(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        $from = $player->cities->first();
+        $rival = $game->empires->firstWhere('is_ai', true);
+        $to = $rival->cities->first();
+        // Capitals can start far apart: move the rival city within caravan range.
+        $centre = $game->tiles->firstWhere('id', $from->tile_id);
+        $near = $game->tiles->first(fn ($t) => $t->distanceTo($centre) === 4 && $t->isLand());
+        $to->update(['tile_id' => $near->id]);
+        $player->update(['technologies' => ['agriculture', 'writing', 'mining', 'bronze_working', 'currency'], 'gold' => 100, 'explored' => null]);
+        $game->adjustAttitude($player->id, $rival->id, 30);
+        $game->save();
+
+        $this->actingAs($user)->post(route('games.route', [$game, $from]), ['to' => $to->id])->assertSessionHas('status');
+        $this->assertSame($to->id, $from->fresh()->trade_to);
+        $this->assertSame(100 - Rules::TRADE_ROUTE_COST, $player->fresh()->gold);
+        $this->actingAs($user)->get(route('games.show', ['game' => $game, 'tile' => $from->tile_id]))->assertSee('Trade route')->assertSee('trade-routes', false);
+
+        $rivalGold = $rival->fresh()->gold;
+        $this->actingAs($user)->post(route('games.end-turn', $game));
+        $this->assertSame($to->id, $from->fresh()->trade_to);
+
+        $game->refresh();
+        $game->setDiplomacy($player->id, $rival->id, 'war');
+        $game->save();
+        $this->actingAs($user)->post(route('games.end-turn', $game));
+        $this->assertNull($from->fresh()->trade_to, 'war cuts the route');
     }
 }

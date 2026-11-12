@@ -104,6 +104,18 @@ final class Presenter
             $totals['prod'] += $y['prod'];
             $worked = array_merge($worked, $y['worked']);
         }
+        // Trade routes: gold and science on top of the cities' own yields.
+        $routes = [];
+        $allCities = $game->cities->keyBy('id');
+        foreach ($player->cities as $city) {
+            $to = $city->trade_to ? $allCities->get($city->trade_to) : null;
+            if ($to) {
+                $ry = Economy::routeYield($city, $to, $tiles->firstWhere('id', $city->tile_id), $tiles->firstWhere('id', $to->tile_id));
+                $routes[$city->id] = ['to' => $to, 'yield' => $ry];
+                $totals['gold'] += $ry['gold'];
+                $totals['science'] += $ry['science'];
+            }
+        }
 
         $empiresById = $game->empires->keyBy('id');
         $citiesByTile = $game->cities->keyBy('tile_id');
@@ -158,6 +170,8 @@ final class Presenter
                 $selectedInfo['skyline'] = CitySvg::render($selectedCity, $player);
                 $selectedInfo['sizeCap'] = Economy::sizeCap($selectedCity);
                 $selectedInfo['scoutable'] = Fog::wouldReveal($game, $player, $selected->x, $selected->y, Rules::SCOUT_RADIUS);
+                $selectedInfo['route'] = $routes[$selectedCity->id] ?? null;
+                $selectedInfo['routeOptions'] = $player->knows('currency') ? $this->actions->routeOptions($game, $player, $selectedCity, $tiles) : null;
                 $selectedInfo['buildOptions'] = Economy::buildOptions($selectedCity, $player, $wondersBuilt);
                 $selectedInfo['buildCost'] = $cost;
                 $selectedInfo['turnsToBuild'] = ($remaining !== null && $y['prod'] > 0) ? (int) ceil($remaining / $y['prod']) : null;

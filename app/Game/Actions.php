@@ -710,6 +710,82 @@ final class Actions
         return "{$up['n']} ".Rules::UNITS[$from]['name'].' retrained as '.Rules::UNITS[$up['to']]['name']." for {$up['gold']} gold.";
     }
 
+    /** Why a caravan cannot go from one city to another, or null. */
+    public function routeProblem(Game $game, Empire $empire, City $from, City $to, Collection $tiles): ?string
+    {
+        if (! $empire->knows('currency')) {
+            return 'Trade routes need Currency.';
+        }
+        if ($from->empire_id !== $empire->id || $from->id === $to->id) {
+            return 'Pick another city as the destination.';
+        }
+        [, $byId] = $this->tileLookup($tiles);
+        $a = $byId[$from->tile_id] ?? null;
+        $b = $byId[$to->tile_id] ?? null;
+        if (! $a || ! $b || ! Fog::visible($game, $empire, $b)) {
+            return 'Your caravans do not know the way there.';
+        }
+        if ($a->distanceTo($b) > Rules::TRADE_ROUTE_RANGE) {
+            return 'Too far: caravans travel at most '.Rules::TRADE_ROUTE_RANGE.' tiles.';
+        }
+        if ($to->empire_id !== $empire->id) {
+            if ($game->atWar($empire->id, $to->empire_id)) {
+                return 'You are at war with them.';
+            }
+            if ($game->attitude($empire->id, $to->empire_id) <= -40) {
+                return 'They are hostile and turn caravans away.';
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Destinations a city could trade with, best first.
+     *
+     * @return array<int, array{city: City, yield: array}>
+     */
+    public function routeOptions(Game $game, Empire $empire, City $from, Collection $tiles, int $limit = 8): array
+    {
+        [, $byId] = $this->tileLookup($tiles);
+        $out = [];
+        foreach ($game->empires as $e) {
+            if ($e->eliminated) {
+                continue;
+            }
+            foreach ($e->cities as $to) {
+                if ($this->routeProblem($game, $empire, $from, $to, $tiles) !== null) {
+                    continue;
+                }
+                $out[] = ['city' => $to, 'owner' => $e, 'yield' => Economy::routeYield($from, $to, $byId[$from->tile_id], $byId[$to->tile_id])];
+            }
+        }
+        usort($out, fn ($x, $y) => ($y['yield']['gold'] + 2 * $y['yield']['science'] + $y['yield']['food']) <=> ($x['yield']['gold'] + 2 * $x['yield']['science'] + $x['yield']['food']));
+
+        return array_slice($out, 0, $limit);
+    }
+
+    /** Send a caravan: the city's trade route now runs to $to. Returns a line. */
+    public function setTradeRoute(Game $game, Empire $empire, City $from, City $to, Collection $tiles): string
+    {
+        $problem = $this->routeProblem($game, $empire, $from, $to, $tiles);
+        if ($problem) {
+            throw new InvalidArgumentException($problem);
+        }
+        if ($from->trade_to === $to->id) {
+            throw new InvalidArgumentException("{$from->name} already trades with {$to->name}.");
+        }
+        if ($empire->gold < Rules::TRADE_ROUTE_COST) {
+            throw new InvalidArgumentException('A caravan costs '.Rules::TRADE_ROUTE_COST.' gold.');
+        }
+        $empire->gold -= Rules::TRADE_ROUTE_COST;
+        $empire->save();
+        $from->trade_to = $to->id;
+        $from->save();
+
+        return "A caravan sets out from {$from->name} for {$to->name}.";
+    }
+
     public function setFocus(City $city, string $focus): void
     {
         if (! isset(Rules::FOCUS[$focus])) {

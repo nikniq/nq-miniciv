@@ -87,6 +87,33 @@
                 </select>
                 <noscript><button class="rounded border border-stone-600 px-2 py-1">Set</button></noscript>
             </form>
+            @if (($selected['routeOptions'] ?? null) !== null)
+                <div class="mt-3 rounded border border-amber-900/50 bg-amber-950/20 p-2 text-xs">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-amber-200">🐪 Trade route</span>
+                        @if ($selected['route'])
+                            @php $ry = $selected['route']['yield']; @endphp
+                            <span class="text-stone-300">to <b>{{ $selected['route']['to']->name }}</b>: +{{ $ry['gold'] }} 💰@if ($ry['science']) +{{ $ry['science'] }} 🔬@endif @if ($ry['food']) +{{ $ry['food'] }} 🌾@endif</span>
+                        @else
+                            <span class="text-stone-500">none yet</span>
+                        @endif
+                    </div>
+                    @if ($selected['routeOptions'] && $game->isActive())
+                        <form method="POST" action="{{ route('games.route', [$game, $city]) }}" class="mt-2 flex gap-2">
+                            @csrf
+                            <select name="to" class="min-w-0 flex-1 rounded border border-stone-700 bg-stone-900 px-2 py-1 focus:border-amber-500 focus:outline-none">
+                                @foreach ($selected['routeOptions'] as $o)
+                                    @continue($selected['route'] && $selected['route']['to']->id === $o['city']->id)
+                                    <option value="{{ $o['city']->id }}">{{ $o['city']->name }}@if ($o['owner']->id !== $player->id) ({{ $o['owner']->name }})@endif · +{{ $o['yield']['gold'] }} 💰@if ($o['yield']['science']) +{{ $o['yield']['science'] }} 🔬@endif @if ($o['yield']['food']) +{{ $o['yield']['food'] }} 🌾@endif</option>
+                                @endforeach
+                            </select>
+                            <button class="shrink-0 rounded border border-amber-800 px-2 py-1 text-amber-200 hover:bg-amber-950 disabled:opacity-40" @disabled($player->gold < Rules::TRADE_ROUTE_COST)>{{ $selected['route'] ? 'Redirect' : 'Send caravan' }} ({{ Rules::TRADE_ROUTE_COST }} 💰)</button>
+                        </form>
+                    @elseif (! $selected['routeOptions'])
+                        <p class="mt-1 text-stone-500">No city within {{ Rules::TRADE_ROUTE_RANGE }} tiles to trade with yet.</p>
+                    @endif
+                </div>
+            @endif
             @if ($y['pillaged'] ?? 0)
                 <div class="mt-2 rounded border border-red-900 bg-red-950/40 px-2 py-1 text-xs text-red-200">☠ Barbarians nearby pillage −{{ 2 * $y['pillaged'] }} food. Clear the camp.</div>
             @endif

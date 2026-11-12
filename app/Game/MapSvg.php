@@ -202,11 +202,34 @@ final class MapSvg
                 $roads[$key] = sprintf('M%s %s Q%s %s %s %s', $x1, $y1, round($mx, 1), round($my, 1), $x2, $y2);
             }
         }
+        // Trade routes: gold dotted arcs between partner cities
+        $routes = [];
+        $byCityId = [];
+        foreach ($centres as [$c, $ct]) {
+            $byCityId[$c->id] = $ct;
+        }
+        foreach ($centres as [$c, $ct]) {
+            if ($c->trade_to && isset($byCityId[$c->trade_to])) {
+                $o = $byCityId[$c->trade_to];
+                $x1 = $ct->x * $s + $s / 2;
+                $y1 = $ct->y * $s + $s / 2;
+                $x2 = $o->x * $s + $s / 2;
+                $y2 = $o->y * $s + $s / 2;
+                $mx = ($x1 + $x2) / 2 - ($y2 - $y1) * 0.25;
+                $my = ($y1 + $y2) / 2 + ($x2 - $x1) * 0.25;
+                $routes[] = sprintf('M%s %s Q%s %s %s %s', $x1, $y1, round($mx, 1), round($my, 1), $x2, $y2);
+            }
+        }
         if ($roads) {
             $d = implode(' ', $roads);
             $out[] = '<g id="roads" fill="none" stroke-linecap="round" style="pointer-events:none">';
             $out[] = '<path d="'.$d.'" stroke="#3f2a14" stroke-width="5" opacity="0.55"/>';
             $out[] = '<path d="'.$d.'" stroke="#c8a165" stroke-width="2.2" stroke-dasharray="6 4" opacity="0.9"/>';
+            $out[] = '</g>';
+        }
+        if ($routes) {
+            $out[] = '<g id="trade-routes" fill="none" stroke-linecap="round" style="pointer-events:none">';
+            $out[] = '<path d="'.implode(' ', $routes).'" stroke="#fbbf24" stroke-width="2.5" stroke-dasharray="0.1 7" opacity="0.95" class="trade-route"/>';
             $out[] = '</g>';
         }
 

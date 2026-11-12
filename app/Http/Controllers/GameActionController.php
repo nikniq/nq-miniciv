@@ -270,6 +270,26 @@ class GameActionController extends Controller
         return $this->back($game, "Scouts from {$city->name} map {$n} new tiles.", $city->tile_id, 'status');
     }
 
+    public function route(Request $request, Game $game, City $city): RedirectResponse
+    {
+        $this->own($request, $game);
+        $empire = $this->ownCity($game, $city);
+        $game->load(['empires.cities', 'tiles']);
+        $empire = $game->empires->firstWhere('id', $empire->id);
+        $to = City::where('game_id', $game->id)->find($request->integer('to'));
+        if (! $to) {
+            return $this->back($game, 'Pick a destination.', $city->tile_id);
+        }
+
+        try {
+            $line = $this->actions->setTradeRoute($game, $empire, $city, $to, $game->tiles);
+        } catch (InvalidArgumentException $e) {
+            return $this->back($game, $e->getMessage(), $city->tile_id);
+        }
+
+        return $this->back($game, $line, $city->tile_id, 'status');
+    }
+
     public function upgrade(Request $request, Game $game): RedirectResponse
     {
         $this->own($request, $game);

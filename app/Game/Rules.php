@@ -435,6 +435,11 @@ final class Rules
     /** Gold per production point of difference when retraining a unit. */
     public const UPGRADE_RATE = 1;
 
+    /** Trade routes: caravan price and how far a caravan will travel. */
+    public const TRADE_ROUTE_COST = 25;
+
+    public const TRADE_ROUTE_RANGE = 9;
+
     /** Raids: a lighter act of war than a siege. */
     public const RAID_MIN_ARMY = 3;
 

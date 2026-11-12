@@ -110,6 +110,7 @@ final class TurnProcessor
                 }
 
                 $gold += Economy::tradeGold($game, $empire, $this->tiles);
+                $gold += $this->tradeRoutes($game, $empire, $science);
                 $this->greatPeople($game, $empire);
 
                 $this->randomEvent($game, $empire);
@@ -361,6 +362,49 @@ final class TurnProcessor
         if (Fog::percent($game, $player) >= 100) {
             $this->events[] = '🧭 The whole world is mapped.';
         }
+    }
+
+    /**
+     * Pay out every trade route of an empire; routes whose partner is now at
+     * war, hostile or gone are cut. Returns gold; science is added in place.
+     */
+    private function tradeRoutes(Game $game, Empire $empire, int &$science): int
+    {
+        $gold = 0;
+        $allCities = $game->empires->flatMap->cities->keyBy('id');
+        $byId = $this->tiles->keyBy('id');
+        foreach ($empire->cities as $city) {
+            if (! $city->trade_to) {
+                continue;
+            }
+            $to = $allCities->get($city->trade_to);
+            $partner = $to ? $game->empires->firstWhere('id', $to->empire_id) : null;
+            $cut = ! $to || ! $partner || $partner->eliminated
+                || ($partner->id !== $empire->id && ($game->atWar($empire->id, $partner->id) || $game->attitude($empire->id, $partner->id) <= -40));
+            if ($cut) {
+                $city->trade_to = null;
+                $city->save();
+                $this->note($empire, "🐪 The trade route from {$city->name} has been cut.");
+
+                continue;
+            }
+            $y = Economy::routeYield($city, $to, $byId->get($city->tile_id), $byId->get($to->tile_id));
+            $gold += $y['gold'];
+            $science += $y['science'];
+            if ($y['food']) {
+                $city->food_stored += $y['food'];
+                $city->save();
+            }
+            if ($y['partner']) {
+                $partner->gold += $y['partner'];
+                $partner->save();
+                if ($game->turn % 5 === 0) {
+                    $game->adjustAttitude($empire->id, $partner->id, 1);
+                }
+            }
+        }
+
+        return $gold;
     }
 
     /** An unanswered dilemma defaults to its second answer; then maybe draw a new one. */
