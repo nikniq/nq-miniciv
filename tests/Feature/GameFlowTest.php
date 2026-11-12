@@ -533,4 +533,26 @@ class GameFlowTest extends TestCase
         $this->actingAs($user)->post(route('games.end-turn', $game))->assertRedirect();
         $this->assertGreaterThan(0, Fog::percent($game, $player->fresh()));
     }
+
+    public function test_launching_the_grand_expedition_wins_a_science_victory(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        $capital = $player->cities->first();
+        $player->update(['technologies' => array_keys(Rules::TECHS), 'gold' => 99999]);
+        $capital->update(['current_build' => 'grand_expedition', 'production_stored' => 0]);
+
+        // Gold cannot buy it.
+        $this->actingAs($user)->post(route('games.buy', [$game, $capital]))->assertSessionHas('error');
+        $this->assertSame(0, $capital->fresh()->production_stored);
+
+        $capital->update(['production_stored' => Rules::BUILDINGS['grand_expedition']['cost']]);
+        $this->actingAs($user)->post(route('games.end-turn', $game))->assertRedirect();
+
+        $game->refresh();
+        $this->assertSame('won', $game->status);
+        $this->assertStringContainsString('Science victory', $game->events[0]);
+        $this->assertArrayHasKey('win_science', $user->fresh()->achievements ?? []);
+    }
 }

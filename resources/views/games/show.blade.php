@@ -407,6 +407,12 @@
             <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
                 <div class="flex items-baseline justify-between"><h2 class="font-semibold">Road to victory</h2><span class="text-xs text-stone-500">{{ $victory['turnsLeft'] }} turns left</span></div>
                 <div class="mt-2 grid gap-3 text-xs sm:grid-cols-2">
+                    <div class="sm:col-span-2">
+                        <div class="text-stone-400" title="Half for knowing every technology, half for building the Grand Expedition">⛵ Science (all techs, then the Grand Expedition)</div>
+                        @foreach ($victory['science'] as $v)
+                            <div class="mt-1 flex items-center gap-2"><span class="inline-block h-2 w-2 rounded-sm" style="background: {{ $v['empire']->color }}"></span><span class="w-16 truncate {{ $v['empire']->id === $player->id ? 'text-amber-200' : '' }}">{{ $v['empire']->name }}</span><span class="h-1.5 flex-1 rounded bg-stone-800"><span class="block h-1.5 rounded" style="width: {{ $v['pct'] }}%; background: {{ $v['empire']->color }}"></span></span><span class="w-20 text-right {{ $v['launch'] !== null ? 'text-red-300' : 'text-stone-400' }}">{{ $v['launch'] !== null ? '⛵ '.$v['launch'].'% built' : $v['pct'].'%' }}</span></div>
+                        @endforeach
+                    </div>
                     <div>
                         <div class="text-stone-400">🗺️ Domination ({{ $dominationShare }}% of land)</div>
                         @foreach ($victory['domination'] as $v)

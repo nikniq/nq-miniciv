@@ -145,9 +145,16 @@ final class TurnProcessor
             $this->scoresAndVictory($game, $player);
             $this->recordHistory($game);
 
+            // Achievements read this turn's headline (e.g. how a victory was
+            // won), so publish the events before checking.
+            $game->events = array_slice($this->events, 0, 12);
+            $unlocked = [];
             foreach (Achievements::check($game) as $a) {
-                array_unshift($this->events, "🏅 Achievement unlocked: {$a['name']} — {$a['blurb']}");
+                $unlocked[] = "🏅 Achievement unlocked: {$a['name']} — {$a['blurb']}";
             }
+            // Announcements follow a victory headline, which stays first.
+            $headline = $game->isActive() ? [] : array_splice($this->events, 0, 1);
+            $this->events = array_merge($headline, $unlocked, $this->events);
             $game->events = array_slice($this->events, 0, 12);
             // Chronicle: the last 8 turns' events, oldest first.
             $log = $game->log ?? [];
@@ -433,6 +440,27 @@ final class TurnProcessor
             array_unshift($this->events, 'Your last city has fallen. The empire is no more.');
 
             return;
+        }
+
+        // Science victory: the Grand Expedition has sailed. Read the empires'
+        // own city models: they carry buildings completed this turn.
+        foreach ($game->empires->flatMap->cities as $c) {
+            if ($c->has('grand_expedition')) {
+                $launcher = $game->empires->firstWhere('id', $c->empire_id);
+                if ($launcher && ! $launcher->eliminated) {
+                    $game->status = $launcher->is_ai ? 'lost' : 'won';
+                    $game->winner_empire_id = $launcher->id;
+                    array_unshift($this->events, $launcher->is_ai
+                        ? "The Grand Expedition of {$launcher->name} sails from {$c->name} into a new age. Their science has won the world."
+                        : "Your Grand Expedition sails from {$c->name} into a new age. Science victory!");
+                    foreach ($game->empires as $e) {
+                        $e->score = $e->eliminated ? 0 : Economy::score($e, $ownedBy[$e->id] ?? 0);
+                        $e->save();
+                    }
+
+                    return;
+                }
+            }
         }
 
         $best = null;

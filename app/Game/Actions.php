@@ -162,6 +162,9 @@ final class Actions
         if ($cost === null) {
             throw new InvalidArgumentException('Nothing purchasable is being built.');
         }
+        if (in_array($key, Rules::NO_HURRY, true)) {
+            throw new InvalidArgumentException(Economy::buildName($key).' cannot be bought. It must be built.');
+        }
         $remaining = max(0, $cost - $city->production_stored);
         $price = $remaining * Rules::BUY_RATE;
         if ($price === 0) {
@@ -545,6 +548,9 @@ final class Actions
         $cost = $key ? Economy::buildCost($key) : null;
         if ($key === null || $key === 'wealth' || $cost === null) {
             throw new InvalidArgumentException("{$city->name} is not building anything to finish.");
+        }
+        if (in_array($key, Rules::NO_HURRY, true)) {
+            throw new InvalidArgumentException(Economy::buildName($key).' cannot be hurried.');
         }
         $city->production_stored = max($city->production_stored, $cost);
         $city->save();

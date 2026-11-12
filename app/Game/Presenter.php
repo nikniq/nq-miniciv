@@ -309,6 +309,14 @@ final class Presenter
             'victory' => [
                 'domination' => $game->empires->filter(fn ($e) => ! $e->eliminated)->map(fn ($e) => ['empire' => $e, 'pct' => min(100, (int) round(100 * (($ownedBy[$e->id] ?? 0) / $landTotal) / Rules::DOMINATION_SHARE))])->sortByDesc('pct')->values()->take(3),
                 'culture' => $game->empires->filter(fn ($e) => ! $e->eliminated)->map(fn ($e) => ['empire' => $e, 'pct' => min(100, (int) round(100 * Economy::culture($e) / Rules::cultureGoal($game)))])->sortByDesc('pct')->values()->take(3),
+                'science' => $game->empires->filter(fn ($e) => ! $e->eliminated)->map(function ($e) use ($game) {
+                    $techs = count($e->technologies ?? []);
+                    $building = $game->cities->first(fn ($c) => $c->empire_id === $e->id && $c->current_build === 'grand_expedition');
+                    $launch = $building ? (int) round(100 * $building->production_stored / Rules::BUILDINGS['grand_expedition']['cost']) : 0;
+
+                    // Two halves: knowing every tech, then building the expedition.
+                    return ['empire' => $e, 'pct' => min(100, (int) round(50 * $techs / count(Rules::TECHS)) + intdiv($launch, 2)), 'launch' => $building ? $launch : null];
+                })->sortByDesc('pct')->values()->take(3),
                 'turnsLeft' => max(0, $game->max_turns - $game->turn + 1),
             ],
             'tips' => $tips,

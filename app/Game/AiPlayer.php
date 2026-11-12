@@ -144,9 +144,24 @@ final class AiPlayer
         $happiness = Economy::happiness($empire, Economy::warsCount($game, $empire));
         $pillaged = $tiles->contains(fn (Tile $t) => $t->camp && $this->actions->campProblem($empire, $t, $tiles) === null);
 
+        // Once Exploration is known, the most productive city launches the
+        // Grand Expedition and keeps at it.
+        $expeditionCity = null;
+        if ($empire->knows('exploration') && ! in_array('grand_expedition', $wondersBuilt, true)
+            && ! $empire->cities->contains(fn ($c) => $c->current_build === 'grand_expedition')) {
+            $expeditionCity = $empire->cities->sortByDesc('population')->first();
+        }
+
         foreach ($empire->cities as $city) {
             $options = Economy::buildOptions($city, $empire, $wondersBuilt);
             $current = $city->current_build;
+
+            if ($expeditionCity && $city->is($expeditionCity) && isset($options['grand_expedition'])) {
+                $city->current_build = 'grand_expedition';
+                $city->save();
+
+                continue;
+            }
 
             // Keep what is in progress unless it is wealth or now impossible.
             if ($current && $current !== 'wealth' && isset($options[$current])) {

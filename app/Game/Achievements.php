@@ -61,7 +61,9 @@ final class Achievements
         }
         if ($game->status === 'won') {
             $first = $game->events[0] ?? '';
-            if (str_contains($first, 'dominates')) {
+            if (str_contains($first, 'Science victory')) {
+                $award('win_science');
+            } elseif (str_contains($first, 'dominates')) {
                 $award('win_domination');
             } elseif (str_contains($first, 'Cultural')) {
                 $award('win_culture');

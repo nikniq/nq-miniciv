@@ -210,6 +210,8 @@ final class Rules
             'effects' => ['culture' => 5], 'empire_effects' => ['happy' => 2], 'blurb' => 'Wonder: +2 happiness in every city.'],
         'machu_picchu' => ['name' => 'Machu Picchu', 'icon' => '⛰️', 'cost' => 260, 'tech' => 'feudalism', 'requires' => null, 'wonder' => true, 'score' => 30,
             'effects' => ['culture' => 4], 'empire_effects' => ['gold' => 3], 'blurb' => 'Wonder: +3 gold in every city.'],
+        'grand_expedition' => ['name' => 'Grand Expedition', 'icon' => '⛵', 'cost' => 900, 'tech' => 'exploration', 'requires' => null, 'wonder' => true, 'score' => 60,
+            'effects' => [], 'blurb' => 'Science victory: the first empire to launch it wins. Cannot be bought or hurried.'],
         'angkor_wat' => ['name' => 'Angkor Wat', 'icon' => '🛕', 'cost' => 300, 'tech' => 'printing', 'requires' => null, 'wonder' => true, 'score' => 30,
             'effects' => ['culture' => 6], 'empire_effects' => ['culture' => 1], 'blurb' => 'Wonder: +6 culture here, +1 culture in every city.'],
         'colossus' => ['name' => 'Colossus', 'icon' => '🗽', 'cost' => 180, 'tech' => 'currency', 'requires' => null, 'wonder' => true, 'score' => 25,
@@ -275,6 +277,7 @@ final class Rules
         'printing' => ['name' => 'Printing', 'cost' => 240, 'requires' => ['education'], 'bonus' => [], 'unlocks' => 'Printing Press, Angkor Wat'],
         'gunpowder' => ['name' => 'Gunpowder', 'cost' => 270, 'requires' => ['chivalry', 'engineering'], 'bonus' => [], 'unlocks' => 'Musketeers'],
         'economics' => ['name' => 'Economics', 'cost' => 280, 'requires' => ['banking', 'printing'], 'bonus' => ['grassland' => ['gold' => 1]], 'unlocks' => 'Guild Hall, +1 gold on grassland'],
+        'exploration' => ['name' => 'Exploration', 'cost' => 360, 'requires' => ['navigation', 'economics'], 'bonus' => [], 'unlocks' => 'Grand Expedition (science victory)'],
     ];
 
     public const EMPIRE_NAMES = ['Rome', 'Egypt', 'Babylon', 'Carthage', 'Persia', 'Athens', 'Maurya', 'Han'];
@@ -358,6 +361,7 @@ final class Rules
         'scholar' => ['name' => 'Enlightened', 'icon' => '📚', 'blurb' => 'Know every technology.'],
         'win_score' => ['name' => 'Greatest Empire', 'icon' => '⭐', 'blurb' => 'Win on score.'],
         'win_domination' => ['name' => 'World Ruler', 'icon' => '🗺️', 'blurb' => 'Win by domination.'],
+        'win_science' => ['name' => 'New Horizons', 'icon' => '⛵', 'blurb' => 'Win by launching the Grand Expedition.'],
         'win_culture' => ['name' => 'Beacon of Culture', 'icon' => '🎭', 'blurb' => 'Win by culture.'],
         'win_king' => ['name' => 'Kingslayer', 'icon' => '👑', 'blurb' => 'Win at King difficulty or above.'],
         'win_huge' => ['name' => 'Wide World', 'icon' => '🌍', 'blurb' => 'Win on a huge map.'],
@@ -387,7 +391,7 @@ final class Rules
 
     /** Great-person points per turn by building. Wonders count double. */
     public const GREAT_SOURCES = [
-        'library' => ['scientist' => 1], 'university' => ['scientist' => 2], 'printing_press' => ['scientist' => 1], 'great_library' => ['scientist' => 3],
+        'library' => ['scientist' => 1], 'university' => ['scientist' => 2], 'printing_press' => ['scientist' => 1], 'great_library' => ['scientist' => 3], 'grand_expedition' => [],
         'workshop' => ['engineer' => 1], 'guild_hall' => ['engineer' => 1, 'merchant' => 1], 'pyramids' => ['engineer' => 3],
         'market' => ['merchant' => 1], 'bank' => ['merchant' => 2], 'harbor' => ['merchant' => 1], 'colossus' => ['merchant' => 3],
         'temple' => ['artist' => 1], 'cathedral' => ['artist' => 2], 'colosseum' => ['artist' => 1], 'oracle' => ['artist' => 2], 'notre_dame' => ['artist' => 3], 'hanging_gardens' => ['artist' => 2],
@@ -406,6 +410,9 @@ final class Rules
     public const SCOUT_RADIUS = 5;
 
     public const SCOUT_COST = 25;
+
+    /** Builds that must be earned with production: no gold purchase, no Great Engineer. */
+    public const NO_HURRY = ['grand_expedition'];
 
     /** Raids: a lighter act of war than a siege. */
     public const RAID_MIN_ARMY = 3;
