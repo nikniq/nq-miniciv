@@ -328,3 +328,10 @@ if (replayData) {
 }
 
 document.getElementById('keys-open')?.addEventListener('click', () => document.getElementById('keys-dialog')?.showModal());
+
+// Build cards: Shift-click queues instead of replacing. Delegated, because the
+// city panel is swapped in by fetch.
+document.addEventListener('click', (e) => {
+    const card = e.target.closest('.build-cards button[name="build"]');
+    if (card) card.form.querySelector('.queue-flag').value = e.shiftKey ? '1' : '0';
+});

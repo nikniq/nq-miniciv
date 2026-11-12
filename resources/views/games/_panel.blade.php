@@ -117,7 +117,35 @@
             @if ($y['pillaged'] ?? 0)
                 <div class="mt-2 rounded border border-red-900 bg-red-950/40 px-2 py-1 text-xs text-red-200">☠ Barbarians nearby pillage −{{ 2 * $y['pillaged'] }} food. Clear the camp.</div>
             @endif
-            <form method="POST" action="{{ route('games.build', [$game, $city]) }}" class="mt-3 flex gap-2">
+            <form method="POST" action="{{ route('games.build', [$game, $city]) }}" class="build-cards mt-3 max-h-72 overflow-y-auto rounded border border-stone-800 bg-stone-950/40 p-1.5">
+                @csrf
+                <input type="hidden" name="queue" value="0" class="queue-flag">
+                <div class="mb-1 text-[10px] text-stone-500">Click to build now · Shift-click to queue</div>
+                @foreach (['building' => 'Buildings', 'wonder' => 'Wonders', 'unit' => 'Units', 'project' => 'Projects'] as $kind => $label)
+                    @php $opts = array_filter($selected['buildOptions'], fn ($o) => $o['kind'] === $kind); @endphp
+                    @if ($opts)
+                        <div class="mt-1 text-[10px] uppercase tracking-wide text-stone-600">{{ $label }}</div>
+                        <div class="grid grid-cols-2 gap-1">
+                            @foreach ($opts as $key => $o)
+                                @php
+                                    $turns = $o['cost'] ? (int) ceil(max(0, $o['cost'] - ($key === $city->current_build ? $city->production_stored : 0)) / max(1, $y['prod'])) : null;
+                                    $icon = Rules::BUILDINGS[$key]['icon'] ?? ($kind === 'unit' ? '⚔️' : ($key === 'settlers' ? '🏕️' : '💰'));
+                                    $isCurrent = $key === $city->current_build;
+                                    $tone = ['building' => 'hover:border-sky-700', 'wonder' => 'border-amber-900/60 hover:border-amber-600', 'unit' => 'hover:border-red-700', 'project' => 'hover:border-emerald-700'][$kind];
+                                @endphp
+                                <button name="build" value="{{ $key }}" class="flex min-w-0 items-start gap-1.5 rounded border border-stone-800 bg-stone-900/80 px-1.5 py-1 text-left {{ $tone }} {{ $isCurrent ? 'ring-1 ring-amber-400' : '' }}" title="{{ $o['name'] }}: {{ $o['blurb'] }}@if ($o['cost']) ({{ $o['cost'] }} production)@endif · Shift-click to queue">
+                                    <span class="text-base leading-none">{{ $icon }}</span>
+                                    <span class="min-w-0">
+                                        <span class="block truncate text-[11px] font-medium text-stone-200">{{ $o['name'] }}</span>
+                                        <span class="block truncate text-[10px] text-stone-500">{{ $turns !== null ? $turns.'t · '.$o['cost'].'⚒' : 'ongoing' }}</span>
+                                    </span>
+                                </button>
+                            @endforeach
+                        </div>
+                    @endif
+                @endforeach
+            </form>
+            <form method="POST" action="{{ route('games.build', [$game, $city]) }}" class="mt-2 flex gap-2">
                 @csrf
                 <select name="build" class="min-w-0 flex-1 rounded border border-stone-700 bg-stone-900 px-2 py-1.5 text-xs focus:border-amber-500 focus:outline-none">
                     @foreach (['building' => 'Buildings', 'wonder' => 'Wonders', 'unit' => 'Units', 'project' => 'Projects'] as $kind => $label)
