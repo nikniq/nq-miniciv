@@ -16,6 +16,32 @@ final class Presenter
 
     /** Inline SVG line chart of score per empire over time. */
     /**
+     * Where the player stands among the living empires, metric by metric.
+     *
+     * @return array<int, array{label: string, icon: string, mine: int, rank: int, of: int, best: int}>
+     */
+    private function demographics(Game $game, Empire $player, $ownedBy): array
+    {
+        $alive = $game->empires->filter(fn ($e) => ! $e->eliminated)->values();
+        $metrics = [
+            ['Population', '👥', fn ($e) => (int) $e->cities->sum('population')],
+            ['Land', '🗺️', fn ($e) => (int) ($ownedBy[$e->id] ?? 0)],
+            ['Army', '⚔️', fn ($e) => $e->strength()],
+            ['Culture', '🎭', fn ($e) => Economy::culture($e)],
+            ['Technologies', '🔬', fn ($e) => count($e->technologies ?? [])],
+            ['Treasury', '💰', fn ($e) => (int) $e->gold],
+        ];
+        $out = [];
+        foreach ($metrics as [$label, $icon, $f]) {
+            $values = $alive->mapWithKeys(fn ($e) => [$e->id => $f($e)]);
+            $mine = $values[$player->id] ?? 0;
+            $out[] = ['label' => $label, 'icon' => $icon, 'mine' => $mine, 'rank' => 1 + $values->filter(fn ($v) => $v > $mine)->count(), 'of' => $alive->count(), 'best' => (int) $values->max()];
+        }
+
+        return $out;
+    }
+
+    /**
      * What will happen when the turn ends: completions, growth, discoveries
      * and deadlines. Each line is [icon, text, tile id or null].
      *
@@ -396,6 +422,7 @@ final class Presenter
                 return $r + ['cityModel' => $city, 'defense' => $defense, 'holds' => $defense >= $r['strength']];
             })->filter()->values(),
             'briefing' => $game->isActive() ? $this->briefing($game, $player, $cityYields, $totals) : [],
+            'demographics' => $this->demographics($game, $player, $ownedBy),
             'checklist' => $game->turn <= 40 && $game->isActive() ? $this->checklist($game, $player) : null,
             'pantheonReady' => ! $player->belief && $game->isActive() && Economy::culture($player) >= Rules::PANTHEON_CULTURE,
             'choice' => $game->choice ? Choices::describe($game, $game->choice) : null,

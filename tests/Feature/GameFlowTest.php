@@ -685,6 +685,7 @@ class GameFlowTest extends TestCase
         $player = $game->playerEmpire();
 
         $this->actingAs($user)->get(route('games.show', $game))->assertSee('First steps')->assertSee('0/7');
+        $this->actingAs($user)->get(route('games.show', $game))->assertSee('Demographics')->assertSee('Technologies');
 
         $player->update(['current_tech' => 'agriculture']);
         $this->actingAs($user)->get(route('games.show', $game))->assertSee('1/7');

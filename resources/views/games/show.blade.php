@@ -523,6 +523,23 @@
 
         @if ($game->isActive())
             <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
+                <h2 class="font-semibold">Demographics</h2>
+                <table class="mt-2 w-full text-xs">
+                    <thead class="text-stone-500"><tr><th class="text-left font-normal"></th><th class="text-right font-normal">You</th><th class="text-right font-normal">Rank</th><th class="text-right font-normal">Best</th></tr></thead>
+                    <tbody>
+                        @foreach ($demographics as $d)
+                            <tr>
+                                <td class="py-0.5 text-stone-400">{{ $d['icon'] }} {{ $d['label'] }}</td>
+                                <td class="text-right">{{ $d['mine'] }}</td>
+                                <td class="text-right {{ $d['rank'] === 1 ? 'text-emerald-300' : ($d['rank'] === $d['of'] ? 'text-red-300' : 'text-stone-300') }}">#{{ $d['rank'] }}<span class="text-stone-600">/{{ $d['of'] }}</span></td>
+                                <td class="text-right text-stone-500">{{ $d['best'] }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
                 <div class="flex items-baseline justify-between"><h2 class="font-semibold">Road to victory</h2><span class="text-xs text-stone-500">{{ $victory['turnsLeft'] }} turns left</span></div>
                 <div class="mt-2 grid gap-3 text-xs sm:grid-cols-2">
                     <div class="sm:col-span-2">
