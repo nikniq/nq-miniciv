@@ -80,8 +80,19 @@ if (map) {
     }, { passive: false });
     document.querySelectorAll('[data-zoom]').forEach((b) => b.addEventListener('click', () => {
         const z = b.dataset.zoom;
-        if (z === 'in') zoomAt(1 / 1.3);
-        else if (z === 'out') zoomAt(1.3);
+        if (z === 'in' || z === 'out') {
+            // Zoom toward the selected tile, or the capital, when it is in view;
+            // otherwise around the middle. Keeps the focus on screen near edges.
+            const capital = document.querySelector('[data-zoom="home"]')?.dataset.tile;
+            const focus = map.querySelector('.map-tile.is-selected rect') || (capital && map.querySelector(`.map-tile[data-tile="${capital}"] rect`));
+            const factor = z === 'in' ? 1 / 1.3 : 1.3;
+            if (focus) {
+                const r = focus.getBoundingClientRect(), m = svg.getBoundingClientRect();
+                const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+                if (cx >= m.left && cx <= m.right && cy >= m.top && cy <= m.bottom) return zoomAt(factor, cx, cy);
+            }
+            return zoomAt(factor);
+        }
         else if (z === 'reset') { vb = { x: 0, y: 0, w: W, h: H }; apply(); }
         else if (z === 'wide') setWide(!wide);
         else if (z === 'home' && b.dataset.tile) {

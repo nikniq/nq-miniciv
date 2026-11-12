@@ -488,9 +488,9 @@ final class MapSvg
 
         $garrison = $this->garrisons[$city->empire_id] ?? 0;
         $shield = sprintf('<g style="pointer-events:none"><path d="M%1$s %2$s l5 -2 l5 2 v5 q0 4 -5 6 q-5 -2 -5 -6 z" fill="#1c1917" stroke="#e7e5e4" stroke-width="1"/><text x="%3$s" y="%4$s" font-size="7.5" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="#fff">%5$d</text></g>',
-            $cx - $r - 4, $cy + $r - 10, $cx - $r + 1, $cy + $r - 4, $garrison);
+            $cx - $r - 4, $cy - $r - 2, $cx - $r + 1, $cy - $r + 4, $garrison);
 
-        return $walls.$glow.$shield.sprintf(
+        return $walls.$glow.sprintf(
             '<g class="city" style="pointer-events:none">'
             .'<circle cx="%1$s" cy="%2$s" r="%3$s" fill="%4$s" stroke="#111" stroke-width="2"/>'
             .'<circle cx="%1$s" cy="%2$s" r="%5$s" fill="none" stroke="#fff" stroke-opacity="0.6" stroke-width="1"/>'
@@ -499,7 +499,7 @@ final class MapSvg
             .'<text x="%1$s" y="%9$s" font-size="9.5" font-weight="600" text-anchor="middle" fill="#fff" style="paint-order:stroke;stroke:#000;stroke-width:2.5px;letter-spacing:.2px">%10$s</text>'
             .'</g>',
             $cx, $cy, $r, $color, $r - 3, $r >= 13 ? 12 : 11, $city->population, $star, $cy + $s / 2 - 3, $name
-        );
+        ).$shield;
     }
 
     private function defs(): string
