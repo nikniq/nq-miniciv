@@ -122,6 +122,21 @@ final class CitySvg
             'notre_dame' => sprintf('<rect x="%.1f" y="%d" width="36" height="24" fill="#e7e5e4"/><rect x="%.1f" y="%d" width="9" height="38" fill="#d6d3d1"/><rect x="%.1f" y="%d" width="9" height="38" fill="#d6d3d1"/><circle cx="%.1f" cy="%d" r="5" fill="#60a5fa" stroke="#1e3a8a" stroke-width="1"/><path d="M%.1f %d a4 6 0 0 1 8 0 v8 h-8 z" fill="#1e293b"/>', $cx - 18, $g - 24, $cx - 18, $g - 38, $cx + 9, $g - 38, $cx, $g - 16, $cx - 4, $g - 8),
             'machu_picchu' => sprintf('<polygon points="%.1f,%d %.1f,%d %.1f,%d" fill="#4d7c0f"/><polygon points="%.1f,%d %.1f,%d %.1f,%d" fill="#65a30d"/>%s', $cx - 26, $g, $cx - 6, $g - 40, $cx + 14, $g, $cx - 2, $g, $cx + 14, $g - 30, $cx + 28, $g, implode('', array_map(fn ($i) => sprintf('<rect x="%.1f" y="%d" width="%d" height="3" fill="#a8a29e"/>', $cx - 12 + $i * 2, $g - 8 - $i * 6, 14 - $i * 2), range(0, 4)))),
             'angkor_wat' => sprintf('<rect x="%.1f" y="%d" width="44" height="12" fill="#78716c"/>%s', $cx - 22, $g - 12, implode('', array_map(fn ($i) => sprintf('<polygon points="%.1f,%d %.1f,%d %.1f,%d" fill="#a8a29e" stroke="#44403c" stroke-width="0.8"/>', $cx - 18 + $i * 12, $g - 12, $cx - 12 + $i * 12, $g - 12 - ($i === 1 ? 30 : 20), $cx - 6 + $i * 12, $g - 12), range(0, 2)))),
+            // Caravanserai: a domed gate with a camel waiting outside.
+            'silk_road' => sprintf('<rect x="%.1f" y="%d" width="34" height="20" fill="#d6b370"/><path d="M%.1f %d a7 8 0 0 1 14 0 v12 h-14 z" fill="#78350f"/><path d="M%.1f %d a9 7 0 0 1 18 0 z" fill="#b45309"/><path d="M%.1f %d h10 m-8 0 v-6 q3 -5 6 0 v6 m2 -6 q2 -3 4 -1" fill="none" stroke="#a16207" stroke-width="2" stroke-linecap="round"/>',
+                $cx - 17, $g - 20, $cx - 7, $g - 12, $cx - 9, $g - 20, $cx + 14, $g, ),
+            // Temple of Artemis: a long colonnade under a low pediment.
+            'temple_of_artemis' => sprintf('<rect x="%.1f" y="%d" width="42" height="4" fill="#e7e5e4"/>%s<polygon points="%.1f,%d %.1f,%d %.1f,%d" fill="#f5f5f4" stroke="#a8a29e" stroke-width="0.8"/>',
+                $cx - 21, $g - 4, implode('', array_map(fn ($i) => sprintf('<rect x="%.1f" y="%d" width="3" height="20" fill="#f5f5f4"/>', $cx - 19 + $i * 6.3, $g - 24), range(0, 6))), $cx - 23, $g - 24, $cx, $g - 34, $cx + 23, $g - 24),
+            // Art of War: a tiered pagoda flying a red banner.
+            'art_of_war' => sprintf('<rect x="%.1f" y="%d" width="16" height="10" fill="#7f1d1d"/><polygon points="%.1f,%d %.1f,%d %.1f,%d %.1f,%d" fill="#292524"/><rect x="%.1f" y="%d" width="12" height="9" fill="#991b1b"/><polygon points="%.1f,%d %.1f,%d %.1f,%d %.1f,%d" fill="#292524"/><line x1="%.1f" y1="%d" x2="%.1f" y2="%d" stroke="#d6d3d1" stroke-width="1.2"/><polygon points="%.1f,%d %.1f,%d %.1f,%d" fill="#ef4444"/>',
+                $cx - 8, $g - 10, $cx - 13, $g - 10, $cx + 13, $g - 10, $cx + 8, $g - 15, $cx - 8, $g - 15, $cx - 6, $g - 24, $cx - 10, $g - 24, $cx + 10, $g - 24, $cx + 6, $g - 29, $cx - 6, $g - 29, $cx, $g - 29, $cx, $g - 44, $cx, $g - 44, $cx + 10, $g - 41, $cx, $g - 38),
+            // Grand Expedition: a carrack under full sail.
+            'grand_expedition' => sprintf('<path d="M%1$.1f %2$d h40 l-7 9 h-26 z" fill="#78350f"/><rect x="%3$.1f" y="%4$d" width="1.6" height="36" fill="#44403c"/>'
+                .'<path d="M%5$.1f %6$d h22 q3 6 0 12 h-22 q2 -6 0 -12 z" fill="#f5f5f4" stroke="#a8a29e" stroke-width="0.6"/>'
+                .'<path d="M%7$.1f %8$d h16 q2 5 0 10 h-16 q2 -5 0 -10 z" fill="#e7e5e4" stroke="#a8a29e" stroke-width="0.6"/>'
+                .'<polygon points="%9$.1f,%10$d %11$.1f,%12$d %9$.1f,%13$d" fill="#ef4444"/>',
+                $cx - 20, $g - 9, $cx - 0.8, $g - 45, $cx - 11, $g - 24, $cx - 8, $g - 38, $cx, $g - 45, $cx + 9, $g - 42, $g - 39),
             default => sprintf('<rect x="%.1f" y="%d" width="30" height="30" fill="#fbbf24"/>', $cx - 15, $g - 30),
         };
     }
