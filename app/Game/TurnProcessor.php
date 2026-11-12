@@ -149,6 +149,14 @@ final class TurnProcessor
             $this->aiTechSwaps($game);
             $this->culturalPressure($game);
             $this->drawChoice($game, $player);
+            if ($player && ! $player->eliminated) {
+                foreach (Quests::check($game, $player, $this->tiles) as $e) {
+                    $this->events[] = $e;
+                }
+                if ($line = Quests::maybeIssue($game, $player, $this->tiles)) {
+                    $this->events[] = $line;
+                }
+            }
             $this->spawnCamps($game);
             $this->barbarianRaids($game);
             $game->turn += 1;

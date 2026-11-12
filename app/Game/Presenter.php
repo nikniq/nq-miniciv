@@ -268,6 +268,7 @@ final class Presenter
             'trades' => $e->id === $player->id ? [] : $this->actions->techTradeOffers($game, $player, $e),
             'allied' => $e->id !== $player->id && $game->allied($player->id, $e->id),
             'canAlly' => $e->id !== $player->id && $this->actions->allianceProblem($game, $player, $e) === null,
+            'quest' => ($q = collect($game->quests ?? [])->firstWhere('empire', $e->id)) ? ['text' => Quests::describe($game, $q, $tiles), 'left' => $q['until'] - $game->turn] : null,
             'canTribute' => $e->id !== $player->id && ! $game->atWar($player->id, $e->id) && $player->army >= 2 * $e->army + 5,
             'warProblem' => $e->id === $player->id ? null : $this->actions->warProblem($game, $player, $e),
             'peaceLikely' => $e->id !== $player->id && $game->atWar($player->id, $e->id) && $this->actions->peaceAcceptable($game, $player, $e),

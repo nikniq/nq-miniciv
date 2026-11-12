@@ -389,6 +389,9 @@
                             </div>
                             <span class="shrink-0 font-semibold">{{ $e->eliminated ? '✝' : $r['score'] }}</span>
                         </div>
+                        @if ($r['quest'] && $game->isActive())
+                            <div class="mt-1 rounded border border-amber-800/60 bg-amber-950/30 px-2 py-1 text-[11px] text-amber-100" title="Keep it for +{{ \App\Game\Quests::REWARD_ATTITUDE }} attitude">📜 Asks you to {{ $r['quest']['text'] }} · <span class="text-amber-300/80">{{ $r['quest']['left'] }} {{ Str::plural('turn', $r['quest']['left']) }} left</span></div>
+                        @endif
                         @if ($r['trades'])
                             <ul class="trades mt-1 hidden space-y-1 rounded border border-sky-900/60 bg-sky-950/20 p-2 text-xs">
                                 @foreach ($r['trades'] as $t)

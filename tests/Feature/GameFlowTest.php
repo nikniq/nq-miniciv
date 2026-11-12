@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Game\Actions;
 use App\Game\Economy;
 use App\Game\Fog;
+use App\Game\Quests;
 use App\Game\Rules;
 use App\Models\Game;
 use App\Models\User;
@@ -733,5 +734,29 @@ class GameFlowTest extends TestCase
         $game->save();
         $this->actingAs($user)->post(route('games.end-turn', $game));
         $this->assertFalse($game->fresh()->allied($player->id, $friend->id));
+    }
+
+    public function test_rival_favours_reward_the_player_and_lapse_when_ignored(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        $rival = $game->empires->firstWhere('is_ai', true);
+        $player->update(['gold' => 200]);
+        $game->update(['quests' => [['empire' => $rival->id, 'kind' => 'gold', 'target' => null, 'amount' => 50, 'progress' => 0, 'until' => $game->turn + 5]]]);
+
+        $this->actingAs($user)->get(route('games.show', $game))->assertSee('Asks you to send a gift of 50 gold');
+        $before = $game->fresh()->attitude($player->id, $rival->id);
+        $this->actingAs($user)->post(route('games.gift', [$game, $rival]), ['gold' => 50])->assertSessionHas('status');
+        $this->actingAs($user)->post(route('games.end-turn', $game));
+        $game->refresh();
+        $this->assertSame([], $game->quests);
+        $this->assertGreaterThanOrEqual($before + 5 + Quests::REWARD_ATTITUDE - 2, $game->attitude($player->id, $rival->id));
+
+        // An ignored request lapses at its deadline and cools relations.
+        $game->update(['quests' => [['empire' => $rival->id, 'kind' => 'gold', 'target' => null, 'amount' => 50, 'progress' => 0, 'until' => $game->turn]]]);
+        $this->actingAs($user)->post(route('games.end-turn', $game));
+        $this->assertSame([], $game->fresh()->quests);
+        $this->assertStringContainsString('let', collect($game->fresh()->log)->flatten()->implode(' '));
     }
 }

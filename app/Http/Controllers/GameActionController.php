@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Game\Actions;
 use App\Game\Choices;
+use App\Game\Quests;
 use App\Game\Rules;
 use App\Game\TurnProcessor;
 use App\Models\City;
@@ -212,6 +213,7 @@ class GameActionController extends Controller
         } catch (InvalidArgumentException $e) {
             return $this->back($game, $e->getMessage(), $request->integer('tile') ?: null);
         }
+        Quests::giftSent($game, $empire->id, $request->integer('gold'));
 
         return $this->back($game, "{$empire->name} accepts your gift. Relations improve by {$delta}.", $request->integer('tile') ?: null, 'status');
     }
@@ -263,6 +265,7 @@ class GameActionController extends Controller
         } catch (InvalidArgumentException $e) {
             return $this->back($game, $e->getMessage(), $tile->id);
         }
+        Quests::campCleared($game, $tile->id);
 
         return $this->back($game, "The camp is destroyed. Your troops loot {$loot} gold.", $tile->id, 'status');
     }
