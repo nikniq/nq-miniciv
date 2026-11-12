@@ -248,6 +248,7 @@ if (map) {
     document.addEventListener('keydown', (e) => {
         if (['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(document.activeElement?.tagName)) return;
         if (e.key === 'Enter') document.getElementById('end-turn-form')?.requestSubmit();
+        if (e.key === '?') { const d = document.getElementById('keys-dialog'); d?.open ? d.close() : d?.showModal(); e.preventDefault(); return; }
         // Arrow keys move the selection one tile.
         if (e.key?.toLowerCase() === 'b' && !e.metaKey && !e.ctrlKey && !e.altKey) { setWide(!wide); e.preventDefault(); return; }
         const pans = { w: [0, -1], a: [-1, 0], s: [0, 1], d: [1, 0] };
@@ -325,3 +326,5 @@ if (replayData) {
     slider.addEventListener('input', () => { stop(); draw(+slider.value); });
     draw(R.frames.length - 1);
 }
+
+document.getElementById('keys-open')?.addEventListener('click', () => document.getElementById('keys-dialog')?.showModal());

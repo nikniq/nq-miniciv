@@ -137,6 +137,7 @@
     @if ($wars)<div class="text-red-300" title="At war">⚔ at war ({{ $wars }})</div>@endif
     <div title="Score">⭐ <b>{{ $rivals->firstWhere('empire.id', $player->id)['score'] ?? 0 }}</b></div>
     <div class="ml-auto flex items-center gap-3">
+        <button type="button" id="keys-open" class="hidden text-xs text-stone-400 hover:text-white sm:inline" title="Keyboard shortcuts (?)">⌨ keys</button>
         <a href="{{ route('guide') }}" target="_blank" class="text-xs text-stone-400 hover:text-white" title="How to play">? help</a>
         @if ($game->isActive())
             <form method="POST" action="{{ route('games.end-turn', $game) }}" id="end-turn-form"
@@ -564,4 +565,16 @@
         @endif
     </aside>
 </div>
+<dialog id="keys-dialog" class="m-auto w-80 max-w-[92vw] rounded-lg border border-stone-700 bg-stone-900 p-5 text-sm text-stone-200 shadow-2xl backdrop:bg-black/60">
+    <div class="flex items-center justify-between"><h2 class="font-semibold">⌨ Keyboard shortcuts</h2><button type="button" class="text-stone-400 hover:text-white" onclick="this.closest('dialog').close()" aria-label="Close">✕</button></div>
+    <dl class="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-xs">
+        <dt><kbd class="rounded border border-stone-600 px-1.5">Enter</kbd></dt><dd>End turn</dd>
+        <dt><kbd class="rounded border border-stone-600 px-1.5">← ↑ → ↓</kbd></dt><dd>Move the selected tile</dd>
+        <dt><kbd class="rounded border border-stone-600 px-1.5">W A S D</kbd></dt><dd>Pan the map</dd>
+        <dt><kbd class="rounded border border-stone-600 px-1.5">Scroll</kbd></dt><dd>Pan the map (Shift for sideways)</dd>
+        <dt><kbd class="rounded border border-stone-600 px-1.5">⌘/Ctrl + scroll</kbd></dt><dd>Zoom</dd>
+        <dt><kbd class="rounded border border-stone-600 px-1.5">B</kbd></dt><dd>Big map: full width, panels below</dd>
+        <dt><kbd class="rounded border border-stone-600 px-1.5">?</kbd></dt><dd>This list</dd>
+    </dl>
+</dialog>
 @endsection
