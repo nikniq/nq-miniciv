@@ -60,6 +60,7 @@ final class MapSvg
         $out = [];
         $out[] = '<svg id="map-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '.$w.' '.$h.'" class="block h-full w-full select-none" preserveAspectRatio="xMidYMid meet" role="img" aria-label="World map">';
         $out[] = $this->defs();
+        $out[] = '<pattern id="speckle" width="23" height="19" patternUnits="userSpaceOnUse"><circle cx="3" cy="4" r="0.9" fill="#000" opacity="0.35"/><circle cx="14" cy="9" r="0.7" fill="#fff" opacity="0.3"/><circle cx="8" cy="15" r="1" fill="#000" opacity="0.25"/><circle cx="19" cy="2" r="0.6" fill="#fff" opacity="0.25"/><circle cx="20" cy="15" r="0.8" fill="#000" opacity="0.3"/></pattern>';
         $out[] = '<pattern id="fogp" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(35)"><rect width="10" height="10" fill="#0b0f15"/><rect width="10" height="3" fill="#121922"/></pattern>';
 
         // Layer 1: terrain (unexplored tiles are fog)
@@ -68,6 +69,32 @@ final class MapSvg
             $out[] = $this->fogged($t) ? sprintf('<rect x="%d" y="%d" width="%d" height="%d" fill="url(#fogp)"/>', $t->x * $s, $t->y * $s, $s, $s) : $this->terrainTile($t, $s);
         }
         $out[] = '</g>';
+
+        // Layer 1a: texture, then shorelines (sand on land, foam in the water)
+        $out[] = sprintf('<rect width="%d" height="%d" fill="url(#speckle)" opacity="0.5" style="pointer-events:none"/>', $w, $h);
+        $sand = [];
+        $foam = [];
+        foreach ($tiles as $t) {
+            if (! $t->isLand() || $this->fogged($t)) {
+                continue;
+            }
+            $x = $t->x * $s;
+            $y = $t->y * $s;
+            foreach ([[0, -1, "M$x $y h$s", 'M'.$x.' '.($y - 4)." h$s"], [0, 1, 'M'.$x.' '.($y + $s)." h$s", 'M'.$x.' '.($y + $s + 4)." h$s"],
+                [-1, 0, "M$x $y v$s", 'M'.($x - 4)." $y v$s"], [1, 0, 'M'.($x + $s)." $y v$s", 'M'.($x + $s + 4)." $y v$s"]] as [$dx, $dy, $edge, $off]) {
+                $n = $this->grid[$t->y + $dy][$t->x + $dx] ?? null;
+                if ($n && ! $n->isLand()) {
+                    $sand[] = $edge;
+                    $foam[] = $off;
+                }
+            }
+        }
+        if ($sand) {
+            $out[] = '<g id="shores" fill="none" style="pointer-events:none" stroke-linecap="round">';
+            $out[] = '<path d="'.implode(' ', $foam).'" stroke="#dbeafe" stroke-width="1.5" opacity="0.35" stroke-dasharray="5 4" class="foam"/>';
+            $out[] = '<path d="'.implode(' ', $sand).'" stroke="#e9d8a6" stroke-width="3.5" opacity="0.85"/>';
+            $out[] = '</g>';
+        }
 
         // Layer 1b: rivers, joining adjacent river tiles centre to centre
         $out[] = '<g id="rivers" fill="none" stroke-linecap="round" stroke-linejoin="round">';
@@ -141,6 +168,46 @@ final class MapSvg
             }
         }
         $out[] = '</g>';
+
+        // Layer 3b: roads from each city to its nearest sister city
+        $roads = [];
+        $centres = [];
+        foreach ($citiesByTile as $tileId => $c) {
+            $ct = $tiles->firstWhere('id', $tileId);
+            if ($ct && ! $this->fogged($ct)) {
+                $centres[] = [$c, $ct];
+            }
+        }
+        foreach ($centres as [$c, $ct]) {
+            $best = null;
+            foreach ($centres as [$o, $ot]) {
+                if ($o->id === $c->id || $o->empire_id !== $c->empire_id) {
+                    continue;
+                }
+                $d = $ct->distanceTo($ot);
+                if ($d <= 7 && ($best === null || $d < $best[0])) {
+                    $best = [$d, $o, $ot];
+                }
+            }
+            if ($best) {
+                $key = min($c->id, $best[1]->id).'-'.max($c->id, $best[1]->id);
+                $x1 = $ct->x * $s + $s / 2;
+                $y1 = $ct->y * $s + $s / 2;
+                $x2 = $best[2]->x * $s + $s / 2;
+                $y2 = $best[2]->y * $s + $s / 2;
+                // A gentle bend so roads do not look ruled.
+                $mx = ($x1 + $x2) / 2 + ($y2 - $y1) * 0.12;
+                $my = ($y1 + $y2) / 2 - ($x2 - $x1) * 0.12;
+                $roads[$key] = sprintf('M%s %s Q%s %s %s %s', $x1, $y1, round($mx, 1), round($my, 1), $x2, $y2);
+            }
+        }
+        if ($roads) {
+            $d = implode(' ', $roads);
+            $out[] = '<g id="roads" fill="none" stroke-linecap="round" style="pointer-events:none">';
+            $out[] = '<path d="'.$d.'" stroke="#3f2a14" stroke-width="5" opacity="0.55"/>';
+            $out[] = '<path d="'.$d.'" stroke="#c8a165" stroke-width="2.2" stroke-dasharray="6 4" opacity="0.9"/>';
+            $out[] = '</g>';
+        }
 
         // Layer 4: worked markers, resources, cities
         $out[] = '<g id="features">';
