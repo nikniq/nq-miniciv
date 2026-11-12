@@ -147,6 +147,7 @@ final class TurnProcessor
             $this->revealBorders($game, $player);
             $this->attitudeDrift($game);
             $this->aiTechSwaps($game);
+            $this->aiAlliances($game);
             $this->culturalPressure($game);
             $this->drawChoice($game, $player);
             if ($player && ! $player->eliminated) {
@@ -476,6 +477,23 @@ final class TurnProcessor
             $game->choice = $choice;
             $desc = Choices::describe($game, $choice);
             $this->events[] = "{$desc['icon']} {$desc['title']}: a decision awaits you.";
+        }
+    }
+
+    /** Rivals who have grown close form alliances of their own, every few turns. */
+    private function aiAlliances(Game $game): void
+    {
+        if ($game->turn % 5 !== 0) {
+            return;
+        }
+        $ais = $game->empires->filter(fn ($e) => $e->is_ai && ! $e->eliminated)->values();
+        foreach ($ais as $i => $a) {
+            foreach ($ais->slice($i + 1) as $b) {
+                if (! $game->allied($a->id, $b->id) && ! $game->atWar($a->id, $b->id) && $game->attitude($a->id, $b->id) >= Rules::ALLIANCE_ATTITUDE + 10) {
+                    $game->setAllied($a->id, $b->id, true);
+                    $this->events[] = "🤝 {$a->name} and {$b->name} have formed an alliance.";
+                }
+            }
         }
     }
 

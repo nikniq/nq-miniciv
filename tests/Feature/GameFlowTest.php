@@ -759,4 +759,23 @@ class GameFlowTest extends TestCase
         $this->assertSame([], $game->fresh()->quests);
         $this->assertStringContainsString('let', collect($game->fresh()->log)->flatten()->implode(' '));
     }
+
+    public function test_close_rivals_ally_and_their_allies_defend_them(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        [$a, $b] = $game->empires->where('is_ai', true)->values()->all();
+        $game->adjustAttitude($a->id, $b->id, 80);
+        $game->update(['turn' => 5]);
+        $game->save();
+
+        $this->actingAs($user)->post(route('games.end-turn', $game));
+        $game->refresh();
+        $this->assertTrue($game->allied($a->id, $b->id));
+        $this->actingAs($user)->get(route('games.show', $game))->assertSee('Their allies will join them: '.$b->name, false);
+
+        $this->actingAs($user)->post(route('games.war', [$game, $a]))->assertSessionHas('status');
+        $this->assertTrue($game->fresh()->atWar($player->id, $b->id), "the defender's ally joins");
+    }
 }

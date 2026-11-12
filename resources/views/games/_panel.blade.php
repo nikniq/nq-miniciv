@@ -190,7 +190,7 @@
             <div class="mt-3">
                 @if (! $selected['atWar'])
                     @if ($selected['warProblem'] === null)
-                        <form method="POST" action="{{ route('games.war', [$game, $selected['owner']]) }}" onsubmit="return confirm('Declare war on {{ $selected['owner']->name }}? War costs {{ Rules::WAR_WEARINESS }} happiness per turn and they may strike back.')">
+                        <form method="POST" action="{{ route('games.war', [$game, $selected['owner']]) }}" onsubmit="return confirm('Declare war on {{ $selected['owner']->name }}? War costs {{ Rules::WAR_WEARINESS }} happiness per turn and they may strike back.{{ ($al = $game->alliesOf($selected['owner']->id, $player->id)) ? ' Their allies will join them: '.implode(', ', $al).'.' : '' }}')">
                             @csrf
                             <input type="hidden" name="tile" value="{{ $tile->id }}">
                             <button class="w-full rounded border border-red-800 px-3 py-1.5 text-sm text-red-200 hover:bg-red-950">Declare war on {{ $selected['owner']->name }}</button>

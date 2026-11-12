@@ -460,7 +460,7 @@
                                             </form>
                                         @endif
                                         @if ($r['warProblem'] === null)
-                                            <form method="POST" action="{{ route('games.war', [$game, $e]) }}" class="inline" onsubmit="return confirm('Declare war on {{ $e->name }}?')">
+                                            <form method="POST" action="{{ route('games.war', [$game, $e]) }}" class="inline" onsubmit="return confirm('Declare war on {{ $e->name }}?{{ $r['theirAllies'] ? ' Their allies will join them: '.implode(', ', $r['theirAllies']).'.' : '' }}{{ $r['allied'] ? ' They are your ally: this is a betrayal the world will remember.' : '' }}')">
                                                 @csrf
                                                 <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
                                                 <button class="rounded border border-stone-700 px-1.5 py-0.5 text-[10px] text-stone-400 hover:border-red-800 hover:text-red-200">⚔ war</button>

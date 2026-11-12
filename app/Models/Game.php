@@ -102,6 +102,19 @@ class Game extends Model
         $this->diplomacy = $diplomacy;
     }
 
+    /** Names of the empires allied with $id (excluding $except). */
+    public function alliesOf(int $id, ?int $except = null): array
+    {
+        $names = [];
+        foreach ($this->empires as $e) {
+            if ($e->id !== $id && $e->id !== $except && ! $e->eliminated && $this->allied($id, $e->id)) {
+                $names[] = $e->name;
+            }
+        }
+
+        return $names;
+    }
+
     public function atWar(int $a, int $b): bool
     {
         return $this->relation($a, $b)['state'] === 'war';
