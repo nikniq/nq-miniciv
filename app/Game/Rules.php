@@ -453,6 +453,11 @@ final class Rules
     /** Rival personalities map onto traits. */
     public const TRAIT_FOR_PERSONALITY = ['Conqueror' => 'militaristic', 'Builder' => 'industrious', 'Scholar' => 'scientific', 'Merchant' => 'mercantile', 'Expansionist' => 'expansive', 'Cultured' => 'spiritual', 'Peaceful' => 'spiritual', 'Balanced' => 'industrious'];
 
+    /** Alliances: attitude a rival needs to agree, and below which an alliance lapses. */
+    public const ALLIANCE_ATTITUDE = 45;
+
+    public const ALLIANCE_LAPSE = 15;
+
     /** Raids: a lighter act of war than a siege. */
     public const RAID_MIN_ARMY = 3;
 

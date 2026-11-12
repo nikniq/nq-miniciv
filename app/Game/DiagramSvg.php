@@ -125,6 +125,8 @@ final class DiagramSvg
                 [$x2, $y2] = $pos[$b->id];
                 if ($war) {
                     [$color, $width, $dash, $op] = ['#ef4444', 3.5, ' stroke-dasharray="7 5"', 0.95];
+                } elseif ($game->allied($a->id, $b->id)) {
+                    [$color, $width, $dash, $op] = ['#60a5fa', 5, '', 0.95];
                 } elseif ($att > 15) {
                     [$color, $width, $dash, $op] = ['#34d399', 1.5 + min(4, $att / 20), '', $mine ? 0.95 : 0.6];
                 } elseif ($att < -10) {
@@ -132,13 +134,13 @@ final class DiagramSvg
                 } else {
                     [$color, $width, $dash, $op] = ['#57534e', 1.25, '', $mine ? 0.9 : 0.45];
                 }
-                $label = $war ? 'at war' : Rules::attitudeLabel($att)." ({$att})";
+                $label = $war ? 'at war' : ($game->allied($a->id, $b->id) ? 'allies, ' : '').Rules::attitudeLabel($att)." ({$att})";
                 $out[] = sprintf('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="%s" stroke-width="%s" opacity="%s"%s><title>%s and %s: %s</title></line>',
                     $x1, $y1, $x2, $y2, $color, $width, $op, $dash, e($a->name), e($b->name), $label);
                 if ($mine) {
                     $mx = ($x1 + $x2) / 2;
                     $my = ($y1 + $y2) / 2;
-                    $txt = $war ? '⚔' : ($att > 0 ? '+'.$att : (string) $att);
+                    $txt = $war ? '⚔' : ($game->allied($a->id, $b->id) ? '🤝' : ($att > 0 ? '+'.$att : (string) $att));
                     $out[] = sprintf('<rect x="%.1f" y="%.1f" width="%s" height="14" rx="7" fill="#0c0a09" stroke="%s" stroke-width="1"/><text x="%.1f" y="%.1f" font-size="9" text-anchor="middle" fill="%s">%s</text>',
                         $mx - 14, $my - 7, 28, $color, $mx, $my + 3.5, $color, $txt);
                 }

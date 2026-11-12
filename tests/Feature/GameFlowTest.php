@@ -705,4 +705,33 @@ class GameFlowTest extends TestCase
 
         $this->actingAs($user)->get(route('games.show', $game))->assertSee(Rules::TRAITS['spiritual']['blurb']);
     }
+
+    public function test_alliances_need_devotion_and_allies_join_defensive_wars(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        [$friend, $foe] = $game->empires->where('is_ai', true)->values()->all();
+
+        $this->actingAs($user)->post(route('games.alliance', [$game, $friend]))->assertSessionHas('error');
+
+        $game->adjustAttitude($player->id, $friend->id, 60);
+        $game->save();
+        $this->actingAs($user)->post(route('games.alliance', [$game, $friend]))->assertSessionHas('status');
+        $game->refresh();
+        $this->assertTrue($game->allied($player->id, $friend->id));
+        $this->actingAs($user)->get(route('games.show', $game))->assertSee('🤝 ally');
+
+        // The foe attacks the player: the ally joins in.
+        $game->load('empires');
+        app(Actions::class)->declareWar($game, $game->empires->firstWhere('id', $foe->id), $game->playerEmpire());
+        $game->refresh();
+        $this->assertTrue($game->atWar($friend->id, $foe->id), 'the ally declares war on the aggressor');
+
+        // Trust fading below the threshold ends it at the turn.
+        $game->adjustAttitude($player->id, $friend->id, -200);
+        $game->save();
+        $this->actingAs($user)->post(route('games.end-turn', $game));
+        $this->assertFalse($game->fresh()->allied($player->id, $friend->id));
+    }
 }

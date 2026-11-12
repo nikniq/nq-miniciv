@@ -136,6 +136,7 @@ final class TurnProcessor
                 $empire->save();
             }
 
+            $this->alliances($game, $player);
             $this->revealBorders($game, $player);
             $this->attitudeDrift($game);
             $this->aiTechSwaps($game);
@@ -333,6 +334,43 @@ final class TurnProcessor
             $this->actions->useGreatPerson($game, $empire, $kind, $city);
         } catch (\InvalidArgumentException) {
             // Nothing sensible to spend it on; it waits.
+        }
+    }
+
+    /**
+     * Alliances lapse when trust fades and warm slowly while they hold. The
+     * player sees through allies' eyes: their land is revealed each turn.
+     */
+    private function alliances(Game $game, ?Empire $player): void
+    {
+        $empires = $game->empires->filter(fn ($e) => ! $e->eliminated)->values();
+        foreach ($empires as $i => $a) {
+            foreach ($empires->slice($i + 1) as $b) {
+                if (! $game->allied($a->id, $b->id)) {
+                    continue;
+                }
+                if ($game->attitude($a->id, $b->id) < Rules::ALLIANCE_LAPSE) {
+                    $game->setAllied($a->id, $b->id, false);
+                    if ($player && in_array($player->id, [$a->id, $b->id], true)) {
+                        $other = $a->id === $player->id ? $b : $a;
+                        $this->events[] = "🤝 Trust has faded: the alliance with {$other->name} has lapsed.";
+                    }
+
+                    continue;
+                }
+                if ($game->turn % 3 === 0) {
+                    $game->adjustAttitude($a->id, $b->id, 1);
+                }
+                if ($player && $player->explored !== null && in_array($player->id, [$a->id, $b->id], true)) {
+                    $ally = $a->id === $player->id ? $b : $a;
+                    foreach ($this->tiles as $t) {
+                        if ($t->empire_id === $ally->id) {
+                            Fog::reveal($game, $player, $t->x, $t->y, 1);
+                        }
+                    }
+                    $player->save();
+                }
+            }
         }
     }
 

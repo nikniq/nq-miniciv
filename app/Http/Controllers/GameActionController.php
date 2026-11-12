@@ -132,13 +132,39 @@ class GameActionController extends Controller
         $game->load('empires');
         $player = $game->playerEmpire();
 
+        $betrayal = $game->allied($player->id, $empire->id);
         try {
             $this->actions->declareWar($game, $player, $empire);
         } catch (InvalidArgumentException $e) {
             return $this->back($game, $e->getMessage(), $request->integer('tile') ?: null);
         }
+        $joined = collect($this->actions->lastAlliesJoined)->pluck('name');
+        $msg = ($betrayal ? "You have betrayed your ally {$empire->name}. The world will remember. " : '')
+            ."You are now at war with {$empire->name}. War weariness costs ".Rules::WAR_WEARINESS.' happiness.'
+            .($joined->isNotEmpty() ? ' Their allies join them: '.$joined->join(', ').'.' : '');
 
-        return $this->back($game, "You are now at war with {$empire->name}. War weariness costs ".Rules::WAR_WEARINESS.' happiness.', $request->integer('tile') ?: null, 'status');
+        return $this->back($game, $msg, $request->integer('tile') ?: null, 'status');
+    }
+
+    public function alliance(Request $request, Game $game, Empire $empire): RedirectResponse
+    {
+        $this->own($request, $game);
+        abort_unless($empire->game_id === $game->id, 404);
+        $game->load('empires');
+        $player = $game->playerEmpire();
+
+        try {
+            if ($request->boolean('dissolve')) {
+                $this->actions->dissolveAlliance($game, $player, $empire);
+
+                return $this->back($game, "You have ended the alliance with {$empire->name}.", $request->integer('tile') ?: null, 'status');
+            }
+            $this->actions->formAlliance($game, $player, $empire);
+        } catch (InvalidArgumentException $e) {
+            return $this->back($game, $e->getMessage(), $request->integer('tile') ?: null);
+        }
+
+        return $this->back($game, "🤝 {$empire->name} is now your ally. Each of you joins any war declared on the other, and you share maps.", $request->integer('tile') ?: null, 'status');
     }
 
     public function peace(Request $request, Game $game, Empire $empire): RedirectResponse

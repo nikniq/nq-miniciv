@@ -372,7 +372,7 @@
             <details class="mt-2 text-xs" open>
                 <summary class="cursor-pointer text-stone-400 hover:text-white">Relations web</summary>
                 <div class="mx-auto mt-1 max-w-xs">{!! $relationsSvg !!}</div>
-                <p class="text-[10px] text-stone-500"><span class="text-red-400">red dashes = war</span> · <span class="text-emerald-300">green = friendly</span>, thicker the warmer · <span class="text-orange-300">orange dots = wary</span> · grey = neutral. Numbers are attitudes toward you. Hover a line for details.</p>
+                <p class="text-[10px] text-stone-500"><span class="text-red-400">red dashes = war</span> · <span class="text-blue-300">thick blue = alliance</span> · <span class="text-emerald-300">green = friendly</span>, thicker the warmer · <span class="text-orange-300">orange dots = wary</span> · grey = neutral. Numbers are attitudes toward you. Hover a line for details.</p>
             </details>
             <ul class="mt-2 divide-y divide-stone-800/80">
                 @foreach ($rivals as $r)
@@ -384,6 +384,7 @@
                                 <span class="truncate font-medium {{ $me ? 'text-amber-200' : '' }}">{{ Rules::crest($e->name) }} {{ $e->name }}</span>
                                 @if ($e->eliminated)<span class="text-xs text-stone-500">eliminated</span>
                                 @elseif ($r['relation'] && $r['relation']['state'] === 'war')<span class="rounded bg-red-900/60 px-1.5 text-[10px] text-red-200">at war</span>
+                                @elseif ($r['allied'])<span class="rounded bg-blue-900/60 px-1.5 text-[10px] text-blue-200" title="Allies join each other's defensive wars and share maps">🤝 ally</span>
                                 @elseif ($r['personality'])<span class="rounded bg-stone-800 px-1.5 text-[10px] {{ $r['attitude'] < -10 ? 'text-red-300' : ($r['attitude'] > 15 ? 'text-emerald-300' : 'text-stone-400') }}" title="{{ $r['personality']['trait'] }}: {{ $r['personality']['blurb'] }}@if ($e->trait && isset(Rules::TRAITS[$e->trait])) {{ Rules::TRAITS[$e->trait]['name'] }}: {{ Rules::TRAITS[$e->trait]['blurb'] }}@endif Attitude {{ $r['attitude'] }}.">@if ($e->trait && isset(Rules::TRAITS[$e->trait])){{ Rules::TRAITS[$e->trait]['icon'] }} @endif{{ $r['personality']['trait'] }} · {{ $r['attitudeLabel'] }}</span>@endif
                             </div>
                             <span class="shrink-0 font-semibold">{{ $e->eliminated ? '✝' : $r['score'] }}</span>
@@ -431,6 +432,20 @@
                                             <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
                                             <button class="rounded border border-stone-700 px-1.5 py-0.5 text-[10px] text-stone-400 hover:border-emerald-700 hover:text-emerald-200 disabled:opacity-40" title="Gift 50 gold (+5 attitude)" @disabled($player->gold < 50)>🎁 50</button>
                                         </form>
+                                        @if ($r['canAlly'])
+                                            <form method="POST" action="{{ route('games.alliance', [$game, $e]) }}" class="inline">
+                                                @csrf
+                                                <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                                                <button class="rounded border border-blue-700 px-1.5 py-0.5 text-[10px] text-blue-200 hover:bg-blue-950" title="They are devoted to you: form an alliance">🤝 ally</button>
+                                            </form>
+                                        @elseif ($r['allied'])
+                                            <form method="POST" action="{{ route('games.alliance', [$game, $e]) }}" class="inline" onsubmit="return confirm('End the alliance with {{ $e->name }}? They will resent it.')">
+                                                @csrf
+                                                <input type="hidden" name="dissolve" value="1">
+                                                <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                                                <button class="rounded border border-stone-700 px-1.5 py-0.5 text-[10px] text-stone-400 hover:bg-stone-800" title="End the alliance">✂ ally</button>
+                                            </form>
+                                        @endif
                                         @if ($r['trades'])
                                             <button type="button" class="rounded border border-sky-800 px-1.5 py-0.5 text-[10px] text-sky-200 hover:bg-sky-950" onclick="this.closest('li').querySelector('.trades').classList.toggle('hidden')" title="They will trade technologies">🔁 techs</button>
                                         @endif

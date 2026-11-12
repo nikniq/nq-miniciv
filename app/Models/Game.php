@@ -81,6 +81,26 @@ class Game extends Model
         $this->diplomacy = $diplomacy;
     }
 
+    /** Allied pairs fight together and share maps. Stored on the relation; war clears it. */
+    public function allied(int $a, int $b): bool
+    {
+        return (bool) ($this->relation($a, $b)['allied'] ?? false);
+    }
+
+    public function setAllied(int $a, int $b, bool $allied): void
+    {
+        $key = min($a, $b).'-'.max($a, $b);
+        $diplomacy = $this->diplomacy ?? [];
+        $rel = $diplomacy[$key] ?? ['state' => 'peace', 'since' => 0];
+        if ($allied) {
+            $rel['allied'] = true;
+        } else {
+            unset($rel['allied']);
+        }
+        $diplomacy[$key] = $rel;
+        $this->diplomacy = $diplomacy;
+    }
+
     public function atWar(int $a, int $b): bool
     {
         return $this->relation($a, $b)['state'] === 'war';

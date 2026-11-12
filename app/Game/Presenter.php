@@ -260,6 +260,8 @@ final class Presenter
             'attitudeLabel' => $e->id === $player->id ? null : Rules::attitudeLabel($game->attitude($player->id, $e->id)),
             'personality' => $e->is_ai ? Rules::personality($e->name) : null,
             'trades' => $e->id === $player->id ? [] : $this->actions->techTradeOffers($game, $player, $e),
+            'allied' => $e->id !== $player->id && $game->allied($player->id, $e->id),
+            'canAlly' => $e->id !== $player->id && $this->actions->allianceProblem($game, $player, $e) === null,
             'canTribute' => $e->id !== $player->id && ! $game->atWar($player->id, $e->id) && $player->army >= 2 * $e->army + 5,
             'warProblem' => $e->id === $player->id ? null : $this->actions->warProblem($game, $player, $e),
             'peaceLikely' => $e->id !== $player->id && $game->atWar($player->id, $e->id) && $this->actions->peaceAcceptable($game, $player, $e),

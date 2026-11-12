@@ -66,7 +66,7 @@ final class AiPlayer
                 if (! $game->atWar($empire->id, $victim->id)) {
                     // Friends are not attacked; the bolder the personality, the less friendship it takes.
                     $friendship = $game->attitude($empire->id, $victim->id);
-                    if ($friendship > (int) round(10 * $mind['aggression'])) {
+                    if ($friendship > (int) round(10 * $mind['aggression']) || $game->allied($empire->id, $victim->id)) {
                         continue;
                     }
                     if ($this->actions->warProblem($game, $empire, $victim) === null && Economy::warsCount($game, $empire) === 0) {
@@ -74,6 +74,11 @@ final class AiPlayer
                         $events[] = $victim->is_ai
                             ? "{$empire->name} has declared war on {$victim->name}."
                             : "⚔ {$empire->name} has declared war on you! Their army is {$empire->army}.";
+                        foreach ($this->actions->lastAlliesJoined as $ally) {
+                            $events[] = $ally->is_ai
+                                ? "🤝 {$ally->name} honours its alliance with {$victim->name} and declares war on {$empire->name}."
+                                : "🤝 Your alliance with {$victim->name} draws you into war with {$empire->name}.";
+                        }
                     }
                     break;
                 }

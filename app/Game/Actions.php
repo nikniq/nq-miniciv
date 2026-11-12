@@ -317,14 +317,69 @@ final class Actions
         if ($problem) {
             throw new InvalidArgumentException($problem);
         }
+        $betrayal = $game->allied($a->id, $b->id);
         $game->setDiplomacy($a->id, $b->id, 'war');
-        $game->adjustAttitude($a->id, $b->id, -40);
+        $game->adjustAttitude($a->id, $b->id, $betrayal ? -70 : -40);
         // Third parties dislike warmongers a little.
         foreach ($game->empires as $other) {
             if ($other->id !== $a->id && $other->id !== $b->id && ! $other->eliminated) {
-                $game->adjustAttitude($a->id, $other->id, -5);
+                $game->adjustAttitude($a->id, $other->id, $betrayal ? -15 : -5);
             }
         }
+        // The defender's allies take up arms against the aggressor.
+        $joined = [];
+        foreach ($game->empires as $ally) {
+            if ($ally->id === $a->id || $ally->id === $b->id || $ally->eliminated || ! $game->allied($ally->id, $b->id) || $game->atWar($ally->id, $a->id)) {
+                continue;
+            }
+            $game->setDiplomacy($ally->id, $a->id, 'war');
+            $game->adjustAttitude($ally->id, $a->id, -30);
+            $joined[] = $ally;
+        }
+        $game->save();
+        $this->lastAlliesJoined = $joined;
+    }
+
+    /** Allies of the defender who joined the most recent declaration of war. */
+    public array $lastAlliesJoined = [];
+
+    public function allianceProblem(Game $game, Empire $a, Empire $b): ?string
+    {
+        if ($a->id === $b->id || $b->eliminated) {
+            return 'There is no one to ally with.';
+        }
+        if ($game->allied($a->id, $b->id)) {
+            return 'You are already allies.';
+        }
+        if ($game->atWar($a->id, $b->id)) {
+            return 'Make peace first.';
+        }
+        $att = $game->attitude($a->id, $b->id);
+        if ($att < Rules::ALLIANCE_ATTITUDE) {
+            return "{$b->name} is not devoted enough (attitude {$att}, needs ".Rules::ALLIANCE_ATTITUDE.'). Gifts, trade and peace build trust.';
+        }
+
+        return null;
+    }
+
+    public function formAlliance(Game $game, Empire $a, Empire $b): void
+    {
+        $problem = $this->allianceProblem($game, $a, $b);
+        if ($problem) {
+            throw new InvalidArgumentException($problem);
+        }
+        $game->setAllied($a->id, $b->id, true);
+        $game->adjustAttitude($a->id, $b->id, 5);
+        $game->save();
+    }
+
+    public function dissolveAlliance(Game $game, Empire $a, Empire $b): void
+    {
+        if (! $game->allied($a->id, $b->id)) {
+            throw new InvalidArgumentException('You are not allied.');
+        }
+        $game->setAllied($a->id, $b->id, false);
+        $game->adjustAttitude($a->id, $b->id, -10);
         $game->save();
     }
 
