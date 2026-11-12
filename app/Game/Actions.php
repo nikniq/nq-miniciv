@@ -340,6 +340,9 @@ final class Actions
         $this->lastAlliesJoined = $joined;
     }
 
+    /** Natural wonders found by the most recent scouting party. */
+    public array $lastDiscoveries = [];
+
     /** Allies of the defender who joined the most recent declaration of war. */
     public array $lastAlliesJoined = [];
 
@@ -746,7 +749,17 @@ final class Actions
             throw new InvalidArgumentException('Scouts cost '.Rules::SCOUT_COST.' gold.');
         }
         $empire->gold -= Rules::SCOUT_COST;
+        $before = $tiles->filter(fn (Tile $t) => $t->feature && Fog::visible($game, $empire, $t))->pluck('id')->all();
         $new = Fog::reveal($game, $empire, $centre->x, $centre->y, Rules::SCOUT_RADIUS);
+        $this->lastDiscoveries = [];
+        foreach ($tiles as $t) {
+            if ($t->feature && ! in_array($t->id, $before, true) && Fog::visible($game, $empire, $t)) {
+                $this->lastDiscoveries[] = Rules::NATURAL_WONDERS[$t->feature]['glyph'].' '.Rules::NATURAL_WONDERS[$t->feature]['name'];
+                $empire->gold += Rules::WONDER_DISCOVERY_GOLD;
+                $city->culture += 5;
+            }
+        }
+        $city->save();
         $empire->save();
 
         return $new;

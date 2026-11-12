@@ -296,7 +296,10 @@ class GameActionController extends Controller
             return $this->back($game, $e->getMessage(), $city->tile_id);
         }
 
-        return $this->back($game, "Scouts from {$city->name} map {$n} new tiles.", $city->tile_id, 'status');
+        $found = $this->actions->lastDiscoveries;
+
+        return $this->back($game, "Scouts from {$city->name} map {$n} new tiles."
+            .($found ? ' They discover '.implode(' and ', $found).' (+'.Rules::WONDER_DISCOVERY_GOLD * count($found).' gold, +5 culture each).' : ''), $city->tile_id, 'status');
     }
 
     public function route(Request $request, Game $game, City $city): RedirectResponse

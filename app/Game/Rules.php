@@ -443,6 +443,9 @@ final class Rules
 
     public const SCOUT_COST = 25;
 
+    /** Gold for being the one to find a natural wonder. */
+    public const WONDER_DISCOVERY_GOLD = 15;
+
     /** Builds that must be earned with production: no gold purchase, no Great Engineer. */
     public const NO_HURRY = ['grand_expedition'];
 

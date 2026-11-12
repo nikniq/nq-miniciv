@@ -414,7 +414,9 @@ final class TurnProcessor
         foreach ($this->tiles as $t) {
             if ($t->feature && ! in_array($t->feature, $wondersBefore, true) && Fog::visible($game, $player, $t)) {
                 $nw = Rules::NATURAL_WONDERS[$t->feature];
-                $this->events[] = "{$nw['glyph']} Your explorers discover {$nw['name']}, a natural wonder.";
+                $player->gold += Rules::WONDER_DISCOVERY_GOLD;
+                $player->save();
+                $this->events[] = "{$nw['glyph']} Your explorers discover {$nw['name']}, a natural wonder. Tales of it bring ".Rules::WONDER_DISCOVERY_GOLD.' gold.';
             }
         }
         if (Fog::percent($game, $player) >= 100) {
