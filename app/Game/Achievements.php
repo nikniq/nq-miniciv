@@ -75,8 +75,11 @@ final class Achievements
             } else {
                 $award('win_score');
             }
-            if (in_array($game->difficulty, ['king', 'emperor'], true)) {
+            if (in_array($game->difficulty, ['king', 'emperor', 'deity'], true)) {
                 $award('win_king');
+            }
+            if ($game->difficulty === 'deity') {
+                $award('win_deity');
             }
             if ($game->width >= Rules::MAP_SIZES['huge']['width']) {
                 $award('win_huge');

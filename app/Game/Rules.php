@@ -39,6 +39,7 @@ final class Rules
         'prince' => ['name' => 'Prince', 'ai' => 1.0, 'player_happy' => 1, 'player_gold' => 1.0, 'blurb' => 'Nearly even footing (+1 happiness).'],
         'king' => ['name' => 'King', 'ai' => 1.25, 'player_happy' => 0, 'player_gold' => 1.0, 'blurb' => 'Rivals build and research faster.'],
         'emperor' => ['name' => 'Emperor', 'ai' => 1.5, 'player_happy' => -1, 'player_gold' => 1.0, 'blurb' => 'Rivals are formidable; you get −1 happiness.'],
+        'deity' => ['name' => 'Deity', 'ai' => 1.8, 'player_happy' => -2, 'player_gold' => 0.9, 'blurb' => 'For legends: rivals far ahead, −2 happiness and −10% gold.'],
     ];
 
     public const DOMINATION_SHARE = 0.55;
@@ -378,6 +379,7 @@ final class Rules
         'win_diplomacy' => ['name' => 'Grand Alliance', 'icon' => '🤝', 'blurb' => 'Win by allying with every nation.'],
         'win_culture' => ['name' => 'Beacon of Culture', 'icon' => '🎭', 'blurb' => 'Win by culture.'],
         'win_king' => ['name' => 'Kingslayer', 'icon' => '👑', 'blurb' => 'Win at King difficulty or above.'],
+        'win_deity' => ['name' => 'Godlike', 'icon' => '⚡', 'blurb' => 'Win at Deity difficulty.'],
         'win_huge' => ['name' => 'Wide World', 'icon' => '🌍', 'blurb' => 'Win on a huge map.'],
     ];
 
