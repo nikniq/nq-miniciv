@@ -227,6 +227,12 @@ final class Rules
             'effects' => ['culture' => 6], 'empire_effects' => ['culture' => 1], 'blurb' => 'Wonder: +6 culture here, +1 culture in every city.'],
         'oracle' => ['name' => 'Oracle', 'icon' => '🔮', 'cost' => 180, 'tech' => 'philosophy', 'requires' => null, 'wonder' => true, 'score' => 25,
             'effects' => ['culture' => 3, 'science' => 3], 'empire_effects' => ['happy' => 1], 'blurb' => 'Wonder: +1 happiness in every city, +3 science here.'],
+        'silk_road' => ['name' => 'Silk Road', 'icon' => '🐫', 'cost' => 190, 'tech' => 'currency', 'requires' => null, 'wonder' => true, 'score' => 25,
+            'effects' => ['culture' => 2, 'gold' => 2], 'empire_effects' => ['route_gold' => 2], 'blurb' => 'Wonder: +2 gold on every one of your trade routes.'],
+        'temple_of_artemis' => ['name' => 'Temple of Artemis', 'icon' => '🏹', 'cost' => 210, 'tech' => 'philosophy', 'requires' => null, 'wonder' => true, 'score' => 25,
+            'effects' => ['culture' => 3], 'empire_effects' => ['happy' => 1], 'blurb' => 'Wonder: +1 happiness in every city.'],
+        'art_of_war' => ['name' => 'Art of War', 'icon' => '📜', 'cost' => 240, 'tech' => 'feudalism', 'requires' => null, 'wonder' => true, 'score' => 25,
+            'effects' => ['culture' => 2], 'empire_effects' => ['drill' => 1], 'blurb' => 'Wonder: your army gains experience every other turn, even in peace.'],
         'great_wall' => ['name' => 'Great Wall', 'icon' => '🏯', 'cost' => 200, 'tech' => 'construction', 'requires' => null, 'wonder' => true, 'score' => 25,
             'effects' => ['culture' => 3], 'empire_effects' => ['defense' => 4], 'blurb' => 'Wonder: +4 defence in every city.'],
         'notre_dame' => ['name' => 'Notre Dame', 'icon' => '🕍', 'cost' => 280, 'tech' => 'theology', 'requires' => null, 'wonder' => true, 'score' => 30,
@@ -417,7 +423,7 @@ final class Rules
 
     /** Great-person points per turn by building. Wonders count double. */
     public const GREAT_SOURCES = [
-        'library' => ['scientist' => 1], 'university' => ['scientist' => 2], 'printing_press' => ['scientist' => 1], 'great_library' => ['scientist' => 3], 'grand_expedition' => [],
+        'library' => ['scientist' => 1], 'university' => ['scientist' => 2], 'printing_press' => ['scientist' => 1], 'great_library' => ['scientist' => 3], 'grand_expedition' => [], 'silk_road' => ['merchant' => 2], 'temple_of_artemis' => ['artist' => 2], 'art_of_war' => ['engineer' => 1],
         'workshop' => ['engineer' => 1], 'guild_hall' => ['engineer' => 1, 'merchant' => 1], 'pyramids' => ['engineer' => 3],
         'market' => ['merchant' => 1], 'bank' => ['merchant' => 2], 'harbor' => ['merchant' => 1], 'colossus' => ['merchant' => 3],
         'temple' => ['artist' => 1], 'cathedral' => ['artist' => 2], 'colosseum' => ['artist' => 1], 'oracle' => ['artist' => 2], 'notre_dame' => ['artist' => 3], 'hanging_gardens' => ['artist' => 2],

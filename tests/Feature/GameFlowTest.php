@@ -654,6 +654,14 @@ class GameFlowTest extends TestCase
         $game->adjustAttitude($player->id, $rival->id, 30);
         $game->save();
 
+        $game->load(['empires.cities', 'tiles']);
+        $actions = app(Actions::class);
+        $p = $game->playerEmpire();
+        $plain = $actions->routeOptions($game, $p, $p->cities->first(), $game->tiles)[0]['yield']['gold'];
+        $p->cities->first()->buildings = ['silk_road'];
+        $this->assertSame($plain + 2, $actions->routeOptions($game, $p, $p->cities->first(), $game->tiles)[0]['yield']['gold'], 'the Silk Road adds 2 gold per route');
+        $p->cities->first()->buildings = [];
+
         $this->actingAs($user)->post(route('games.route', [$game, $from]), ['to' => $to->id])->assertSessionHas('status');
         $this->assertSame($to->id, $from->fresh()->trade_to);
         $this->assertSame(100 - Rules::TRADE_ROUTE_COST, $player->fresh()->gold);

@@ -118,6 +118,10 @@ final class TurnProcessor
 
                 $gold += Economy::tradeGold($game, $empire, $this->tiles);
                 $gold += $this->tradeRoutes($game, $empire, $science);
+                // Art of War: drill keeps the army sharp in peacetime.
+                if (($effects['drill'] ?? 0) && $empire->army > 0 && $game->turn % 2 === 0) {
+                    $empire->gainVeterancy(1);
+                }
                 $this->greatPeople($game, $empire);
 
                 $this->randomEvent($game, $empire);
@@ -442,7 +446,7 @@ final class TurnProcessor
 
                 continue;
             }
-            $y = Economy::routeYield($city, $to, $byId->get($city->tile_id), $byId->get($to->tile_id));
+            $y = Economy::routeYield($city, $to, $byId->get($city->tile_id), $byId->get($to->tile_id), Economy::empireEffects($empire)['route_gold'] ?? 0);
             $gold += $y['gold'];
             $science += $y['science'];
             if ($y['food']) {

@@ -817,7 +817,7 @@ final class Actions
                 if ($this->routeProblem($game, $empire, $from, $to, $tiles) !== null) {
                     continue;
                 }
-                $out[] = ['city' => $to, 'owner' => $e, 'yield' => Economy::routeYield($from, $to, $byId[$from->tile_id], $byId[$to->tile_id])];
+                $out[] = ['city' => $to, 'owner' => $e, 'yield' => Economy::routeYield($from, $to, $byId[$from->tile_id], $byId[$to->tile_id], Economy::empireEffects($empire)['route_gold'] ?? 0)];
             }
         }
         usort($out, fn ($x, $y) => ($y['yield']['gold'] + 2 * $y['yield']['science'] + $y['yield']['food']) <=> ($x['yield']['gold'] + 2 * $x['yield']['science'] + $x['yield']['food']));

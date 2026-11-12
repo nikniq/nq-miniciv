@@ -136,7 +136,7 @@ final class Presenter
         foreach ($player->cities as $city) {
             $to = $city->trade_to ? $allCities->get($city->trade_to) : null;
             if ($to) {
-                $ry = Economy::routeYield($city, $to, $tiles->firstWhere('id', $city->tile_id), $tiles->firstWhere('id', $to->tile_id));
+                $ry = Economy::routeYield($city, $to, $tiles->firstWhere('id', $city->tile_id), $tiles->firstWhere('id', $to->tile_id), $effects['route_gold'] ?? 0);
                 $routes[$city->id] = ['to' => $to, 'yield' => $ry];
                 $totals['gold'] += $ry['gold'];
                 $totals['science'] += $ry['science'];

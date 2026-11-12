@@ -273,11 +273,11 @@ final class Economy
      *
      * @return array{gold:int,science:int,food:int,partner:int}
      */
-    public static function routeYield(City $from, City $to, Tile $a, Tile $b): array
+    public static function routeYield(City $from, City $to, Tile $a, Tile $b, int $bonusGold = 0): array
     {
         $dist = $a->distanceTo($b);
         $foreign = $from->empire_id !== $to->empire_id;
-        $gold = 1 + intdiv($dist, 2) + intdiv($to->population, 2) + ($from->has('market') ? 1 : 0) + ($foreign ? 1 : 0);
+        $gold = 1 + intdiv($dist, 2) + intdiv($to->population, 2) + ($from->has('market') ? 1 : 0) + ($foreign ? 1 : 0) + $bonusGold;
 
         return [
             'gold' => $gold,
