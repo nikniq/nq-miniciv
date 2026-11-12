@@ -220,6 +220,24 @@
 
     {{-- Side panel --}}
     <aside class="space-y-4">
+        @if ($checklist)
+            @php $doneCount = collect($checklist)->where('done', true)->count(); @endphp
+            <section class="advisor-tip rounded-lg border border-emerald-800/60 bg-emerald-950/20 p-4 text-sm" data-tip="first-steps-{{ $game->id }}">
+                <div class="flex items-center justify-between">
+                    <h2 class="font-semibold text-emerald-200">🧭 First steps <span class="text-xs font-normal text-stone-400">{{ $doneCount }}/{{ count($checklist) }}</span></h2>
+                    <button type="button" class="dismiss-tip text-xs text-stone-500 hover:text-stone-200" title="Hide for this game">✕</button>
+                </div>
+                <div class="mt-2 h-1 w-full rounded bg-stone-800"><div class="h-1 rounded bg-emerald-500" style="width: {{ (int) round(100 * $doneCount / count($checklist)) }}%"></div></div>
+                <ul class="mt-2 space-y-1 text-xs">
+                    @foreach ($checklist as $item)
+                        <li class="flex gap-2 {{ $item['done'] ? 'text-stone-500 line-through' : 'text-stone-200' }}" @unless ($item['done']) title="{{ $item['hint'] }}" @endunless>
+                            <span class="shrink-0">{{ $item['done'] ? '✅' : '⬜' }}</span>
+                            <span>{{ $item['text'] }}@unless ($item['done'])<span class="block text-[11px] text-stone-500 no-underline">{{ $item['hint'] }}</span>@endunless</span>
+                        </li>
+                    @endforeach
+                </ul>
+            </section>
+        @endif
         {{-- Selected tile / city (also served alone by games.panel) --}}
         @include('games._panel')
 

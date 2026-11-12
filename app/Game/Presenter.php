@@ -2,6 +2,7 @@
 
 namespace App\Game;
 
+use App\Models\Empire;
 use App\Models\Game;
 use App\Models\Tile;
 
@@ -14,6 +15,28 @@ final class Presenter
     public function __construct(private Actions $actions, private MapSvg $mapSvg) {}
 
     /** Inline SVG line chart of score per empire over time. */
+    /**
+     * First steps for a new ruler. Each item ticks itself from game state.
+     *
+     * @return array<int, array{done: bool, text: string, hint: string}>|null
+     */
+    private function checklist(Game $game, Empire $player): ?array
+    {
+        $cities = $player->cities;
+        $items = [
+            [$player->current_tech !== null || count($player->technologies ?? []) > 0, 'Choose a technology to research', 'Research panel, or click a blue node in the Tech tree.'],
+            [$cities->count() >= 2, 'Found a second city', 'You start with settlers: press Found at best site, or click a green tile.'],
+            [$player->army > 0 || $cities->contains(fn ($c) => isset(Rules::UNITS[$c->current_build ?? ''])), 'Train a unit for the army', 'Warriors guard against barbarian war bands. Pick one in a city\'s build menu.'],
+            [$cities->contains(fn ($c) => ! empty($c->queue) || count($c->buildings ?? []) > 0), 'Complete or queue a building', 'Use +Q in the city panel to line up builds.'],
+            [Fog::percent($game, $player) >= 15, 'Explore 15% of the world', 'Send scouts from a city, or let your borders grow.'],
+            [(int) $player->veterancy > 0, 'Win a fight: clear a camp or repel a raid', 'An army of '.Rules::CAMP_CLEAR_ARMY.'+ can clear a ☠ camp next to your land.'],
+            [$cities->contains(fn ($c) => (bool) $c->trade_to), 'Open a trade route', 'Research Currency, then send a caravan from a city panel.'],
+        ];
+        $out = array_map(fn ($i) => ['done' => $i[0], 'text' => $i[1], 'hint' => $i[2]], $items);
+
+        return collect($out)->every('done') ? null : $out;
+    }
+
     /** "x,y,w,h" in map units around the explored tiles, or null when all is known. */
     private function knownBox($tiles, ?array $visible): ?string
     {
@@ -305,6 +328,7 @@ final class Presenter
 
                 return $r + ['cityModel' => $city, 'defense' => $defense, 'holds' => $defense >= $r['strength']];
             })->filter()->values(),
+            'checklist' => $game->turn <= 40 && $game->isActive() ? $this->checklist($game, $player) : null,
             'choice' => $game->choice ? Choices::describe($game, $game->choice) : null,
             'greatPeople' => array_count_values($player->great_people ?? []),
             'greatProgress' => ['have' => $player->greatPointsTotal(), 'need' => $player->greatPointsNeeded(), 'kinds' => $player->great_progress ?? []],
