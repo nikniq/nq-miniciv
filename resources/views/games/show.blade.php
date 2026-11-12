@@ -265,6 +265,16 @@
                 </ul>
             </section>
         @endif
+        @if ($briefing)
+            <section class="rounded-lg border border-sky-900/60 bg-sky-950/20 p-3 text-xs">
+                <h2 class="text-sm font-semibold text-sky-200">⏭ When you end the turn</h2>
+                <ul class="mt-1.5 space-y-0.5">
+                    @foreach ($briefing as [$icon, $text, $tileId])
+                        <li class="flex gap-2"><span class="w-4 shrink-0 text-center">{{ $icon }}</span>@if ($tileId)<a href="?tile={{ $tileId }}" data-tile="{{ $tileId }}" class="map-tile-link text-stone-200 hover:underline">{{ $text }}</a>@else<span class="text-stone-200">{{ $text }}</span>@endif</li>
+                    @endforeach
+                </ul>
+            </section>
+        @endif
         {{-- Selected tile / city (also served alone by games.panel) --}}
         @include('games._panel')
 

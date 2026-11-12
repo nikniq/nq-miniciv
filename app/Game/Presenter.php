@@ -16,6 +16,47 @@ final class Presenter
 
     /** Inline SVG line chart of score per empire over time. */
     /**
+     * What will happen when the turn ends: completions, growth, discoveries
+     * and deadlines. Each line is [icon, text, tile id or null].
+     *
+     * @return array<int, array{0: string, 1: string, 2: ?int}>
+     */
+    private function briefing(Game $game, Empire $player, array $cityYields, array $totals): array
+    {
+        $out = [];
+        foreach ($player->cities as $city) {
+            $y = $cityYields[$city->id] ?? null;
+            if (! $y) {
+                continue;
+            }
+            $key = $city->current_build;
+            $cost = $key ? Economy::buildCost($key) : null;
+            if ($cost !== null && $city->production_stored + $y['prod'] >= $cost) {
+                $out[] = ['🏗️', "{$city->name} completes ".Economy::buildName($key), $city->tile_id];
+            }
+            if ($y['surplus'] > 0 && $city->food_stored + $y['surplus'] >= $city->foodToGrow() && $city->population < Economy::sizeCap($city)) {
+                $out[] = ['🌱', "{$city->name} grows to size ".($city->population + 1), $city->tile_id];
+            } elseif ($y['surplus'] < 0 && $city->food_stored + $y['surplus'] < 0 && $city->population > 1) {
+                $out[] = ['⚠️', "{$city->name} is starving and will shrink", $city->tile_id];
+            }
+        }
+        if ($player->current_tech && $player->research_progress + $totals['science'] >= Rules::TECHS[$player->current_tech]['cost']) {
+            $out[] = ['🔬', 'You discover '.Rules::TECHS[$player->current_tech]['name'], null];
+        }
+        if ($player->golden_age_until === $game->turn) {
+            $out[] = ['✦', 'The Golden Age ends', null];
+        }
+        foreach ($game->quests ?? [] as $q) {
+            $left = $q['until'] - $game->turn;
+            if ($left <= 2 && ($asker = $game->empires->firstWhere('id', $q['empire']))) {
+                $out[] = ['📜', "{$asker->name}'s favour is due in {$left} ".($left === 1 ? 'turn' : 'turns'), null];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * First steps for a new ruler. Each item ticks itself from game state.
      *
      * @return array<int, array{done: bool, text: string, hint: string}>|null
@@ -341,6 +382,7 @@ final class Presenter
 
                 return $r + ['cityModel' => $city, 'defense' => $defense, 'holds' => $defense >= $r['strength']];
             })->filter()->values(),
+            'briefing' => $game->isActive() ? $this->briefing($game, $player, $cityYields, $totals) : [],
             'checklist' => $game->turn <= 40 && $game->isActive() ? $this->checklist($game, $player) : null,
             'pantheonReady' => ! $player->belief && $game->isActive() && Economy::culture($player) >= Rules::PANTHEON_CULTURE,
             'choice' => $game->choice ? Choices::describe($game, $game->choice) : null,

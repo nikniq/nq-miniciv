@@ -845,4 +845,19 @@ class GameFlowTest extends TestCase
         $this->assertGreaterThan(Rules::cultureGoal($quick), Rules::cultureGoal($epic));
         $this->actingAs($user)->get(route('games.show', $epic))->assertSee('/180');
     }
+
+    public function test_the_briefing_lists_what_the_next_turn_brings(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        $capital = $player->cities->first();
+        $capital->update(['current_build' => 'monument', 'production_stored' => Rules::BUILDINGS['monument']['cost'] - 1]);
+        $player->update(['current_tech' => 'agriculture', 'research_progress' => Rules::TECHS['agriculture']['cost'] - 1]);
+
+        $this->actingAs($user)->get(route('games.show', $game))
+            ->assertSee('When you end the turn')
+            ->assertSee($capital->name.' completes Monument')
+            ->assertSee('You discover Agriculture');
+    }
 }
