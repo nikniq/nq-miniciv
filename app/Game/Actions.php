@@ -38,8 +38,12 @@ final class Actions
         if ($tile->empire_id && $tile->empire_id !== $empire->id) {
             return 'That land belongs to another empire.';
         }
-        $cityTiles = $tiles->whereIn('id', $game->cities->pluck('tile_id'));
-        foreach ($cityTiles as $ct) {
+        $byId = $this->tileLookup($tiles)[1];
+        foreach ($game->cities as $c) {
+            $ct = $byId[$c->tile_id] ?? null;
+            if (! $ct) {
+                continue;
+            }
             if ($ct->distanceTo($tile) < Rules::MIN_CITY_DISTANCE) {
                 return 'Too close to an existing city (minimum '.Rules::MIN_CITY_DISTANCE.' tiles apart).';
             }
@@ -761,19 +765,19 @@ final class Actions
         return $best;
     }
 
-    /** @var array{0:int,1:int,2:array,3:array}|null grid and id map for the last tile collection seen */
+    /** @var array{0:Collection,1:int,2:array,3:array}|null the last tile collection seen, with its grid and id map */
     private ?array $lookup = null;
 
     /**
      * A [y][x] grid and an id map for a tile collection, cached while the same
-     * collection is passed in (one turn reuses it for every empire).
+     * collection is passed in (one turn reuses it for every empire). The
+     * collection itself is held so it cannot be freed and its id reused.
      *
      * @return array{0: array<int, array<int, Tile>>, 1: array<int, Tile>}
      */
     private function tileLookup(Collection $tiles): array
     {
-        $key = spl_object_id($tiles);
-        if ($this->lookup && $this->lookup[0] === $key && $this->lookup[1] === $tiles->count()) {
+        if ($this->lookup && $this->lookup[0] === $tiles && $this->lookup[1] === $tiles->count()) {
             return [$this->lookup[2], $this->lookup[3]];
         }
         $grid = [];
@@ -782,7 +786,7 @@ final class Actions
             $grid[$t->y][$t->x] = $t;
             $byId[$t->id] = $t;
         }
-        $this->lookup = [$key, $tiles->count(), $grid, $byId];
+        $this->lookup = [$tiles, $tiles->count(), $grid, $byId];
 
         return [$grid, $byId];
     }
