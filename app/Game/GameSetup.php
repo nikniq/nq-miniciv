@@ -57,7 +57,7 @@ final class GameSetup
                 'technologies' => [],
                 'settlers' => 1,
                 'gold' => 30,
-                'trait' => isset(Rules::TRAITS[$trait]) ? $trait : null,
+                'trait' => $trait !== null && isset(Rules::TRAITS[$trait]) ? $trait : null,
             ]);
             Fog::init($game, $empires[0]);
             for ($i = 0; $i < $rivals; $i++) {

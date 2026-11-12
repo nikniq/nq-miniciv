@@ -154,18 +154,22 @@ final class AiPlayer
         $expeditionCity = null;
         if ($empire->knows('exploration') && ! in_array('grand_expedition', $wondersBuilt, true)
             && ! $empire->cities->contains(fn ($c) => $c->current_build === 'grand_expedition')) {
-            $expeditionCity = $empire->cities->sortByDesc('population')->first();
+            $expeditionCity = $empire->cities->sortByDesc('population')->first(fn ($c) => $c->has('university'))
+                ?? $empire->cities->sortByDesc('population')->first();
         }
 
         foreach ($empire->cities as $city) {
             $options = Economy::buildOptions($city, $empire, $wondersBuilt);
             $current = $city->current_build;
 
-            if ($expeditionCity && $city->is($expeditionCity) && isset($options['grand_expedition'])) {
-                $city->current_build = 'grand_expedition';
-                $city->save();
+            if ($expeditionCity && $city->is($expeditionCity)) {
+                $want = isset($options['grand_expedition']) ? 'grand_expedition' : (isset($options['university']) ? 'university' : (isset($options['library']) ? 'library' : null));
+                if ($want && $current !== $want) {
+                    $city->current_build = $want;
+                    $city->save();
 
-                continue;
+                    continue;
+                }
             }
 
             // Keep what is in progress unless it is wealth or now impossible.

@@ -542,7 +542,7 @@ class GameFlowTest extends TestCase
         $player = $game->playerEmpire();
         $capital = $player->cities->first();
         $player->update(['technologies' => array_keys(Rules::TECHS), 'gold' => 99999]);
-        $capital->update(['current_build' => 'grand_expedition', 'production_stored' => 0]);
+        $capital->update(['current_build' => 'grand_expedition', 'production_stored' => 0, 'buildings' => ['library', 'university']]);
 
         // Gold cannot buy it.
         $this->actingAs($user)->post(route('games.buy', [$game, $capital]))->assertSessionHas('error');
