@@ -31,6 +31,14 @@
                 <div class="mt-3 flex gap-3 text-sm">
                     <a href="{{ route('games.index') }}" class="rounded bg-amber-500 px-3 py-1.5 font-medium text-stone-950 hover:bg-amber-400">Play again</a>
                     <a href="{{ route('hall') }}" class="rounded border border-stone-700 px-3 py-1.5 hover:bg-stone-800">Hall of Fame</a>
+                    @php
+                        $kind = $game->victoryKind();
+                        $shareText = ($game->status === 'won' ? 'I won Mini Civilisation' : 'I played Mini Civilisation')
+                            .($game->status === 'won' && $kind ? ' by '.strtolower($kind[1]) : '')
+                            .' as '.$player->name.' on turn '.min($game->turn, $game->max_turns)
+                            .' ('.Rules::DIFFICULTIES[$game->difficulty ?? 'prince']['name'].', '.$game->width.'×'.$game->height.' map). Score '.($rivals->firstWhere('empire.id', $player->id)['score'] ?? 0).'.';
+                    @endphp
+                    <button type="button" class="share-result rounded border border-stone-700 px-3 py-1.5 hover:bg-stone-800" data-text="{{ $shareText }}" data-url="{{ url('/') }}">📣 Share</button>
                     @if (auth()->user()->isGuest())
                         <a href="{{ route('register') }}" class="rounded border border-stone-700 px-3 py-1.5 hover:bg-stone-800">Save under your name</a>
                     @endif

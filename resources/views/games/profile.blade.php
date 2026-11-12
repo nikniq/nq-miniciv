@@ -28,6 +28,15 @@
         @endforeach
     </dl>
 
+    @if ($winsByKind->isNotEmpty())
+        <div class="mt-4 flex flex-wrap gap-2 text-sm">
+            <span class="text-stone-500">Victories:</span>
+            @foreach ($winsByKind as $label => $w)
+                <span class="rounded border border-amber-800/60 bg-amber-950/30 px-2 py-0.5">{{ $w['icon'] }} {{ $label }} × {{ $w['n'] }}</span>
+            @endforeach
+        </div>
+    @endif
+
     <h2 class="mt-8 text-lg font-semibold">Achievements <span class="text-sm font-normal text-stone-500">{{ count($earned) }}/{{ count(Rules::ACHIEVEMENTS) }}</span></h2>
     <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         @foreach (Rules::ACHIEVEMENTS as $id => $a)

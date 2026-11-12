@@ -355,3 +355,14 @@ window.addEventListener('pageshow', (e) => {
     const btn = document.querySelector('#end-turn-form button');
     if (btn) { btn.disabled = false; btn.textContent = 'End turn ▶'; btn.classList.remove('opacity-80'); }
 });
+
+// End screen: share the result (native share sheet where available, else copy).
+document.querySelector('.share-result')?.addEventListener('click', async (e) => {
+    const b = e.currentTarget, text = b.dataset.text, url = b.dataset.url;
+    try {
+        if (navigator.share) { await navigator.share({ text, url }); return; }
+        await navigator.clipboard.writeText(`${text} ${url}`);
+        b.textContent = '✓ Copied';
+    } catch { b.textContent = '✕ Could not share'; }
+    setTimeout(() => { b.textContent = '📣 Share'; }, 2500);
+});

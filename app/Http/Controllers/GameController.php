@@ -86,6 +86,8 @@ class GameController extends Controller
                 'turns' => $games->sum(fn ($g) => min($g->turn, $g->max_turns) - 1),
             ],
             'earned' => $user->achievements ?? [],
+            'winsByKind' => $finished->where('status', 'won')->map(fn ($g) => $g->victoryKind())->filter()
+                ->groupBy(fn ($k) => $k[1])->map(fn ($group) => ['icon' => $group->first()[0], 'n' => $group->count()])->sortByDesc('n'),
         ]);
     }
 
