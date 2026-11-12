@@ -43,7 +43,7 @@ final class MapSvg
      * @param  Collection<int, City>  $citiesByTile
      * @param  array<int, true>  $worked
      */
-    public function render(Game $game, Collection $tiles, Collection $empiresById, Collection $citiesByTile, array $worked, ?int $selectedId, string $tileUrlBase, array $foundable = [], ?int $bestSiteId = null, ?array $visible = null, array $raids = []): string
+    public function render(Game $game, Collection $tiles, Collection $empiresById, Collection $citiesByTile, array $worked, ?int $selectedId, string $tileUrlBase, array $foundable = [], ?int $bestSiteId = null, ?array $visible = null, array $raids = [], ?int $goldenEmpireId = null): string
     {
         $this->visible = $visible;
         $this->garrisons = [];
@@ -141,6 +141,16 @@ final class MapSvg
             }
         }
         $out[] = '</g>';
+        // A golden age bathes the empire's land in warm light.
+        if ($goldenEmpireId) {
+            $out[] = '<g id="golden" class="golden-glow" style="pointer-events:none">';
+            foreach ($tiles as $t) {
+                if ($t->empire_id === $goldenEmpireId && ! $this->fogged($t)) {
+                    $out[] = sprintf('<rect x="%d" y="%d" width="%d" height="%d" fill="#fbbf24"/>', $t->x * $s, $t->y * $s, $s, $s);
+                }
+            }
+            $out[] = '</g>';
+        }
 
         // Layer 3: borders on edges between different owners
         $out[] = '<g id="borders" stroke-width="3" stroke-linecap="square" fill="none">';

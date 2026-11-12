@@ -293,7 +293,7 @@ final class Presenter
             $bestSite = $this->actions->bestSite($game, $player, $tiles, 8);
         }
 
-        $mapSvg = $this->mapSvg->render($game, $tiles, $empiresById, $citiesByTile, array_flip($worked), $selected?->id, route('games.show', $game), $foundable, $bestSite?->id, $visible, $game->raids ?? []);
+        $mapSvg = $this->mapSvg->render($game, $tiles, $empiresById, $citiesByTile, array_flip($worked), $selected?->id, route('games.show', $game), $foundable, $bestSite?->id, $visible, $game->raids ?? [], $player->inGoldenAge($game->turn) ? $player->id : null);
 
         return [
             'game' => $game,

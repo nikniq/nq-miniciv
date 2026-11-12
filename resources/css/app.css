@@ -28,7 +28,10 @@
     #map-svg .trade-route { animation: caravan 1.4s linear infinite; }
     #map-svg .raid-path { animation: march 0.9s linear infinite; }
     #map-svg .foam { animation: shimmer 5s linear infinite; }
+    #map-svg .golden-glow { animation: golden 3.5s ease-in-out infinite; }
 }
+#map-svg .golden-glow { opacity: 0.12; }
+@keyframes golden { 0%, 100% { opacity: 0.06; } 50% { opacity: 0.2; } }
 @keyframes caravan { to { stroke-dashoffset: -7.1; } }
 @keyframes march { to { stroke-dashoffset: -13; } }
 @keyframes drift { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(3px); } }

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', $game->name.' · Turn '.$game->turn)
 @section('mood', $game->status === 'won' ? 'victory' : ($wars > 0 ? 'war' : 'peace'))
-@section('cue', $game->status === 'won' ? 'win' : ($raidsIncoming->contains(fn ($r) => ! $r['holds']) ? 'war' : (collect($game->events ?? [])->contains(fn ($e) => str_contains($e, 'Achievement')) ? 'achievement' : (collect($game->events ?? [])->contains(fn ($e) => str_contains($e, 'declared war on you')) ? 'war' : (session('status') && str_contains(session('status'), 'founded') ? 'found' : '')))))
+@section('cue', $game->status === 'won' ? 'win' : ($raidsIncoming->contains(fn ($r) => ! $r['holds']) ? 'war' : (collect($game->events ?? [])->contains(fn ($e) => str_contains($e, 'Achievement') || str_contains($e, 'A new age dawns')) ? 'achievement' : (collect($game->events ?? [])->contains(fn ($e) => str_contains($e, 'declared war on you')) ? 'war' : (session('status') && str_contains(session('status'), 'founded') ? 'found' : '')))))
 
 @php
     use App\Game\Economy;

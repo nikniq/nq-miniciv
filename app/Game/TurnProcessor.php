@@ -540,8 +540,13 @@ final class TurnProcessor
         $cost = Rules::TECHS[$tech]['cost'];
         if ($empire->research_progress >= $cost) {
             $empire->research_progress -= $cost;
+            $eraBefore = Rules::era(count($empire->technologies ?? []));
             $empire->technologies = array_values(array_unique(array_merge($empire->technologies ?? [], [$tech])));
             $this->note($empire, 'You have discovered '.Rules::TECHS[$tech]['name'].': '.Rules::TECHS[$tech]['unlocks'].'.');
+            $eraAfter = Rules::era(count($empire->technologies));
+            if ($eraAfter !== $eraBefore) {
+                $this->note($empire, "🏛️ A new age dawns: your people enter the {$eraAfter}.");
+            }
             $empire->current_tech = $empire->is_ai ? $this->ai->chooseTech($empire) : null;
         }
     }
