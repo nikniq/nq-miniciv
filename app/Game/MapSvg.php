@@ -43,7 +43,7 @@ final class MapSvg
      * @param  Collection<int, City>  $citiesByTile
      * @param  array<int, true>  $worked
      */
-    public function render(Game $game, Collection $tiles, Collection $empiresById, Collection $citiesByTile, array $worked, ?int $selectedId, string $tileUrlBase, array $foundable = [], ?int $bestSiteId = null, ?array $visible = null): string
+    public function render(Game $game, Collection $tiles, Collection $empiresById, Collection $citiesByTile, array $worked, ?int $selectedId, string $tileUrlBase, array $foundable = [], ?int $bestSiteId = null, ?array $visible = null, array $raids = []): string
     {
         $this->visible = $visible;
         $this->garrisons = [];
@@ -61,6 +61,7 @@ final class MapSvg
         $out[] = '<svg id="map-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '.$w.' '.$h.'" class="block h-full w-full select-none" preserveAspectRatio="xMidYMid meet" role="img" aria-label="World map">';
         $out[] = $this->defs();
         $out[] = '<pattern id="speckle" width="23" height="19" patternUnits="userSpaceOnUse"><circle cx="3" cy="4" r="0.9" fill="#000" opacity="0.35"/><circle cx="14" cy="9" r="0.7" fill="#fff" opacity="0.3"/><circle cx="8" cy="15" r="1" fill="#000" opacity="0.25"/><circle cx="19" cy="2" r="0.6" fill="#fff" opacity="0.25"/><circle cx="20" cy="15" r="0.8" fill="#000" opacity="0.3"/></pattern>';
+        $out[] = '<marker id="raid-head" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#ef4444"/></marker>';
         $out[] = '<pattern id="fogp" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(35)"><rect width="10" height="10" fill="#0b0f15"/><rect width="10" height="3" fill="#121922"/></pattern>';
 
         // Layer 1: terrain (unexplored tiles are fog)
@@ -256,6 +257,31 @@ final class MapSvg
                 if ($near) {
                     $out[] = sprintf('<rect x="%d" y="%d" width="%d" height="%d" fill="#0b0f15" opacity="%s"/>', $t->x * $s, $t->y * $s, $s, $s, min(0.55, 0.12 + 0.07 * $near));
                 }
+            }
+            $out[] = '</g>';
+        }
+
+        // Layer 4a2: barbarian war bands on the march, camp to target city
+        if ($raids) {
+            $byId = $tiles->keyBy('id');
+            $out[] = '<g id="raids" style="pointer-events:none" fill="none">';
+            foreach ($raids as $r) {
+                $from = $byId->get($r['camp']);
+                $city = $citiesByTile->first(fn ($c) => $c->id === $r['city']);
+                $to = $city ? $byId->get($city->tile_id) : null;
+                if (! $from || ! $to || ($this->fogged($from) && $this->fogged($to))) {
+                    continue;
+                }
+                $x1 = $from->x * $s + $s / 2;
+                $y1 = $from->y * $s + $s / 2;
+                $x2 = $to->x * $s + $s / 2;
+                $y2 = $to->y * $s + $s / 2;
+                $len = max(1, hypot($x2 - $x1, $y2 - $y1));
+                $ex = $x2 - ($x2 - $x1) / $len * 18;
+                $ey = $y2 - ($y2 - $y1) / $len * 18;
+                $out[] = sprintf('<path d="M%s %s L%s %s" stroke="#000" stroke-width="6" opacity="0.5"/><path d="M%s %s L%s %s" stroke="#ef4444" stroke-width="3" stroke-dasharray="8 5" class="raid-path" marker-end="url(#raid-head)"/>',
+                    $x1, $y1, round($ex, 1), round($ey, 1), $x1, $y1, round($ex, 1), round($ey, 1));
+                $out[] = sprintf('<text x="%s" y="%s" font-size="12" font-weight="700" text-anchor="middle" fill="#fecaca" style="paint-order:stroke;stroke:#000;stroke-width:3px">☠ %d</text>', round(($x1 + $ex) / 2, 1), round(($y1 + $ey) / 2 - 6, 1), $r['strength']);
             }
             $out[] = '</g>';
         }

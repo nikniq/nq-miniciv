@@ -109,6 +109,18 @@ final class Rules
 
     public const CAMP_CLEAR_LOSS = 2;
 
+    /** Barbarian war bands: earliest turn, chance per camp per turn (%), reach, and strength growth. */
+    public const RAID_FROM_TURN = 8;
+
+    public const RAID_CHANCE = 8;
+
+    public const RAID_REACH = 6;
+
+    public static function raidStrength(int $turn): int
+    {
+        return 6 + intdiv($turn, 5);
+    }
+
     /** City focus options: weights for choosing worked tiles. */
     public const FOCUS = [
         'balanced' => ['name' => 'Balanced', 'food' => 2, 'prod' => 1.5, 'gold' => 1, 'science' => 1],

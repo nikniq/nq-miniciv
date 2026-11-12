@@ -141,6 +141,7 @@ final class TurnProcessor
             $this->culturalPressure($game);
             $this->drawChoice($game, $player);
             $this->spawnCamps($game);
+            $this->barbarianRaids($game);
             $game->turn += 1;
             $this->scoresAndVictory($game, $player);
             $this->recordHistory($game);
@@ -739,6 +740,78 @@ final class TurnProcessor
         $pick->camp = true;
         $pick->save();
         $this->events[] = 'Barbarians have made camp in the wilds.';
+    }
+
+    /**
+     * War bands strike the turn after they are seen; then camps may send new
+     * ones at the nearest city in reach. Clearing the camp first calls a band
+     * off. A city that holds gains its army experience; one that falls is
+     * looted, not taken.
+     */
+    private function barbarianRaids(Game $game): void
+    {
+        $cities = $game->empires->flatMap->cities->keyBy('id');
+        $empires = $game->empires->keyBy('id');
+        $byId = $this->tiles->keyBy('id');
+        $pending = [];
+        foreach ($game->raids ?? [] as $r) {
+            $camp = $byId->get($r['camp']);
+            $city = $cities->get($r['city']);
+            if (! $camp || ! $camp->camp || ! $city) {
+                continue; // camp cleared or city gone: the band disperses
+            }
+            if ($r['arrives'] > $game->turn) {
+                $pending[] = $r;
+
+                continue;
+            }
+            $owner = $empires->get($city->empire_id);
+            $garrison = $this->actions->garrison($owner);
+            $defense = Rules::cityDefense($city, $garrison, Economy::empireEffects($owner)['defense'] ?? 0);
+            if ($defense >= $r['strength']) {
+                $owner->gainVeterancy(1);
+                $owner->save();
+                $this->note($owner, "☠ Barbarians hurled themselves at {$city->name} and broke against its defence ({$defense} against {$r['strength']}).");
+
+                continue;
+            }
+            $loot = min($owner->gold, 10 + intdiv($game->turn, 2));
+            $owner->gold -= $loot;
+            $owner->save();
+            $city->food_stored = 0;
+            $city->production_stored = intdiv($city->production_stored, 2);
+            if ($city->population > 1) {
+                $city->population -= 1;
+            }
+            $city->save();
+            $this->note($owner, "☠ Barbarians sacked {$city->name}: stores burned, {$loot} gold taken, the city shrinks to size {$city->population}. Defence {$defense} could not hold {$r['strength']}.");
+        }
+
+        if ($game->turn >= Rules::RAID_FROM_TURN) {
+            mt_srand($game->seed * 7 + $game->turn * 101);
+            $busy = array_column($pending, 'camp');
+            foreach ($this->tiles as $t) {
+                if (! $t->camp || in_array($t->id, $busy, true) || mt_rand(1, 100) > Rules::RAID_CHANCE) {
+                    continue;
+                }
+                $target = null;
+                foreach ($cities as $c) {
+                    $ct = $byId->get($c->tile_id);
+                    $d = $ct ? $ct->distanceTo($t) : 99;
+                    if ($d <= Rules::RAID_REACH && ($target === null || $d < $target[0])) {
+                        $target = [$d, $c];
+                    }
+                }
+                if (! $target) {
+                    continue;
+                }
+                $strength = Rules::raidStrength($game->turn);
+                $pending[] = ['camp' => $t->id, 'city' => $target[1]->id, 'strength' => $strength, 'arrives' => $game->turn + 1];
+                $owner = $empires->get($target[1]->empire_id);
+                $this->note($owner, "☠ A barbarian war band (strength {$strength}) marches on {$target[1]->name}. It strikes at the end of next turn: strengthen the army, buy walls, or clear the camp.");
+            }
+        }
+        $game->raids = $pending;
     }
 
     private function wondersBuilt(Game $game): array

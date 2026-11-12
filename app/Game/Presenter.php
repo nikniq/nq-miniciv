@@ -246,7 +246,7 @@ final class Presenter
             $bestSite = $this->actions->bestSite($game, $player, $tiles, 8);
         }
 
-        $mapSvg = $this->mapSvg->render($game, $tiles, $empiresById, $citiesByTile, array_flip($worked), $selected?->id, route('games.show', $game), $foundable, $bestSite?->id, $visible);
+        $mapSvg = $this->mapSvg->render($game, $tiles, $empiresById, $citiesByTile, array_flip($worked), $selected?->id, route('games.show', $game), $foundable, $bestSite?->id, $visible, $game->raids ?? []);
 
         return [
             'game' => $game,
@@ -282,6 +282,15 @@ final class Presenter
                 'inProduction' => $player->cities->filter(fn ($c) => isset(Rules::UNITS[$c->current_build ?? '']))->map(fn ($c) => ['city' => $c, 'unit' => Rules::UNITS[$c->current_build]])->values(),
             ],
             'governments' => Economy::availableGovernments($player),
+            'raidsIncoming' => collect($game->raids ?? [])->map(function ($r) use ($player) {
+                $city = $player->cities->firstWhere('id', $r['city']);
+                if (! $city) {
+                    return null;
+                }
+                $defense = Rules::cityDefense($city, $this->actions->garrison($player), Economy::empireEffects($player)['defense'] ?? 0);
+
+                return $r + ['cityModel' => $city, 'defense' => $defense, 'holds' => $defense >= $r['strength']];
+            })->filter()->values(),
             'choice' => $game->choice ? Choices::describe($game, $game->choice) : null,
             'greatPeople' => array_count_values($player->great_people ?? []),
             'greatProgress' => ['have' => $player->greatPointsTotal(), 'need' => $player->greatPointsNeeded(), 'kinds' => $player->great_progress ?? []],

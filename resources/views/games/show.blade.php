@@ -77,6 +77,20 @@
     </div>
 @endif
 
+{{-- Barbarians on the march toward the player's cities --}}
+@if ($raidsIncoming->isNotEmpty() && $game->isActive())
+    @foreach ($raidsIncoming as $r)
+        <div class="mb-3 flex flex-wrap items-center gap-3 rounded-lg border {{ $r['holds'] ? 'border-stone-700 bg-stone-900/70' : 'border-red-700 bg-red-950/50' }} px-4 py-2 text-sm">
+            <span class="text-2xl">☠</span>
+            <div class="min-w-0 flex-1">
+                <b>Barbarians march on <a href="?tile={{ $r['cityModel']->tile_id }}" data-tile="{{ $r['cityModel']->tile_id }}" class="map-tile-link underline">{{ $r['cityModel']->name }}</a></b>: strength {{ $r['strength'] }} against defence {{ $r['defense'] }}. They strike at the end of this turn.
+                <span class="{{ $r['holds'] ? 'text-emerald-300' : 'text-red-300' }}">{{ $r['holds'] ? 'The city should hold.' : 'The city will be sacked unless you add '.($r['strength'] - $r['defense']).' defence: train or buy units, buy walls, or clear the camp.' }}</span>
+            </div>
+            <a href="?tile={{ $r['camp'] }}" data-tile="{{ $r['camp'] }}" class="map-tile-link rounded border border-red-800 px-2 py-1 text-xs text-red-200 hover:bg-red-950">Show camp</a>
+        </div>
+    @endforeach
+@endif
+
 {{-- Turn toasts: what happened last turn, dismissible, newest first --}}
 @if ($toasts->isNotEmpty() && $game->isActive())
     <div id="toasts" class="pointer-events-none fixed bottom-4 right-4 z-40 flex w-80 max-w-[90vw] flex-col gap-2">

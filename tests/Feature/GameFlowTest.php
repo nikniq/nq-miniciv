@@ -599,4 +599,41 @@ class GameFlowTest extends TestCase
         $game->update(['status' => 'won']);
         $this->actingAs($user)->get(route('games.show', $game))->assertSee('replay-canvas', false);
     }
+
+    public function test_barbarian_war_bands_sack_weak_cities_and_break_on_strong_ones(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        $city = $player->cities->first();
+        $camp = $game->tiles->first(fn ($t) => $t->canSettle() && ! $t->empire_id);
+        $camp->update(['camp' => true]);
+        $city->update(['population' => 4, 'food_stored' => 30]);
+        $player->update(['gold' => 100]);
+
+        // Arriving this turn with overwhelming strength: the city is sacked.
+        $game->update(['raids' => [['camp' => $camp->id, 'city' => $city->id, 'strength' => 99, 'arrives' => $game->turn]]]);
+        $this->actingAs($user)->post(route('games.end-turn', $game));
+        $city->refresh();
+        $this->assertSame(3, $city->population);
+        $this->assertLessThan(100, $player->fresh()->gold);
+        $this->assertStringContainsString('sacked', implode(' ', $game->fresh()->events ?? []).' '.collect($game->fresh()->log ?? [])->flatten()->implode(' '));
+
+        // Announced for next turn: the banner shows, then a weak band breaks.
+        $game->refresh();
+        $game->update(['raids' => [['camp' => $camp->id, 'city' => $city->id, 'strength' => 1, 'arrives' => $game->turn]]]);
+        $this->actingAs($user)->get(route('games.show', $game))->assertSee('Barbarians march on')->assertSee('The city should hold.');
+        $pop = $city->fresh()->population;
+        $this->actingAs($user)->post(route('games.end-turn', $game));
+        $this->assertGreaterThanOrEqual($pop - 1, $city->fresh()->population);
+        $this->assertStringContainsString('broke against', collect($game->fresh()->log ?? [])->flatten()->implode(' '));
+
+        // Clearing the camp calls a raid off.
+        $game->refresh();
+        $game->update(['raids' => [['camp' => $camp->id, 'city' => $city->id, 'strength' => 99, 'arrives' => $game->turn]]]);
+        $camp->update(['camp' => false]);
+        $before = $city->fresh()->population;
+        $this->actingAs($user)->post(route('games.end-turn', $game));
+        $this->assertStringNotContainsString('sacked', collect(($game->fresh()->log ?? [])[count($game->fresh()->log) - 1] ?? [])->flatten()->implode(' '));
+    }
 }
