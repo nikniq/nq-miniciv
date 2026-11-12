@@ -388,6 +388,12 @@ final class Presenter
                     // Two halves: knowing every tech, then building the expedition.
                     return ['empire' => $e, 'pct' => min(100, (int) round(50 * $techs / count(Rules::TECHS)) + intdiv($launch, 2)), 'launch' => $building ? $launch : null];
                 })->sortByDesc('pct')->values()->take(3),
+                'diplomacy' => $game->empires->filter(fn ($e) => ! $e->eliminated)->map(function ($e) use ($game) {
+                    $others = $game->empires->filter(fn ($o) => ! $o->eliminated && $o->id !== $e->id);
+                    $allies = $others->filter(fn ($o) => $game->allied($e->id, $o->id))->count();
+
+                    return ['empire' => $e, 'allies' => $allies, 'of' => $others->count(), 'pct' => $others->count() ? (int) round(100 * $allies / $others->count()) : 0];
+                })->sortByDesc('pct')->values()->take(3),
                 'turnsLeft' => max(0, $game->max_turns - $game->turn + 1),
             ],
             'tips' => $tips,

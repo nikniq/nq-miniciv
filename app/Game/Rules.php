@@ -375,6 +375,7 @@ final class Rules
         'win_score' => ['name' => 'Greatest Empire', 'icon' => '⭐', 'blurb' => 'Win on score.'],
         'win_domination' => ['name' => 'World Ruler', 'icon' => '🗺️', 'blurb' => 'Win by domination.'],
         'win_science' => ['name' => 'New Horizons', 'icon' => '⛵', 'blurb' => 'Win by launching the Grand Expedition.'],
+        'win_diplomacy' => ['name' => 'Grand Alliance', 'icon' => '🤝', 'blurb' => 'Win by allying with every nation.'],
         'win_culture' => ['name' => 'Beacon of Culture', 'icon' => '🎭', 'blurb' => 'Win by culture.'],
         'win_king' => ['name' => 'Kingslayer', 'icon' => '👑', 'blurb' => 'Win at King difficulty or above.'],
         'win_huge' => ['name' => 'Wide World', 'icon' => '🌍', 'blurb' => 'Win on a huge map.'],

@@ -778,4 +778,23 @@ class GameFlowTest extends TestCase
         $this->actingAs($user)->post(route('games.war', [$game, $a]))->assertSessionHas('status');
         $this->assertTrue($game->fresh()->atWar($player->id, $b->id), "the defender's ally joins");
     }
+
+    public function test_allying_with_every_nation_wins_a_diplomatic_victory(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        $this->actingAs($user)->get(route('games.show', $game))->assertSee('0/2 allies');
+        foreach ($game->empires->where('is_ai', true) as $ai) {
+            $game->adjustAttitude($player->id, $ai->id, 90);
+            $game->setAllied($player->id, $ai->id, true);
+        }
+        $game->save();
+
+        $this->actingAs($user)->post(route('games.end-turn', $game));
+        $game->refresh();
+        $this->assertSame('won', $game->status);
+        $this->assertStringContainsString('Diplomatic victory', $game->events[0]);
+        $this->assertArrayHasKey('win_diplomacy', $user->fresh()->achievements ?? []);
+    }
 }

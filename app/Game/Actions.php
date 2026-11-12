@@ -354,6 +354,10 @@ final class Actions
         if ($game->atWar($a->id, $b->id)) {
             return 'Make peace first.';
         }
+        $others = $game->empires->filter(fn ($o) => ! $o->eliminated && $o->id !== $b->id && $o->id !== $a->id);
+        if ($others->isNotEmpty() && $others->every(fn ($o) => $game->allied($b->id, $o->id))) {
+            return "{$b->name} is allied with everyone else: joining would complete their Grand Alliance and hand them victory.";
+        }
         $att = $game->attitude($a->id, $b->id);
         if ($att < Rules::ALLIANCE_ATTITUDE) {
             return "{$b->name} is not devoted enough (attitude {$att}, needs ".Rules::ALLIANCE_ATTITUDE.'). Gifts, trade and peace build trust.';

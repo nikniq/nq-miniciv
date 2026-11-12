@@ -492,6 +492,13 @@ final class TurnProcessor
                 if (! $game->allied($a->id, $b->id) && ! $game->atWar($a->id, $b->id) && $game->attitude($a->id, $b->id) >= Rules::ALLIANCE_ATTITUDE + 10) {
                     $game->setAllied($a->id, $b->id, true);
                     $this->events[] = "🤝 {$a->name} and {$b->name} have formed an alliance.";
+                    foreach ([$a, $b] as $x) {
+                        $alive = $game->empires->filter(fn ($o) => ! $o->eliminated && $o->id !== $x->id);
+                        $missing = $alive->reject(fn ($o) => $game->allied($x->id, $o->id));
+                        if ($alive->count() >= 2 && $missing->count() === 1) {
+                            $this->events[] = "⚠ {$x->name} is one alliance away from a Grand Alliance (diplomatic victory). Only {$missing->first()->name} stands outside it.";
+                        }
+                    }
                 }
             }
         }
@@ -577,6 +584,26 @@ final class TurnProcessor
                     foreach ($game->empires as $e) {
                         $e->score = $e->eliminated ? 0 : Economy::score($e, $ownedBy[$e->id] ?? 0);
                         $e->save();
+                    }
+
+                    return;
+                }
+            }
+        }
+
+        // Diplomatic victory: allied with every other surviving empire (two or more).
+        $alive = $game->empires->filter(fn ($e) => ! $e->eliminated)->values();
+        if ($alive->count() >= 3) {
+            foreach ($alive as $e) {
+                if ($alive->every(fn ($o) => $o->id === $e->id || $game->allied($e->id, $o->id))) {
+                    $game->status = $e->is_ai ? 'lost' : 'won';
+                    $game->winner_empire_id = $e->id;
+                    array_unshift($this->events, $e->is_ai
+                        ? "{$e->name} stands at the head of a Grand Alliance of every nation. The age belongs to them."
+                        : 'Every nation has joined your Grand Alliance. Diplomatic victory!');
+                    foreach ($game->empires as $x) {
+                        $x->score = $x->eliminated ? 0 : Economy::score($x, $ownedBy[$x->id] ?? 0);
+                        $x->save();
                     }
 
                     return;
