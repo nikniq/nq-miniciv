@@ -19,7 +19,7 @@
                 @foreach ($rows as $i => $r)
                     <tr class="{{ $i < 3 ? 'text-amber-200' : '' }}">
                         <td class="py-2 text-stone-500">{{ $i + 1 }}</td>
-                        <td><span class="mr-1 inline-block h-2.5 w-2.5 rounded-sm" style="background: {{ $r['empire']?->color }}"></span>{{ $r['game']->name }}</td>
+                        <td><span class="mr-1 inline-block h-2.5 w-2.5 rounded-sm" style="background: {{ $r['empire']?->color }}"></span>{{ $r['game']->name }}@if ($r['empire']?->trait && isset(Rules::TRAITS[$r['empire']->trait])) <span title="{{ Rules::TRAITS[$r['empire']->trait]['name'] }}">{{ Rules::TRAITS[$r['empire']->trait]['icon'] }}</span>@endif @if ($r['empire']?->belief && isset(Rules::BELIEFS[$r['empire']->belief]))<span title="{{ Rules::BELIEFS[$r['empire']->belief]['name'] }}">{{ Rules::BELIEFS[$r['empire']->belief]['icon'] }}</span>@endif</td>
                         <td class="text-stone-400">{{ $r['player'] }}</td>
                         <td>
                             @if ($r['game']->status === 'won') <span class="text-emerald-300">Victory</span>
