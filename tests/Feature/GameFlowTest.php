@@ -860,4 +860,17 @@ class GameFlowTest extends TestCase
             ->assertSee($capital->name.' completes Monument')
             ->assertSee('You discover Agriculture');
     }
+
+    public function test_a_devoted_rival_can_propose_an_alliance(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        $rival = $game->empires->firstWhere('is_ai', true);
+        $game->update(['choice' => ['kind' => 'alliance', 'turn' => $game->turn, 'city' => $player->cities->first()->id, 'rival' => $rival->id]]);
+
+        $this->actingAs($user)->get(route('games.show', $game))->assertSee($rival->name.' proposes an alliance');
+        $this->actingAs($user)->post(route('games.choose', $game), ['option' => 'a'])->assertSessionHas('status');
+        $this->assertTrue($game->fresh()->allied($player->id, $rival->id));
+    }
 }

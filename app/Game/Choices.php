@@ -25,6 +25,16 @@ final class Choices
             return null;
         }
         mt_srand($game->seed * 17 + $game->turn * 13);
+
+        // A devoted rival may come asking for an alliance (a third of the time it could).
+        foreach ($rivals as $r) {
+            $others = $game->empires->filter(fn ($o) => ! $o->eliminated && $o->id !== $r->id && $o->id !== $player->id);
+            $wouldCrown = $others->isNotEmpty() && $others->every(fn ($o) => $game->allied($r->id, $o->id));
+            if (! $game->allied($player->id, $r->id) && ! $wouldCrown && $game->attitude($player->id, $r->id) >= Rules::ALLIANCE_ATTITUDE + 5 && mt_rand(1, 3) === 1) {
+                return ['kind' => 'alliance', 'turn' => $game->turn, 'city' => $player->cities->first()->id, 'rival' => $r->id];
+            }
+        }
+
         if (mt_rand(1, 100) > self::CHANCE) {
             return null;
         }
@@ -52,6 +62,9 @@ final class Choices
         $gold = self::goldScale($game);
 
         return match ($choice['kind']) {
+            'alliance' => ['icon' => '🤝', 'title' => "{$rivalName} proposes an alliance",
+                'text' => 'Their ruler writes of shared fortunes: each would join any war declared on the other, and your scouts would share their maps.',
+                'a' => 'Accept the alliance', 'b' => 'Decline politely (−3 attitude)'],
             'envoy' => ['icon' => '🕊️', 'title' => "An envoy from {$rivalName}",
                 'text' => "An envoy arrives bearing compliments and asks for {$gold} gold as a token of lasting friendship.",
                 'a' => "Pay {$gold} gold (+15 attitude)", 'b' => 'Send them home (−6 attitude)'],
@@ -90,6 +103,23 @@ final class Choices
             throw new InvalidArgumentException("You need {$gold} gold for that.");
         }
         $line = match ($choice['kind']) {
+            'alliance' => $a
+                ? (function () use ($game, $player, $rival) {
+                    if (! $rival || $rival->eliminated || $game->atWar($player->id, $rival->id)) {
+                        return 'The offer has lapsed.';
+                    }
+                    $game->setAllied($player->id, $rival->id, true);
+                    $game->adjustAttitude($player->id, $rival->id, 5);
+
+                    return "🤝 You and {$rival->name} are now allies.";
+                })()
+                : (function () use ($game, $player, $rival) {
+                    if ($rival) {
+                        $game->adjustAttitude($player->id, $rival->id, -3);
+                    }
+
+                    return 'You decline the alliance. They take it with grace, mostly.';
+                })(),
             'envoy' => $a
                 ? (function () use ($player, $gold, $game, $rival) {
                     $player->gold -= $gold;
@@ -97,14 +127,14 @@ final class Choices
                         $game->adjustAttitude($player->id, $rival->id, 15);
                     }
 
-return 'The envoy departs delighted; '.($rival?->name ?? 'their court').' thinks warmly of you.';
+                    return 'The envoy departs delighted; '.($rival?->name ?? 'their court').' thinks warmly of you.';
                 })()
                 : (function () use ($game, $player, $rival) {
                     if ($rival) {
                         $game->adjustAttitude($player->id, $rival->id, -6);
                     }
 
-return 'The envoy leaves empty-handed and a little offended.';
+                    return 'The envoy leaves empty-handed and a little offended.';
                 })(),
             'caravan' => $a
                 ? (function () use ($player, $city, $gold) {
