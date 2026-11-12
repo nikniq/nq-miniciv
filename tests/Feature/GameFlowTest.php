@@ -823,4 +823,18 @@ class GameFlowTest extends TestCase
         $this->actingAs($user)->post(route('games.belief', $game), ['belief' => 'war'])->assertSessionHas('error');
         $this->actingAs($user)->get(route('games.show', $game))->assertDontSee('seek a pantheon');
     }
+
+    public function test_game_length_sets_the_turn_limit_and_scales_the_culture_goal(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user)->post(route('games.store'), ['empire' => 'Rome', 'rivals' => 2, 'size' => 'normal', 'difficulty' => 'prince', 'trait' => 'none', 'length' => 'quick'])->assertRedirect();
+        $quick = Game::latest('id')->firstOrFail();
+        $this->assertSame(80, $quick->max_turns);
+
+        $this->actingAs($user)->post(route('games.store'), ['empire' => 'Rome', 'rivals' => 2, 'size' => 'normal', 'difficulty' => 'prince', 'trait' => 'none', 'length' => 'epic'])->assertRedirect();
+        $epic = Game::latest('id')->firstOrFail();
+        $this->assertSame(180, $epic->max_turns);
+        $this->assertGreaterThan(Rules::cultureGoal($quick), Rules::cultureGoal($epic));
+        $this->actingAs($user)->get(route('games.show', $epic))->assertSee('/180');
+    }
 }

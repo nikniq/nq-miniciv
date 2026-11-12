@@ -6,7 +6,7 @@
 @section('content')
 <div class="mx-auto max-w-3xl">
     <h1 class="text-3xl font-semibold">How to play</h1>
-    <p class="mt-2 text-stone-400">A game lasts {{ Rules::MAX_TURNS }} turns. Each turn you manage your cities, pick research, and press <b>End turn</b> (or Enter). Your rivals act at the same time.</p>
+    <p class="mt-2 text-stone-400">A game lasts {{ Rules::LENGTHS['quick']['turns'] }}, {{ Rules::LENGTHS['standard']['turns'] }} or {{ Rules::LENGTHS['epic']['turns'] }} turns (Quick, Standard or Epic). Each turn you manage your cities, pick research, and press <b>End turn</b> (or Enter). Your rivals act at the same time.</p>
 
     <section class="mt-6 rounded-lg border border-emerald-800/60 bg-emerald-950/30 p-5">
         <h2 class="font-semibold text-emerald-300">🏕️ Founding a city, step by step</h2>
@@ -27,7 +27,7 @@
                 <li><b>Culture</b>: reach {{ Rules::CULTURE_VICTORY }} total culture across your cities on a normal map (more on larger maps).</li>
                 <li><b>Science</b>: research Exploration (the last technology) and be the first to build the <b>Grand Expedition</b> ({{ Rules::BUILDINGS['grand_expedition']['cost'] }} ⚒) in a city with a University. It cannot be bought or hurried, and rivals racing for it show in Wonder races.</li>
                 <li><b>Diplomacy</b>: be allied with every other surviving empire (at least two). Rivals ally only when Devoted, so gifts, trade routes, kept favours and peace are the way.</li>
-                <li><b>Score</b>: highest score when turn {{ Rules::MAX_TURNS }} ends.</li>
+                <li><b>Score</b>: highest score when the last turn ends.</li>
             </ul>
             <p class="mt-2 text-xs text-stone-500">Score counts population, cities, techs, buildings, wonders, land, army and culture.</p>
         </section>

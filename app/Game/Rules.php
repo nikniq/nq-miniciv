@@ -19,6 +19,13 @@ final class Rules
 
     public const MAX_TURNS = 120;
 
+    /** Game lengths offered at the start. */
+    public const LENGTHS = [
+        'quick' => ['name' => 'Quick', 'turns' => 80],
+        'standard' => ['name' => 'Standard', 'turns' => 120],
+        'epic' => ['name' => 'Epic', 'turns' => 180],
+    ];
+
     /** Map sizes: width, height, rivals allowed. */
     public const MAP_SIZES = [
         'small' => ['name' => 'Small', 'width' => 20, 'height' => 13, 'max_rivals' => 2],
@@ -51,7 +58,10 @@ final class Rules
     {
         $normal = self::MAP_SIZES['normal']['width'] * self::MAP_SIZES['normal']['height'];
 
-        return (int) round(self::CULTURE_VICTORY * max(1, ($game->width * $game->height) / $normal) / 100) * 100;
+        // Larger maps need more; shorter games need less, longer ones more.
+        $length = ($game->max_turns ?: self::MAX_TURNS) / self::MAX_TURNS;
+
+        return (int) round(self::CULTURE_VICTORY * max(1, ($game->width * $game->height) / $normal) * $length / 100) * 100;
     }
 
     /** How many cities a rival aims for, by map area. */
