@@ -120,6 +120,27 @@ class Game extends Model
         return $this->relation($a, $b)['state'] === 'war';
     }
 
+    /**
+     * How a finished game was decided, read from its headline:
+     * [icon, label] such as ['⛵', 'Science'], or null while it is running.
+     */
+    public function victoryKind(): ?array
+    {
+        if ($this->isActive()) {
+            return null;
+        }
+        $head = ($this->events ?? [])[0] ?? '';
+
+        return match (true) {
+            str_contains($head, 'Grand Expedition') || str_contains($head, 'Science victory') => ['⛵', 'Science'],
+            str_contains($head, 'Grand Alliance') || str_contains($head, 'Diplomatic victory') => ['🤝', 'Diplomacy'],
+            str_contains($head, 'dominates') || str_contains($head, 'rules most of the known world') => ['🗺️', 'Domination'],
+            str_contains($head, 'ultur') => ['🎭', 'Culture'],
+            str_contains($head, 'has fallen') || str_contains($head, 'no more') => ['💀', 'Conquered'],
+            default => ['⭐', 'Score'],
+        };
+    }
+
     public function isActive(): bool
     {
         return $this->status === 'active';

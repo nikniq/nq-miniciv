@@ -33,7 +33,7 @@
                                     default => 'bg-stone-800 text-stone-300',
                                 };
                             @endphp
-                            <span class="rounded px-2 py-0.5 text-xs {{ $badge }}">{{ ucfirst($game->status) }}</span>
+                            <span class="rounded px-2 py-0.5 text-xs {{ $badge }}">{{ ucfirst($game->status) }}@if ($kind = $game->victoryKind()) · {{ $kind[0] }} {{ $kind[1] }}@endif</span>
                             <a href="{{ route('games.show', $game) }}" class="rounded border border-stone-700 px-3 py-1 text-sm hover:bg-stone-800">{{ $game->isActive() ? 'Play' : 'View' }}</a>
                             <form method="POST" action="{{ route('games.destroy', $game) }}" onsubmit="return confirm('Abandon this game? This cannot be undone.')">
                                 @csrf @method('DELETE')

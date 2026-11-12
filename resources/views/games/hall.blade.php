@@ -25,6 +25,7 @@
                             @if ($r['game']->status === 'won') <span class="text-emerald-300">Victory</span>
                             @elseif ($r['game']->status === 'lost') <span class="text-red-300">Defeat</span>
                             @else <span class="text-stone-400">Finished</span> @endif
+                            @if ($kind = $r['game']->victoryKind()) <span class="text-xs text-stone-400" title="{{ $kind[1] }}">{{ $kind[0] }} {{ $kind[1] }}</span> @endif
                             <span class="text-xs text-stone-500">· turn {{ min($r['game']->turn, $r['game']->max_turns) }}</span>
                         </td>
                         <td class="text-stone-400">{{ Rules::DIFFICULTIES[$r['game']->difficulty ?? 'prince']['name'] }}</td>

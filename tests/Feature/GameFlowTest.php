@@ -795,6 +795,8 @@ class GameFlowTest extends TestCase
         $game->refresh();
         $this->assertSame('won', $game->status);
         $this->assertStringContainsString('Diplomatic victory', $game->events[0]);
+        $this->assertSame(['🤝', 'Diplomacy'], $game->victoryKind());
+        $this->get(route('hall'))->assertSee('🤝 Diplomacy');
         $this->assertArrayHasKey('win_diplomacy', $user->fresh()->achievements ?? []);
     }
 }
