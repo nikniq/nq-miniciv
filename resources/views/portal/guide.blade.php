@@ -26,7 +26,7 @@
                 <li><b>Domination</b>: own {{ (int) (Rules::DOMINATION_SHARE * 100) }}% of all land.</li>
                 <li><b>Culture</b>: reach {{ Rules::CULTURE_VICTORY }} total culture across your cities on a normal map (more on larger maps).</li>
                 <li><b>Science</b>: research Exploration (the last technology) and be the first to build the <b>Grand Expedition</b> ({{ Rules::BUILDINGS['grand_expedition']['cost'] }} ⚒) in a city with a University. It cannot be bought or hurried, and rivals racing for it show in Wonder races.</li>
-                <li><b>Diplomacy</b>: be allied with every other surviving empire (at least two). Rivals ally only when Devoted, so gifts, trade routes, kept favours and peace are the way.</li>
+                <li><b>Diplomacy</b>: be allied with every other surviving empire (at least two) once the game is past its halfway point. Rivals ally only when Devoted, so gifts, trade routes, kept favours and peace are the way.</li>
                 <li><b>Score</b>: highest score when the last turn ends.</li>
             </ul>
             <p class="mt-2 text-xs text-stone-500">Score counts population, cities, techs, buildings, wonders, land, army and culture.</p>

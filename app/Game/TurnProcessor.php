@@ -598,9 +598,10 @@ final class TurnProcessor
             }
         }
 
-        // Diplomatic victory: allied with every other surviving empire (two or more).
+        // Diplomatic victory: allied with every other surviving empire (two or
+        // more), counted only from the halfway point so it cannot be bought early.
         $alive = $game->empires->filter(fn ($e) => ! $e->eliminated)->values();
-        if ($alive->count() >= 3) {
+        if ($alive->count() >= 3 && $game->turn > intdiv($game->max_turns ?: Rules::MAX_TURNS, 2)) {
             foreach ($alive as $e) {
                 if ($alive->every(fn ($o) => $o->id === $e->id || $game->allied($e->id, $o->id))) {
                     $game->status = $e->is_ai ? 'lost' : 'won';

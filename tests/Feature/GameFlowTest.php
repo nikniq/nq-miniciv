@@ -802,6 +802,12 @@ class GameFlowTest extends TestCase
         }
         $game->save();
 
+        // Too early: allied with everyone, but before the halfway point.
+        $this->actingAs($user)->post(route('games.end-turn', $game));
+        $this->assertSame('active', $game->fresh()->status);
+        $game->refresh();
+        $game->update(['turn' => intdiv($game->max_turns, 2) + 1]);
+
         $this->actingAs($user)->post(route('games.end-turn', $game));
         $game->refresh();
         $this->assertSame('won', $game->status);

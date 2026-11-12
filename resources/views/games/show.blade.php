@@ -563,7 +563,7 @@
                         @endforeach
                     </div>
                     <div class="sm:col-span-2">
-                        <div class="text-stone-400" title="Be allied with every other surviving empire">🤝 Diplomacy (ally with every nation)</div>
+                        <div class="text-stone-400" title="Be allied with every other surviving empire, from turn {{ intdiv($game->max_turns, 2) + 1 }}">🤝 Diplomacy (ally with every nation, from turn {{ intdiv($game->max_turns, 2) + 1 }})</div>
                         @foreach ($victory['diplomacy'] as $v)
                             <div class="mt-1 flex items-center gap-2"><span class="inline-block h-2 w-2 rounded-sm" style="background: {{ $v['empire']->color }}"></span><span class="w-16 truncate {{ $v['empire']->id === $player->id ? 'text-amber-200' : '' }}">{{ $v['empire']->name }}</span><span class="h-1.5 flex-1 rounded bg-stone-800"><span class="block h-1.5 rounded" style="width: {{ $v['pct'] }}%; background: {{ $v['empire']->color }}"></span></span><span class="w-20 text-right text-stone-400">{{ $v['allies'] }}/{{ $v['of'] }} allies</span></div>
                         @endforeach
