@@ -99,14 +99,17 @@
                 $style = ['war' => 'border-red-700 bg-red-950/90 text-red-100', 'bad' => 'border-orange-700 bg-orange-950/90 text-orange-100', 'great' => 'border-amber-600 bg-amber-950/90 text-amber-100', 'attention' => 'border-sky-700 bg-sky-950/90 text-sky-100', 'info' => 'border-stone-700 bg-stone-900/90 text-stone-200'][$t['kind']];
                 $icon = ['war' => '⚔', 'bad' => '⚠', 'great' => '✦', 'attention' => '➜', 'info' => '·'][$t['kind']];
             @endphp
-            <div class="toast pointer-events-auto flex items-start gap-2 rounded-lg border px-3 py-2 text-sm shadow-lg backdrop-blur {{ $style }}" style="animation-delay: {{ $i * 80 }}ms">
+            <div class="toast pointer-events-auto flex items-start gap-2 rounded-lg border px-3 py-2 text-sm shadow-lg backdrop-blur {{ $style }} {{ $i >= 2 ? 'max-sm:hidden' : '' }}" style="animation-delay: {{ $i * 80 }}ms">
                 <span class="mt-0.5 shrink-0">{{ $icon }}</span>
                 <span class="flex-1">{{ $t['text'] }}</span>
                 <button type="button" class="shrink-0 opacity-60 hover:opacity-100" onclick="this.parentElement.remove()" aria-label="Dismiss">✕</button>
             </div>
         @endforeach
+        @if ($toasts->count() > 2)
+            <div class="pointer-events-auto text-right text-xs text-stone-400 sm:hidden">+{{ $toasts->count() - 2 }} more in the Chronicle below</div>
+        @endif
         @if ($toasts->count() > 6)
-            <div class="pointer-events-auto text-right text-xs text-stone-500">+{{ $toasts->count() - 6 }} more in “Last turn” below</div>
+            <div class="pointer-events-auto text-right text-xs text-stone-500 max-sm:hidden">+{{ $toasts->count() - 6 }} more in the Chronicle below</div>
         @endif
     </div>
 @endif
