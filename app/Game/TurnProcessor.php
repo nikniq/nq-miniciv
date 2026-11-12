@@ -47,6 +47,9 @@ final class TurnProcessor
                 $effects = Economy::empireEffects($empire);
                 $diff = Rules::DIFFICULTIES[$game->difficulty ?? 'prince'];
                 $happiness = Economy::happiness($empire, Economy::warsCount($game, $empire), $empire->is_ai ? 0 : $diff['player_happy']);
+                if ($empire->is_ai) {
+                    $this->ai->respondToRaids($game, $empire);
+                }
                 $anarchy = $empire->inAnarchy($game->turn);
                 if ($anarchy) {
                     $this->note($empire, 'Anarchy: production and science are halved while the new government takes hold.');

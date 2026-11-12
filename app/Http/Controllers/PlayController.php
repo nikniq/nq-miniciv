@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Game\GameSetup;
+use App\Game\Rules;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,7 +32,7 @@ class PlayController extends Controller
             $request->session()->regenerate();
         }
 
-        $game = $setup->create($user, 'Rome', 2);
+        $game = $setup->create($user, 'Rome', 2, null, 'normal', 'prince', array_rand(Rules::TRAITS));
 
         return redirect()->route('games.show', $game)
             ->with('status', 'Your capital has been founded. You also have settlers ready: pick a tile at least 3 away and found a second city.');

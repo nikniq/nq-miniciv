@@ -282,6 +282,35 @@ final class AiPlayer
         return $events;
     }
 
+    /**
+     * A war band is coming: hurry the best unit in each threatened city.
+     * Called before the empire's cities produce, so a purchase lands in time.
+     */
+    public function respondToRaids(Game $game, Empire $empire): void
+    {
+        foreach ($game->raids ?? [] as $raid) {
+            $city = $empire->cities->firstWhere('id', $raid['city']);
+            if (! $city) {
+                continue;
+            }
+            $defense = Rules::cityDefense($city, $this->actions->garrison($empire), Economy::empireEffects($empire)['defense'] ?? 0);
+            if ($defense >= $raid['strength']) {
+                continue;
+            }
+            $units = array_filter(Economy::buildOptions($city, $empire, []), fn ($o) => $o['kind'] === 'unit');
+            if ($units) {
+                uasort($units, fn ($a, $b) => $b['cost'] <=> $a['cost']);
+                $city->current_build = array_key_first($units);
+                $city->save();
+                try {
+                    $this->actions->buyBuild($city, $empire);
+                } catch (InvalidArgumentException) {
+                    // cannot afford it; the unit is at least in production
+                }
+            }
+        }
+    }
+
     public function chooseTech(Empire $empire): ?string
     {
         $available = $empire->availableTechs();
