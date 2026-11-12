@@ -342,6 +342,7 @@ final class Presenter
                 return $r + ['cityModel' => $city, 'defense' => $defense, 'holds' => $defense >= $r['strength']];
             })->filter()->values(),
             'checklist' => $game->turn <= 40 && $game->isActive() ? $this->checklist($game, $player) : null,
+            'pantheonReady' => ! $player->belief && $game->isActive() && Economy::culture($player) >= Rules::PANTHEON_CULTURE,
             'choice' => $game->choice ? Choices::describe($game, $game->choice) : null,
             'greatPeople' => array_count_values($player->great_people ?? []),
             'greatProgress' => ['have' => $player->greatPointsTotal(), 'need' => $player->greatPointsNeeded(), 'kinds' => $player->great_progress ?? []],

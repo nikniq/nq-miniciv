@@ -64,6 +64,16 @@
         </section>
 
         <section class="rounded-lg border border-stone-800 bg-stone-900/50 p-5">
+            <h2 class="font-semibold text-amber-300">🛐 Pantheon</h2>
+            <ul class="mt-2 space-y-1 text-sm text-stone-300">
+                <li class="text-xs text-stone-500">Once your cities gather {{ Rules::PANTHEON_CULTURE }} culture, choose one belief for the rest of the game:</li>
+                @foreach (Rules::BELIEFS as $b)
+                    <li><b>{{ $b['icon'] }} {{ $b['name'] }}</b>: {{ $b['blurb'] }}</li>
+                @endforeach
+            </ul>
+        </section>
+
+        <section class="rounded-lg border border-stone-800 bg-stone-900/50 p-5">
             <h2 class="font-semibold text-amber-300">🔭 Great people</h2>
             <ul class="mt-2 space-y-1 text-sm text-stone-300">
                 <li>Libraries, workshops, markets and temples (and their upgrades) earn great-person points every turn; wonders earn the most.</li>

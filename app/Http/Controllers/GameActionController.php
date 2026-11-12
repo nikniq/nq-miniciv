@@ -319,6 +319,22 @@ class GameActionController extends Controller
         return $this->back($game, $line, $city->tile_id, 'status');
     }
 
+    public function belief(Request $request, Game $game): RedirectResponse
+    {
+        $this->own($request, $game);
+        $game->load('empires.cities');
+        $player = $game->playerEmpire();
+
+        try {
+            $this->actions->adoptBelief($player, (string) $request->input('belief'));
+        } catch (InvalidArgumentException $e) {
+            return $this->back($game, $e->getMessage(), $request->integer('tile') ?: null);
+        }
+        $b = Rules::BELIEFS[$player->belief];
+
+        return $this->back($game, "🛐 Your people now worship the {$b['name']}: {$b['blurb']}", $request->integer('tile') ?: null, 'status');
+    }
+
     public function upgrade(Request $request, Game $game): RedirectResponse
     {
         $this->own($request, $game);

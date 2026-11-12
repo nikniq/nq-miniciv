@@ -801,4 +801,26 @@ class GameFlowTest extends TestCase
         $this->actingAs($user)->get(route('profile'))->assertSee('🤝 Diplomacy × 1');
         $this->assertArrayHasKey('win_diplomacy', $user->fresh()->achievements ?? []);
     }
+
+    public function test_a_pantheon_is_chosen_once_culture_allows(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        $capital = $player->cities->first();
+
+        $this->actingAs($user)->post(route('games.belief', $game), ['belief' => 'love'])->assertSessionHas('error');
+        $this->actingAs($user)->get(route('games.show', $game))->assertDontSee('seek a pantheon');
+
+        $capital->update(['culture' => Rules::PANTHEON_CULTURE]);
+        $this->actingAs($user)->get(route('games.show', $game))->assertSee('seek a pantheon');
+        $before = Economy::happiness($player->fresh()->load('cities'))['supply'];
+        $this->actingAs($user)->post(route('games.belief', $game), ['belief' => 'love'])->assertSessionHas('status');
+        $player = $player->fresh()->load('cities');
+        $this->assertSame('love', $player->belief);
+        $this->assertSame($before + $player->cities->count(), Economy::happiness($player)['supply']);
+
+        $this->actingAs($user)->post(route('games.belief', $game), ['belief' => 'war'])->assertSessionHas('error');
+        $this->actingAs($user)->get(route('games.show', $game))->assertDontSee('seek a pantheon');
+    }
 }

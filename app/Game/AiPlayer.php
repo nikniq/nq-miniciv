@@ -29,6 +29,11 @@ final class AiPlayer
         $index = new TileIndex($tiles);
         $mind = Rules::personality($empire->name);
 
+        // A pantheon, chosen to suit the personality.
+        if (! $empire->belief && Economy::culture($empire) >= Rules::PANTHEON_CULTURE) {
+            $empire->belief = Rules::BELIEF_FOR_PERSONALITY[$mind['trait']] ?? 'harvest';
+        }
+
         // Use settlers as soon as there is somewhere to put them.
         while ($empire->settlers > 0) {
             $site = $this->bestSite($game, $empire, $tiles);

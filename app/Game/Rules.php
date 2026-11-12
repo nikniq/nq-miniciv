@@ -461,6 +461,20 @@ final class Rules
 
     public const ALLIANCE_LAPSE = 15;
 
+    /** Pantheon beliefs: one per empire, chosen once its culture reaches PANTHEON_CULTURE. */
+    public const PANTHEON_CULTURE = 30;
+
+    public const BELIEFS = [
+        'harvest' => ['name' => 'Goddess of Harvest', 'icon' => '🌾', 'blurb' => '+1 food in every city.'],
+        'forge' => ['name' => 'God of the Forge', 'icon' => '🔨', 'blurb' => '+1 production on hills.'],
+        'sea' => ['name' => 'God of the Sea', 'icon' => '🌊', 'blurb' => '+1 gold on sea tiles.'],
+        'sacred' => ['name' => 'Sacred Monuments', 'icon' => '🗿', 'blurb' => '+1 culture for every Monument and Temple.'],
+        'war' => ['name' => 'God of War', 'icon' => '🔥', 'blurb' => 'The army gains experience twice as fast.'],
+        'love' => ['name' => 'Goddess of Love', 'icon' => '💗', 'blurb' => '+1 happiness in every city.'],
+    ];
+
+    public const BELIEF_FOR_PERSONALITY = ['Conqueror' => 'war', 'Builder' => 'forge', 'Scholar' => 'sacred', 'Merchant' => 'sea', 'Expansionist' => 'harvest', 'Cultured' => 'sacred', 'Peaceful' => 'love', 'Balanced' => 'harvest'];
+
     /** Raids: a lighter act of war than a siege. */
     public const RAID_MIN_ARMY = 3;
 
@@ -536,6 +550,12 @@ final class Rules
                     $y[$k] += $v;
                 }
             }
+        }
+
+        if ($empire?->belief === 'forge' && $tile->terrain === 'hills') {
+            $y['prod'] += 1;
+        } elseif ($empire?->belief === 'sea' && $tile->terrain === 'ocean') {
+            $y['gold'] += 1;
         }
 
         if ($empire) {

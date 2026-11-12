@@ -846,6 +846,22 @@ final class Actions
         return "A caravan sets out from {$from->name} for {$to->name}.";
     }
 
+    /** Adopt a pantheon belief: once, after the empire's culture reaches the threshold. */
+    public function adoptBelief(Empire $empire, string $belief): void
+    {
+        if ($empire->belief) {
+            throw new InvalidArgumentException('Your people already worship '.Rules::BELIEFS[$empire->belief]['name'].'.');
+        }
+        if (! isset(Rules::BELIEFS[$belief])) {
+            throw new InvalidArgumentException('Unknown belief.');
+        }
+        if (Economy::culture($empire) < Rules::PANTHEON_CULTURE) {
+            throw new InvalidArgumentException('A pantheon forms once your cities gather '.Rules::PANTHEON_CULTURE.' culture.');
+        }
+        $empire->belief = $belief;
+        $empire->save();
+    }
+
     public function setFocus(City $city, string $focus): void
     {
         if (! isset(Rules::FOCUS[$focus])) {

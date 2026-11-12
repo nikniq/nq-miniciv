@@ -73,6 +73,12 @@ final class Economy
             $total['prod'] = (int) ceil($total['prod'] * (1 + Rules::GOLDEN_AGE_BONUS));
             $total['gold'] = (int) ceil($total['gold'] * (1 + Rules::GOLDEN_AGE_BONUS));
         }
+        // Pantheon.
+        if ($empire->belief === 'harvest') {
+            $total['food'] += 1;
+        } elseif ($empire->belief === 'sacred') {
+            $total['culture'] += ($city->has('monument') ? 1 : 0) + ($city->has('temple') ? 1 : 0);
+        }
         // National traits.
         match ($empire->trait) {
             'industrious' => $total['prod'] = (int) ceil($total['prod'] * 1.1),
@@ -160,7 +166,7 @@ final class Economy
         $demand = $weariness;
         foreach ($empire->cities as $city) {
             $demand += max(0, $city->population - Rules::FREE_CITIZENS);
-            $supply += Rules::CITY_HAPPINESS + ($effects['happy'] ?? 0) + ($empire->trait === 'spiritual' ? 1 : 0);
+            $supply += Rules::CITY_HAPPINESS + ($effects['happy'] ?? 0) + ($empire->trait === 'spiritual' ? 1 : 0) + ($empire->belief === 'love' ? 1 : 0);
             foreach ($city->buildings ?? [] as $b) {
                 $supply += Rules::BUILDINGS[$b]['effects']['happy'] ?? 0;
             }

@@ -85,6 +85,24 @@
     </div>
 @endif
 
+{{-- A pantheon is ready to be chosen --}}
+@if ($pantheonReady)
+    <div class="mb-4 rounded-lg border border-violet-700/70 bg-violet-950/40 px-5 py-4">
+        <div class="font-semibold">🛐 Your people seek a pantheon</div>
+        <p class="mt-0.5 text-sm text-stone-300">Your cities have gathered {{ Rules::PANTHEON_CULTURE }} culture. Choose the belief that will shape your people for the rest of the game.</p>
+        <form method="POST" action="{{ route('games.belief', $game) }}" class="mt-3 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
+            @csrf
+            <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+            @foreach (Rules::BELIEFS as $key => $b)
+                <button name="belief" value="{{ $key }}" class="flex items-start gap-2 rounded border border-violet-800 bg-stone-900/70 px-3 py-2 text-left hover:border-violet-500 hover:bg-violet-950">
+                    <span class="text-xl">{{ $b['icon'] }}</span>
+                    <span><span class="block font-medium">{{ $b['name'] }}</span><span class="block text-xs text-stone-400">{{ $b['blurb'] }}</span></span>
+                </button>
+            @endforeach
+        </form>
+    </div>
+@endif
+
 {{-- Barbarians on the march toward the player's cities --}}
 @if ($raidsIncoming->isNotEmpty() && $game->isActive())
     @foreach ($raidsIncoming as $r)
@@ -125,7 +143,7 @@
 {{-- Top bar --}}
 <div class="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-stone-800 bg-stone-900/60 px-4 py-3 text-sm">
     <div class="flex items-center gap-2 font-semibold">
-        <span class="flex h-6 w-6 items-center justify-center rounded-full text-sm ring-2" style="background: {{ $player->color }}22; --tw-ring-color: {{ $player->color }}">{{ Rules::crest($player->name) }}</span>{{ $player->name }}@if ($player->trait && isset(Rules::TRAITS[$player->trait]))<span class="ml-1 cursor-help text-sm" title="{{ Rules::TRAITS[$player->trait]['name'] }}: {{ Rules::TRAITS[$player->trait]['blurb'] }}">{{ Rules::TRAITS[$player->trait]['icon'] }}</span>@endif
+        <span class="flex h-6 w-6 items-center justify-center rounded-full text-sm ring-2" style="background: {{ $player->color }}22; --tw-ring-color: {{ $player->color }}">{{ Rules::crest($player->name) }}</span>{{ $player->name }}@if ($player->trait && isset(Rules::TRAITS[$player->trait]))<span class="ml-1 cursor-help text-sm" title="{{ Rules::TRAITS[$player->trait]['name'] }}: {{ Rules::TRAITS[$player->trait]['blurb'] }}">{{ Rules::TRAITS[$player->trait]['icon'] }}</span>@endif @if ($player->belief && isset(Rules::BELIEFS[$player->belief]))<span class="ml-0.5 cursor-help text-sm" title="{{ Rules::BELIEFS[$player->belief]['name'] }}: {{ Rules::BELIEFS[$player->belief]['blurb'] }}">{{ Rules::BELIEFS[$player->belief]['icon'] }}</span>@endif
     </div>
     <div>Turn <b>{{ min($game->turn, $game->max_turns) }}</b><span class="text-stone-500">/{{ $game->max_turns }}</span> <span class="hidden text-stone-500 md:inline">· {{ $era }}</span></div>
     @if ($goldenAge)
