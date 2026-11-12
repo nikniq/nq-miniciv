@@ -267,6 +267,19 @@ final class Presenter
 
         // Advisor: short, situational tips. The page hides dismissed ids.
         $tips = [];
+        // Losing a wonder race wastes the production: warn first, above everything else.
+        foreach ($player->cities as $mine) {
+            $w = $mine->current_build;
+            if (! $w || ! Rules::isWonder($w)) {
+                continue;
+            }
+            $cost = Rules::BUILDINGS[$w]['cost'];
+            $rival = $game->cities->first(fn ($c) => $c->empire_id !== $player->id && $c->current_build === $w && $c->production_stored >= 0.75 * $cost);
+            if ($rival && $rival->production_stored > $mine->production_stored) {
+                $owner = $game->empires->firstWhere('id', $rival->empire_id);
+                $tips[] = ['id' => "race-{$w}-{$mine->id}-".intdiv($game->turn, 5), 'text' => "{$owner?->name} is ".(int) round(100 * $rival->production_stored / $cost).'% through the '.Rules::BUILDINGS[$w]['name']." that {$mine->name} is building (".(int) round(100 * $mine->production_stored / $cost).'%). Buy it now or switch before the race is lost.'];
+            }
+        }
         if ($player->current_tech === null && $player->availableTechs()) {
             $tips[] = ['id' => 'pick-research-'.$game->turn, 'text' => 'Choose a technology. Agriculture (Granary, Farms) or Mining (Workshop, Mine) are strong first picks.'];
         }

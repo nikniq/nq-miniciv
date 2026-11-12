@@ -886,4 +886,17 @@ class GameFlowTest extends TestCase
         $this->actingAs($user)->post(route('games.rename', [$game, $mine]), ['name' => str_repeat('x', 30)])->assertSessionHas('error');
         $this->actingAs($user)->post(route('games.rename', [$game, $theirs]), ['name' => 'Mine now'])->assertForbidden();
     }
+
+    public function test_the_advisor_warns_when_a_rival_leads_a_wonder_race(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $mine = $game->playerEmpire()->cities->first();
+        $rivalCity = $game->empires->firstWhere('is_ai', true)->cities->first();
+        $cost = Rules::BUILDINGS['pyramids']['cost'];
+        $mine->update(['current_build' => 'pyramids', 'production_stored' => 10]);
+        $rivalCity->update(['current_build' => 'pyramids', 'production_stored' => (int) ceil($cost * 0.8)]);
+
+        $this->actingAs($user)->get(route('games.show', $game))->assertSee('through the Pyramids that '.$mine->name.' is building', false);
+    }
 }
