@@ -270,6 +270,20 @@ class GameActionController extends Controller
         return $this->back($game, "Scouts from {$city->name} map {$n} new tiles.", $city->tile_id, 'status');
     }
 
+    public function upgrade(Request $request, Game $game): RedirectResponse
+    {
+        $this->own($request, $game);
+        $empire = $game->empires()->where('is_ai', false)->firstOrFail();
+
+        try {
+            $line = $this->actions->upgradeUnits($empire, (string) $request->input('from'));
+        } catch (InvalidArgumentException $e) {
+            return $this->back($game, $e->getMessage(), $request->integer('tile') ?: null);
+        }
+
+        return $this->back($game, $line, $request->integer('tile') ?: null, 'status');
+    }
+
     public function trade(Request $request, Game $game, Empire $empire): RedirectResponse
     {
         $this->own($request, $game);

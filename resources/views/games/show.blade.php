@@ -197,7 +197,7 @@
 
         {{-- Army --}}
         <section id="army" class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
-            <div class="flex items-baseline justify-between"><h2 class="font-semibold">Army · strength {{ $army['strength'] }}</h2><span class="text-xs text-stone-500">upkeep {{ $army['upkeep'] }} gold/turn</span></div>
+            <div class="flex items-baseline justify-between"><h2 class="font-semibold">Army · strength {{ $army['strength'] }}@if ($army['fighting'] > $army['strength']) <span class="text-amber-300" title="Veterancy lifts fighting strength">→ {{ $army['fighting'] }}</span>@endif</h2><span class="text-xs text-stone-500">upkeep {{ $army['upkeep'] }} gold/turn</span></div>
             <p class="mt-1 text-xs text-stone-400">Your units form one field army. It garrisons every city equally (<b class="text-stone-200">{{ $army['garrison'] }}</b> per city, the shield on each city marker) and can strike any enemy city that borders your land.</p>
             @if ($army['units']->isNotEmpty() || $army['untracked'])
                 <ul class="mt-2 grid grid-cols-2 gap-1 text-xs">
@@ -209,6 +209,23 @@
             @else
                 <p class="mt-2 text-xs text-amber-300/90">No army yet. Choose a unit in a city's build menu; it joins the army when finished.</p>
             @endif
+            <div class="mt-2 flex items-center gap-2 text-xs" title="Battles, raids and cleared camps give experience. Each rank adds {{ (int) (Rules::VETERAN_BONUS * 100) }}% fighting strength.">
+                <span class="text-amber-200">🎖️ {{ $army['rank'] }}</span>
+                <span class="flex gap-0.5">@for ($i = 1; $i <= 3; $i++)<span class="inline-block h-2 w-3 rounded-sm {{ $army['rankNum'] >= $i ? 'bg-amber-400' : 'bg-stone-700' }}"></span>@endfor</span>
+                <span class="text-stone-500">{{ $army['nextAt'] !== null ? $army['xp'].'/'.$army['nextAt'].' xp to next rank' : 'highest rank' }}</span>
+            </div>
+            @foreach ($army['upgrades'] as $from => $up)
+                @if ($game->isActive())
+                    <form method="POST" action="{{ route('games.upgrade', $game) }}" class="mt-2">
+                        @csrf
+                        <input type="hidden" name="from" value="{{ $from }}">
+                        <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                        <button class="w-full rounded border px-2 py-1 text-xs {{ $player->gold >= $up['gold'] ? 'border-amber-800 text-amber-200 hover:bg-amber-950' : 'cursor-not-allowed border-stone-800 text-stone-500' }}" @disabled($player->gold < $up['gold'])>
+                            ⬆ Retrain {{ $up['n'] }} {{ Rules::UNITS[$from]['name'] }} as {{ Rules::UNITS[$up['to']]['name'] }} (+{{ $up['n'] * (Rules::UNITS[$up['to']]['strength'] - Rules::UNITS[$from]['strength']) }} strength) for {{ $up['gold'] }} gold
+                        </button>
+                    </form>
+                @endif
+            @endforeach
             @if ($army['inProduction']->isNotEmpty())
                 <div class="mt-2 text-xs text-stone-500">Training: {{ $army['inProduction']->map(fn ($p) => $p['unit']['name'].' in '.$p['city']->name)->join(', ') }}</div>
             @endif

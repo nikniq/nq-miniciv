@@ -148,7 +148,7 @@ final class Presenter
                 $selectedInfo['raidProblem'] = $this->actions->raidProblem($game, $player, $selectedCity, $tiles);
                 $selectedInfo['raidGold'] = min($owner->gold, 10 + 3 * $selectedCity->population);
                 $selectedInfo['warProblem'] = $this->actions->warProblem($game, $player, $owner);
-                $selectedInfo['attackOdds'] = $player->army > $defense ? 'win' : ($player->army > $defense * 0.7 ? 'close' : 'lose');
+                $selectedInfo['attackOdds'] = $player->strength() > $defense ? 'win' : ($player->strength() > $defense * 0.7 ? 'close' : 'lose');
             }
             if ($selectedCity && $selectedCity->empire_id === $player->id) {
                 $y = $cityYields[$selectedCity->id];
@@ -269,6 +269,12 @@ final class Presenter
             'government' => Economy::government($player) + ['key' => $player->government ?? 'despotism'],
             'army' => [
                 'strength' => $player->army,
+                'fighting' => $player->strength(),
+                'rank' => $player->rankName(),
+                'rankNum' => $player->rank(),
+                'xp' => (int) $player->veterancy,
+                'nextAt' => $player->nextRankAt(),
+                'upgrades' => $player->upgrades(),
                 'units' => collect($player->units ?? [])->map(fn ($n, $key) => ['key' => $key, 'n' => $n] + Rules::UNITS[$key])->sortByDesc('strength')->values(),
                 'untracked' => max(0, $player->army - collect($player->units ?? [])->sum(fn ($n, $key) => $n * Rules::UNITS[$key]['strength'])),
                 'garrison' => $player->garrison(),

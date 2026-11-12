@@ -226,7 +226,7 @@ final class Actions
     /** Garrison strength a defender spreads over each of its cities. */
     public function garrison(Empire $defender): int
     {
-        return intdiv($defender->army, max(1, $defender->cities->count()));
+        return intdiv($defender->strength(), max(1, $defender->cities->count()));
     }
 
     /**
@@ -247,9 +247,10 @@ final class Actions
         $defense = Rules::cityDefense($target, $garrison, Economy::empireEffects($defender)['defense'] ?? 0);
         $eliminated = null;
 
-        if ($attacker->army > $defense) {
-            $attacker->loseStrength((int) ceil($defense * 0.8));
+        if ($attacker->strength() > $defense) {
+            $attacker->loseStrength((int) ceil($defense * 0.8 / (1 + Rules::VETERAN_BONUS * $attacker->rank())));
             $defender->loseStrength($garrison);
+            $attacker->gainVeterancy(4);
 
             $target->empire_id = $attacker->id;
             $target->is_capital = false;
@@ -280,6 +281,8 @@ final class Actions
 
         $attacker->loseStrength((int) ceil($attacker->army / 2));
         $defender->loseStrength(min($garrison, intdiv($attacker->army, 3)));
+        $attacker->gainVeterancy(1);
+        $defender->gainVeterancy(2);
         $attacker->save();
         $defender->save();
 
@@ -416,6 +419,7 @@ final class Actions
         $defender->save();
         $attacker->gold += $gold;
         $attacker->loseStrength(1);
+        $attacker->gainVeterancy(1);
         $attacker->save();
         $target->food_stored = 0;
         $target->production_stored = (int) floor($target->production_stored / 2);
@@ -478,6 +482,7 @@ final class Actions
             throw new InvalidArgumentException($problem);
         }
         $empire->loseStrength(Rules::CAMP_CLEAR_LOSS);
+        $empire->gainVeterancy(2);
         $loot = 20 + 5 * (($tile->x + $tile->y) % 7);
         $empire->gold += $loot;
         $empire->save();
@@ -685,6 +690,24 @@ final class Actions
         $empire->save();
 
         return $new;
+    }
+
+    /** Retrain every unit of one type as the best unit known. Returns a line. */
+    public function upgradeUnits(Empire $empire, string $from): string
+    {
+        $up = $empire->upgrades()[$from] ?? throw new InvalidArgumentException('Those units cannot be upgraded now.');
+        if ($empire->gold < $up['gold']) {
+            throw new InvalidArgumentException("Upgrading costs {$up['gold']} gold.");
+        }
+        $units = $empire->units;
+        unset($units[$from]);
+        $units[$up['to']] = ($units[$up['to']] ?? 0) + $up['n'];
+        $empire->units = $units;
+        $empire->army += $up['n'] * (Rules::UNITS[$up['to']]['strength'] - Rules::UNITS[$from]['strength']);
+        $empire->gold -= $up['gold'];
+        $empire->save();
+
+        return "{$up['n']} ".Rules::UNITS[$from]['name'].' retrained as '.Rules::UNITS[$up['to']]['name']." for {$up['gold']} gold.";
     }
 
     public function setFocus(City $city, string $focus): void

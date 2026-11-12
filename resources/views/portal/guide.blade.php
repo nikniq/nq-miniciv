@@ -80,6 +80,7 @@
                 <li>To attack a city its borders must touch yours and you must <b>declare war</b> first. War costs {{ Rules::WAR_WEARINESS }} happiness per enemy.</li>
                 <li>Attack when your army beats the city's defence (size, walls, capital, garrison). Winning takes the city and its land. Losing costs half your army.</li>
                 <li>Rivals accept peace once a war has dragged on, they are losing, or they were never that angry.</li>
+                <li>The army gains <b>experience</b> from battles, raids and cleared camps: Seasoned, Veteran, then Elite, each rank adding {{ (int) (Rules::VETERAN_BONUS * 100) }}% to its fighting strength. Old units can be <b>retrained</b> as the best unit you know for gold in the Army panel.</li>
                 <li><b>Raid</b> a bordering enemy city to loot gold and burn its food without taking it. Needs an army of {{ Rules::RAID_MIN_ARMY }}.</li>
                 <li>Each rival has a personality and an <b>attitude</b> toward you. Gifts, trade and peace warm it; wars, conquests and tribute demands cool it. Friendly rivals do not attack you.</li>
                 <li>If your army dwarfs a neighbour's you can <b>demand tribute</b>; they pay, and resent it.</li>

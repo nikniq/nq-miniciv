@@ -41,6 +41,9 @@ final class Achievements
         if ($player->explored !== null && Fog::percent($game, $player) >= 100) {
             $award('cartographer');
         }
+        if ($player->rank() >= 3) {
+            $award('elite');
+        }
         if ((int) $player->great_count > 0) {
             $award('great_person');
         }

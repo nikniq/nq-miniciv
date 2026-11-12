@@ -241,6 +241,13 @@ final class AiPlayer
             $city->save();
         }
 
+        // Modernise the army when there is gold to spare.
+        foreach ($empire->upgrades() as $from => $up) {
+            if ($empire->gold - $up['gold'] >= 120) {
+                $this->actions->upgradeUnits($empire, $from);
+            }
+        }
+
         // Spend gold beyond a reserve on whatever cities are building.
         foreach ($empire->cities->sortByDesc('population') as $city) {
             if ($empire->gold < 120) {

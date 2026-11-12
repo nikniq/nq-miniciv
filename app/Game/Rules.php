@@ -354,6 +354,7 @@ final class Rules
         'five_cities' => ['name' => 'Empire Builder', 'icon' => '🏙️', 'blurb' => 'Rule five cities at once.'],
         'first_wonder' => ['name' => 'Wonder of the World', 'icon' => '🔺', 'blurb' => 'Complete a wonder.'],
         'cartographer' => ['name' => 'Cartographer', 'icon' => '🧭', 'blurb' => 'Explore the whole map.'],
+        'elite' => ['name' => 'Elite Legions', 'icon' => '🎖️', 'blurb' => 'Raise an Elite army.'],
         'great_person' => ['name' => 'Patron', 'icon' => '🔭', 'blurb' => 'A great person arrives at your court.'],
         'golden_age' => ['name' => 'Golden Age', 'icon' => '✦', 'blurb' => 'Enter a Golden Age.'],
         'conqueror' => ['name' => 'Conqueror', 'icon' => '⚔', 'blurb' => 'Capture a city.'],
@@ -413,6 +414,14 @@ final class Rules
 
     /** Builds that must be earned with production: no gold purchase, no Great Engineer. */
     public const NO_HURRY = ['grand_expedition'];
+
+    /** Army veterancy: experience needed for each rank, and the strength bonus per rank. */
+    public const VETERAN_RANKS = [0 => 'Green', 4 => 'Seasoned', 10 => 'Veteran', 18 => 'Elite'];
+
+    public const VETERAN_BONUS = 0.10;
+
+    /** Gold per production point of difference when retraining a unit. */
+    public const UPGRADE_RATE = 1;
 
     /** Raids: a lighter act of war than a siege. */
     public const RAID_MIN_ARMY = 3;

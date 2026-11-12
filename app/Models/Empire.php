@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['game_id', 'user_id', 'name', 'color', 'is_ai', 'eliminated', 'gold', 'settlers', 'army', 'units', 'golden_age_until', 'golden_points', 'great_progress', 'great_people', 'great_count', 'explored', 'government', 'anarchy_until', 'captures', 'technologies', 'current_tech', 'research_progress', 'score'])]
+#[Fillable(['game_id', 'user_id', 'name', 'color', 'is_ai', 'eliminated', 'gold', 'settlers', 'army', 'units', 'veterancy', 'golden_age_until', 'golden_points', 'great_progress', 'great_people', 'great_count', 'explored', 'government', 'anarchy_until', 'captures', 'technologies', 'current_tech', 'research_progress', 'score'])]
 class Empire extends Model
 {
     protected function casts(): array
@@ -74,6 +74,9 @@ class Empire extends Model
         }
         $this->units = $units;
         $this->army = $this->unitsStrength() + $untracked;
+        if ($this->army === 0) {
+            $this->veterancy = 0; // a destroyed army's experience dies with it
+        }
     }
 
     public function unitsStrength(): int
@@ -95,6 +98,60 @@ class Empire extends Model
     public function inAnarchy(int $turn): bool
     {
         return $this->anarchy_until >= $turn;
+    }
+
+    /** Veterancy rank, 0 (Green) to 3 (Elite). */
+    public function rank(): int
+    {
+        $rank = 0;
+        foreach (array_keys(Rules::VETERAN_RANKS) as $i => $xp) {
+            if ((int) $this->veterancy >= $xp) {
+                $rank = $i;
+            }
+        }
+
+        return $rank;
+    }
+
+    public function rankName(): string
+    {
+        return array_values(Rules::VETERAN_RANKS)[$this->rank()];
+    }
+
+    /** Experience needed for the next rank, or null at Elite. */
+    public function nextRankAt(): ?int
+    {
+        return array_keys(Rules::VETERAN_RANKS)[$this->rank() + 1] ?? null;
+    }
+
+    /** Fighting strength: army size lifted by veterancy. */
+    public function strength(): int
+    {
+        return (int) floor($this->army * (1 + Rules::VETERAN_BONUS * $this->rank()));
+    }
+
+    public function gainVeterancy(int $xp): void
+    {
+        $this->veterancy = min(60, (int) $this->veterancy + $xp);
+    }
+
+    /** Unit types weaker than the best one known: [from => [to, count, gold]]. */
+    public function upgrades(): array
+    {
+        $best = null;
+        foreach (Rules::UNITS as $key => $u) {
+            if (! $u['tech'] || $this->knows($u['tech'])) {
+                $best = $key; // listed weakest to strongest
+            }
+        }
+        $out = [];
+        foreach ($this->units ?? [] as $key => $n) {
+            if ($best && $key !== $best && $n > 0 && Rules::UNITS[$key]['strength'] < Rules::UNITS[$best]['strength']) {
+                $out[$key] = ['to' => $best, 'n' => $n, 'gold' => $n * max(1, Rules::UNITS[$best]['cost'] - Rules::UNITS[$key]['cost']) * Rules::UPGRADE_RATE];
+            }
+        }
+
+        return $out;
     }
 
     public function inGoldenAge(int $turn): bool

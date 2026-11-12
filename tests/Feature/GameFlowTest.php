@@ -555,4 +555,29 @@ class GameFlowTest extends TestCase
         $this->assertStringContainsString('Science victory', $game->events[0]);
         $this->assertArrayHasKey('win_science', $user->fresh()->achievements ?? []);
     }
+
+    public function test_veterancy_lifts_strength_and_old_units_can_be_retrained(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        $player->addUnit('warriors');
+        $player->addUnit('warriors');
+        $player->update(['technologies' => ['mining', 'bronze_working'], 'gold' => 200, 'veterancy' => 10]);
+        $player->refresh();
+
+        $this->assertSame('Veteran', $player->rankName());
+        $this->assertSame((int) floor(4 * 1.2), $player->strength());
+
+        $page = $this->actingAs($user)->get(route('games.show', $game));
+        $page->assertSee('Veteran')->assertSee('Retrain 2 Warriors as Swordsmen');
+
+        $this->actingAs($user)->post(route('games.upgrade', $game), ['from' => 'warriors'])->assertSessionHas('status');
+        $player->refresh();
+        $this->assertSame(['swordsmen' => 2], $player->units);
+        $this->assertSame(8, $player->army);
+        $this->assertSame(200 - 2 * (Rules::UNITS['swordsmen']['cost'] - Rules::UNITS['warriors']['cost']), $player->gold);
+
+        $this->actingAs($user)->post(route('games.upgrade', $game), ['from' => 'warriors'])->assertSessionHas('error');
+    }
 }
