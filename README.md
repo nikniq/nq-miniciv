@@ -6,9 +6,10 @@ Game portal for Mini Civilisation, built on Laravel.
 
 A turn-based, single-player empire builder against rival AI empires on a
 shared, seeded map. Found cities, grow borders through culture, build
-granaries, libraries, markets and wonders, and research thirteen
-technologies from Agriculture to Banking. Win by controlling 55% of the
-land, or by having the highest score after 120 turns.
+granaries, libraries, markets and wonders, and research 26 technologies from
+Agriculture to Exploration. Six ways to win: domination (55% of the land),
+culture, science (launch the Grand Expedition), diplomacy (ally with every
+nation), or the highest score after 120 turns.
 
 Code lives in `app/Game/`:
 
@@ -18,6 +19,10 @@ Code lives in `app/Game/`:
 - `Actions.php` enforces player and AI actions (found, build, buy, research).
 - `TurnProcessor.php` advances a turn; `AiPlayer.php` drives rivals.
 - `Presenter.php` shapes everything the game screen needs.
+- `MapSvg.php`, `CitySvg.php` and `DiagramSvg.php` draw the map, city skylines,
+  tech tree and relations web as inline SVG.
+- `Fog.php` (fog of war), `Choices.php` (dilemmas), `Quests.php` (rival
+  favours) and `Achievements.php` hold the smaller systems.
 
 Military is abstract: units are not placed on the map. Each one joins an
 empire-wide army whose composition is listed in the Army panel; the army
@@ -40,7 +45,12 @@ unlock with techs and trade bonuses for war weariness; switching costs two
 turns of anarchy. Cities cap at size 8 without an Aqueduct. Achievements are
 awarded to the account and shown on /profile. Culture also exerts pressure: a very cultured city wins over border tiles
 from weak neighbours. The tech tree runs to 25 techs through an Age of
-Discovery. Victory by domination, culture or score. A public Hall of Fame lists the best finished games, and /how-to-play
+Discovery. Later systems: fog of war with scouts; national traits chosen at the start;
+great people (scientist, engineer, merchant, artist); trade routes with
+caravans; tech trading; dilemmas with two answers; rival favours with
+deadlines; alliances (rivals form blocs and defend each other); barbarian war
+bands with a turn's warning; army veterancy and unit upgrades; a First steps
+checklist; an end-of-game territory replay. A public Hall of Fame lists the best finished games, and /how-to-play
 documents every rule, tech and building from the data in `Rules.php`.
 
 Music is generated in the browser with the Web Audio API (no audio files):
