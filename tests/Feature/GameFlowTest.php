@@ -873,4 +873,17 @@ class GameFlowTest extends TestCase
         $this->actingAs($user)->post(route('games.choose', $game), ['option' => 'a'])->assertSessionHas('status');
         $this->assertTrue($game->fresh()->allied($player->id, $rival->id));
     }
+
+    public function test_players_can_rename_their_own_cities_only(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $mine = $game->playerEmpire()->cities->first();
+        $theirs = $game->empires->firstWhere('is_ai', true)->cities->first();
+
+        $this->actingAs($user)->post(route('games.rename', [$game, $mine]), ['name' => 'Nova Roma'])->assertSessionHas('status');
+        $this->assertSame('Nova Roma', $mine->fresh()->name);
+        $this->actingAs($user)->post(route('games.rename', [$game, $mine]), ['name' => str_repeat('x', 30)])->assertSessionHas('error');
+        $this->actingAs($user)->post(route('games.rename', [$game, $theirs]), ['name' => 'Mine now'])->assertForbidden();
+    }
 }

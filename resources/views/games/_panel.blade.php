@@ -17,6 +17,13 @@
             <h2 class="font-semibold">
                 @if ($city)
                     {{ $city->name }} <span class="text-stone-400">· size {{ $city->population }}</span> @if ($city->is_capital) <span title="Capital">★</span> @endif
+                    @if ($city->empire_id === $player->id && $game->isActive())
+                        <form method="POST" action="{{ route('games.rename', [$game, $city]) }}" class="inline" onsubmit="const n = prompt('Rename ' + @js($city->name) + ' to:', @js($city->name)); if (!n || !n.trim()) return false; this.querySelector('[name=name]').value = n.trim(); return true;">
+                            @csrf
+                            <input type="hidden" name="name" value="">
+                            <button class="ml-1 text-xs text-stone-500 hover:text-stone-200" title="Rename this city">✎</button>
+                        </form>
+                    @endif
                 @else
                     @if ($selected['feature']) {{ $selected['feature']['glyph'] }} {{ $selected['feature']['name'] }} <span class="text-stone-400">· natural wonder on {{ strtolower($selected['terrain']['name']) }}</span> @else {{ $selected['terrain']['name'] }} @endif @if ($selected['river']) · 🏞️ River @endif @if ($selected['resource']) · {{ $selected['resource']['icon'] }} {{ $selected['resource']['name'] }}@endif
                 @endif

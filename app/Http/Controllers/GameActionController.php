@@ -338,6 +338,20 @@ class GameActionController extends Controller
         return $this->back($game, "🛐 Your people now worship the {$b['name']}: {$b['blurb']}", $request->integer('tile') ?: null, 'status');
     }
 
+    public function rename(Request $request, Game $game, City $city): RedirectResponse
+    {
+        $this->own($request, $game);
+        $this->ownCity($game, $city);
+        $name = trim(strip_tags((string) $request->input('name')));
+        if ($name === '' || mb_strlen($name) > 24) {
+            return $this->back($game, 'A city name needs 1 to 24 characters.', $city->tile_id);
+        }
+        $old = $city->name;
+        $city->update(['name' => $name]);
+
+        return $this->back($game, "{$old} is now called {$name}.", $city->tile_id, 'status');
+    }
+
     public function upgrade(Request $request, Game $game): RedirectResponse
     {
         $this->own($request, $game);
