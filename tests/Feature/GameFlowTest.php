@@ -241,7 +241,7 @@ class GameFlowTest extends TestCase
         $game->playerEmpire()->update(['score' => 321]);
 
         $this->get(route('hall'))->assertSee('321')->assertSee($user->name);
-        $this->actingAs($user)->get(route('games.show', $game))->assertSee('Victory')->assertSee('Play again');
+        $this->actingAs($user)->get(route('games.show', $game))->assertSee('Victory')->assertSee('Rematch');
     }
 
     public function test_production_queue_feeds_the_next_build(): void
@@ -807,6 +807,10 @@ class GameFlowTest extends TestCase
         $this->assertSame(['🤝', 'Diplomacy'], $game->victoryKind());
         $this->get(route('hall'))->assertSee('🤝 Diplomacy');
         $this->actingAs($user)->get(route('games.show', $game))->assertSee('I won Mini Civilisation by diplomacy', false);
+        $this->actingAs($user)->get(route('games.show', $game))->assertSee('Rematch');
+        $count = Game::count();
+        $this->actingAs($user)->post(route('games.store'), ['empire' => 'Rome', 'size' => 'normal', 'rivals' => 2, 'difficulty' => 'prince', 'length' => 'standard', 'trait' => 'random'])->assertRedirect();
+        $this->assertSame($count + 1, Game::count());
         $this->actingAs($user)->get(route('profile'))->assertSee('🤝 Diplomacy × 1');
         $this->assertArrayHasKey('win_diplomacy', $user->fresh()->achievements ?? []);
     }

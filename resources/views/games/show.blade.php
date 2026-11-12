@@ -29,7 +29,21 @@
                     @endforeach
                 </ol>
                 <div class="mt-3 flex gap-3 text-sm">
-                    <a href="{{ route('games.index') }}" class="rounded bg-amber-500 px-3 py-1.5 font-medium text-stone-950 hover:bg-amber-400">Play again</a>
+                    @php
+                        $sizeKey = collect(Rules::MAP_SIZES)->search(fn ($sz) => $sz['width'] === $game->width && $sz['height'] === $game->height) ?: 'normal';
+                        $lengthKey = collect(Rules::LENGTHS)->search(fn ($l) => $l['turns'] === $game->max_turns) ?: 'standard';
+                    @endphp
+                    <form method="POST" action="{{ route('games.store') }}" class="inline">
+                        @csrf
+                        <input type="hidden" name="empire" value="{{ $player->name }}">
+                        <input type="hidden" name="size" value="{{ $sizeKey }}">
+                        <input type="hidden" name="rivals" value="{{ max(1, $game->empires->count() - 1) }}">
+                        <input type="hidden" name="difficulty" value="{{ $game->difficulty ?? 'prince' }}">
+                        <input type="hidden" name="length" value="{{ $lengthKey }}">
+                        <input type="hidden" name="trait" value="{{ $player->trait ?? 'random' }}">
+                        <button class="rounded bg-amber-500 px-3 py-1.5 font-medium text-stone-950 hover:bg-amber-400" title="A new world with the same settings">🔁 Rematch</button>
+                    </form>
+                    <a href="{{ route('games.index') }}" class="rounded border border-stone-700 px-3 py-1.5 hover:bg-stone-800">New game…</a>
                     <a href="{{ route('hall') }}" class="rounded border border-stone-700 px-3 py-1.5 hover:bg-stone-800">Hall of Fame</a>
                     @php
                         $kind = $game->victoryKind();
