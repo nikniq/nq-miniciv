@@ -136,7 +136,9 @@ final class TurnProcessor
             }
 
             $this->attitudeDrift($game);
+            $this->aiTechSwaps($game);
             $this->culturalPressure($game);
+            $this->drawChoice($game, $player);
             $this->spawnCamps($game);
             $game->turn += 1;
             $this->scoresAndVictory($game, $player);
@@ -321,6 +323,53 @@ final class TurnProcessor
             $this->actions->useGreatPerson($game, $empire, $kind, $city);
         } catch (\InvalidArgumentException) {
             // Nothing sensible to spend it on; it waits.
+        }
+    }
+
+    /** An unanswered dilemma defaults to its second answer; then maybe draw a new one. */
+    private function drawChoice(Game $game, ?Empire $player): void
+    {
+        if (! $player || $player->eliminated) {
+            return;
+        }
+        if ($game->choice && ($game->choice['turn'] ?? 0) < $game->turn) {
+            $desc = Choices::describe($game, $game->choice);
+            $this->events[] = "{$desc['icon']} {$desc['title']}: you let the matter rest. ".Choices::resolve($game, $player, 'b');
+        }
+        $rivals = $game->empires->filter(fn ($e) => $e->is_ai && ! $e->eliminated && ! $game->atWar($player->id, $e->id))->values()->all();
+        $choice = Choices::draw($game, $player, $rivals);
+        if ($choice) {
+            $game->choice = $choice;
+            $desc = Choices::describe($game, $choice);
+            $this->events[] = "{$desc['icon']} {$desc['title']}: a decision awaits you.";
+        }
+    }
+
+    /** Friendly rivals swap techs now and then so the player is not the only trader. */
+    private function aiTechSwaps(Game $game): void
+    {
+        if ($game->turn % 8 !== 0) {
+            return;
+        }
+        $ais = $game->empires->filter(fn ($e) => $e->is_ai && ! $e->eliminated)->values();
+        foreach ($ais as $i => $a) {
+            foreach ($ais->slice($i + 1) as $b) {
+                if ($game->atWar($a->id, $b->id) || $game->attitude($a->id, $b->id) <= 15) {
+                    continue;
+                }
+                $aGets = array_intersect_key($a->availableTechs(), array_flip($b->technologies ?? []));
+                $bGets = array_intersect_key($b->availableTechs(), array_flip($a->technologies ?? []));
+                if (! $aGets || ! $bGets) {
+                    continue;
+                }
+                uasort($aGets, fn ($x, $y) => $x['cost'] <=> $y['cost']);
+                uasort($bGets, fn ($x, $y) => $x['cost'] <=> $y['cost']);
+                $a->technologies = array_values(array_unique(array_merge($a->technologies ?? [], [array_key_first($aGets)])));
+                $b->technologies = array_values(array_unique(array_merge($b->technologies ?? [], [array_key_first($bGets)])));
+                $a->save();
+                $b->save();
+                $game->adjustAttitude($a->id, $b->id, 3);
+            }
         }
     }
 

@@ -7,13 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['user_id', 'name', 'seed', 'width', 'height', 'turn', 'max_turns', 'difficulty', 'status', 'winner_empire_id', 'events', 'diplomacy', 'history', 'log'])]
+#[Fillable(['user_id', 'name', 'seed', 'width', 'height', 'turn', 'max_turns', 'difficulty', 'status', 'winner_empire_id', 'events', 'choice', 'diplomacy', 'history', 'log'])]
 class Game extends Model
 {
     protected function casts(): array
     {
         return [
             'events' => 'array',
+            'choice' => 'array',
             'diplomacy' => 'array',
             'history' => 'array',
             'log' => 'array',

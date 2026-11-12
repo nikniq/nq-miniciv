@@ -566,6 +566,91 @@ final class Actions
         return "A Great Artist's masterpiece in {$city->name} begins a Golden Age.";
     }
 
+    /**
+     * Tech trades a rival would accept: for each tech they know and we could
+     * research, the cheapest tech of ours that satisfies them, plus a gold
+     * price. Warmer rivals settle for less; Scholars drive a harder bargain.
+     *
+     * @return array<int, array{get:string,give:?string,gold:int}>
+     */
+    public function techTradeOffers(Game $game, Empire $player, Empire $rival): array
+    {
+        if ($rival->eliminated || $rival->id === $player->id || $game->atWar($player->id, $rival->id)) {
+            return [];
+        }
+        $attitude = $game->attitude($player->id, $rival->id);
+        if ($attitude < 0 || ($game->relation($player->id, $rival->id)['trade_turn'] ?? -99) > $game->turn - Rules::TECH_TRADE_COOLDOWN) {
+            return [];
+        }
+        $factor = match (true) {
+            $attitude > 45 => 0.6, $attitude > 15 => 0.8, default => 1.0
+        };
+        if (Rules::personality($rival->name)['trait'] === 'Scholar') {
+            $factor += 0.2;
+        }
+        $theirs = array_intersect_key($player->availableTechs(), array_flip($rival->technologies ?? []));
+        $ours = array_intersect_key($rival->availableTechs(), array_flip($player->technologies ?? []));
+        uasort($ours, fn ($a, $b) => $a['cost'] <=> $b['cost']);
+        $offers = [];
+        foreach ($theirs as $get => $spec) {
+            $need = $spec['cost'] * $factor;
+            $give = null;
+            foreach ($ours as $key => $o) {
+                if ($o['cost'] >= $need) {
+                    $give = $key;
+                    break;
+                }
+            }
+            $offers[] = ['get' => $get, 'give' => $give, 'gold' => (int) ceil($spec['cost'] * $factor * Rules::TECH_GOLD_RATE)];
+        }
+        usort($offers, fn ($a, $b) => Rules::TECHS[$a['get']]['cost'] <=> Rules::TECHS[$b['get']]['cost']);
+
+        return $offers;
+    }
+
+    /** Trade for a tech, paying with one of ours or with gold. Returns a line. */
+    public function tradeTech(Game $game, Empire $player, Empire $rival, string $get, ?string $give): string
+    {
+        $offer = collect($this->techTradeOffers($game, $player, $rival))->firstWhere('get', $get);
+        if (! $offer) {
+            throw new InvalidArgumentException("{$rival->name} will not part with that now.");
+        }
+        $name = Rules::TECHS[$get]['name'];
+        if ($give !== null) {
+            if ($offer['give'] !== $give) {
+                throw new InvalidArgumentException("{$rival->name} wants more than that.");
+            }
+            $rival->technologies = array_values(array_unique(array_merge($rival->technologies ?? [], [$give])));
+            if ($rival->current_tech === $give) {
+                $rival->current_tech = null;
+            }
+            $line = "{$rival->name} shares {$name} in exchange for ".Rules::TECHS[$give]['name'].'.';
+        } else {
+            if ($player->gold < $offer['gold']) {
+                throw new InvalidArgumentException("You need {$offer['gold']} gold.");
+            }
+            $player->gold -= $offer['gold'];
+            $rival->gold += $offer['gold'];
+            $line = "{$rival->name} sells you {$name} for {$offer['gold']} gold.";
+        }
+        $player->technologies = array_values(array_unique(array_merge($player->technologies ?? [], [$get])));
+        if ($player->current_tech === $get) {
+            $player->current_tech = null;
+            $player->research_progress = 0;
+        }
+        $player->save();
+        $rival->save();
+        $game->adjustAttitude($player->id, $rival->id, 4);
+        $key = min($player->id, $rival->id).'-'.max($player->id, $rival->id);
+        $d = $game->diplomacy ?? [];
+        $d[$key] = ($d[$key] ?? ['state' => 'peace', 'since' => 0]) + [];
+        $d[$key]['trade_turn'] = $game->turn;
+        $game->diplomacy = $d;
+        $game->save();
+
+        return $line;
+    }
+
     public function setFocus(City $city, string $focus): void
     {
         if (! isset(Rules::FOCUS[$focus])) {

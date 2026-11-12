@@ -442,4 +442,53 @@ class GameFlowTest extends TestCase
         $this->actingAs($user)->post(route('games.great-person', $game), ['kind' => 'merchant'])->assertSessionHas('error');
         $this->assertArrayHasKey('great_person', $user->fresh()->achievements ?? []);
     }
+
+    public function test_friendly_rivals_trade_techs_for_techs_or_gold(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        $rival = $game->empires->firstWhere('is_ai', true);
+        $player->update(['technologies' => ['agriculture'], 'gold' => 500]);
+        $rival->update(['technologies' => ['mining']]);
+
+        // Neutral but below zero: no offers.
+        $game->adjustAttitude($player->id, $rival->id, -5);
+        $game->save();
+        $this->actingAs($user)->get(route('games.show', $game))->assertOk()->assertDontSee('🔁 techs');
+
+        $game->adjustAttitude($player->id, $rival->id, 30);
+        $game->save();
+        $this->actingAs($user)->get(route('games.show', $game))->assertOk()->assertSee('🔁 techs');
+
+        $this->actingAs($user)->post(route('games.trade', [$game, $rival]), ['get' => 'mining', 'give' => 'agriculture'])->assertSessionHas('status');
+        $this->assertContains('mining', $player->fresh()->technologies);
+        $this->assertContains('agriculture', $rival->fresh()->technologies);
+
+        // Cooldown: a second deal straight away is refused.
+        $rival->update(['technologies' => ['mining', 'agriculture', 'pottery']]);
+        $this->actingAs($user)->post(route('games.trade', [$game, $rival]), ['get' => 'pottery'])->assertSessionHas('error');
+    }
+
+    public function test_dilemmas_can_be_answered_and_default_when_ignored(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        $city = $player->cities->first();
+        $game->update(['choice' => ['kind' => 'prophet', 'turn' => $game->turn, 'city' => $city->id, 'rival' => null]]);
+
+        $this->actingAs($user)->get(route('games.show', $game))->assertOk()->assertSee('A prophet preaches');
+        $culture = $city->culture;
+        $this->actingAs($user)->post(route('games.choose', $game), ['option' => 'a'])->assertSessionHas('status');
+        $this->assertGreaterThan($culture, $city->fresh()->culture);
+        $this->assertNull($game->fresh()->choice);
+
+        // Ignored for a turn: option b (gold) is taken at the next end turn.
+        $game->update(['choice' => ['kind' => 'prophet', 'turn' => $game->turn - 1, 'city' => $city->id, 'rival' => null]]);
+        $gold = $player->fresh()->gold;
+        $this->actingAs($user)->post(route('games.end-turn', $game))->assertRedirect();
+        $this->assertGreaterThan($gold - 10, $player->fresh()->gold);
+        $this->assertNotSame($game->fresh()->choice['kind'] ?? null, 'prophet');
+    }
 }

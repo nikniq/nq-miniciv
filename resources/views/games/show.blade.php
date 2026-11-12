@@ -46,6 +46,26 @@
     </div>
 @endif
 
+{{-- A dilemma waiting for an answer --}}
+@if ($choice && $game->isActive())
+    <div class="mb-4 rounded-lg border border-fuchsia-700/70 bg-fuchsia-950/40 px-5 py-4">
+        <div class="flex flex-wrap items-start gap-4">
+            <span class="text-4xl">{{ $choice['icon'] }}</span>
+            <div class="min-w-0 flex-1">
+                <div class="font-semibold">{{ $choice['title'] }}</div>
+                <p class="mt-0.5 text-sm text-stone-300">{{ $choice['text'] }}</p>
+                <form method="POST" action="{{ route('games.choose', $game) }}" class="mt-3 flex flex-wrap gap-2 text-sm">
+                    @csrf
+                    <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                    <button name="option" value="a" class="rounded bg-fuchsia-600 px-3 py-1.5 font-medium hover:bg-fuchsia-500">{{ $choice['a'] }}</button>
+                    <button name="option" value="b" class="rounded border border-stone-600 px-3 py-1.5 hover:bg-stone-800">{{ $choice['b'] }}</button>
+                </form>
+                <p class="mt-1 text-[11px] text-stone-500">Undecided by the end of next turn, the second answer is taken.</p>
+            </div>
+        </div>
+    </div>
+@endif
+
 {{-- Turn toasts: what happened last turn, dismissible, newest first --}}
 @if ($toasts->isNotEmpty() && $game->isActive())
     <div id="toasts" class="pointer-events-none fixed bottom-4 right-4 z-40 flex w-80 max-w-[90vw] flex-col gap-2">
@@ -317,6 +337,32 @@
                             </div>
                             <span class="shrink-0 font-semibold">{{ $e->eliminated ? '✝' : $r['score'] }}</span>
                         </div>
+                        @if ($r['trades'])
+                            <ul class="trades mt-1 hidden space-y-1 rounded border border-sky-900/60 bg-sky-950/20 p-2 text-xs">
+                                @foreach ($r['trades'] as $t)
+                                    <li class="flex flex-wrap items-center justify-between gap-1">
+                                        <span><b>{{ Rules::TECHS[$t['get']]['name'] }}</b> <span class="text-stone-500">({{ Rules::TECHS[$t['get']]['cost'] }} 🔬)</span></span>
+                                        <span class="flex gap-1">
+                                            @if ($t['give'])
+                                                <form method="POST" action="{{ route('games.trade', [$game, $e]) }}" class="inline">
+                                                    @csrf
+                                                    <input type="hidden" name="get" value="{{ $t['get'] }}"><input type="hidden" name="give" value="{{ $t['give'] }}">
+                                                    <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                                                    <button class="rounded border border-sky-800 px-1.5 py-0.5 text-[10px] text-sky-200 hover:bg-sky-900">for {{ Rules::TECHS[$t['give']]['name'] }}</button>
+                                                </form>
+                                            @endif
+                                            <form method="POST" action="{{ route('games.trade', [$game, $e]) }}" class="inline">
+                                                @csrf
+                                                <input type="hidden" name="get" value="{{ $t['get'] }}">
+                                                <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                                                <button class="rounded border border-amber-800 px-1.5 py-0.5 text-[10px] text-amber-200 hover:bg-amber-950 disabled:opacity-40" @disabled($player->gold < $t['gold'])>for {{ $t['gold'] }} 💰</button>
+                                            </form>
+                                        </span>
+                                    </li>
+                                @endforeach
+                                <li class="text-[10px] text-stone-500">One deal per {{ Rules::TECH_TRADE_COOLDOWN }} turns with each rival. Friendlier rivals ask less.</li>
+                            </ul>
+                        @endif
                         <div class="mt-1 flex items-center justify-between gap-2 text-xs text-stone-400">
                             <span>{{ $r['cities'] }} {{ Str::plural('city', $r['cities']) }} · {{ $r['share'] }}% land · ⚔ {{ $r['army'] }} · 🎭 {{ $r['culture'] }} · 🔬 {{ $r['techs'] }}</span>
                             @if ($r['relation'] && ! $e->eliminated && $game->isActive())
@@ -334,6 +380,9 @@
                                             <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
                                             <button class="rounded border border-stone-700 px-1.5 py-0.5 text-[10px] text-stone-400 hover:border-emerald-700 hover:text-emerald-200 disabled:opacity-40" title="Gift 50 gold (+5 attitude)" @disabled($player->gold < 50)>🎁 50</button>
                                         </form>
+                                        @if ($r['trades'])
+                                            <button type="button" class="rounded border border-sky-800 px-1.5 py-0.5 text-[10px] text-sky-200 hover:bg-sky-950" onclick="this.closest('li').querySelector('.trades').classList.toggle('hidden')" title="They will trade technologies">🔁 techs</button>
+                                        @endif
                                         @if ($r['canTribute'])
                                             <form method="POST" action="{{ route('games.tribute', [$game, $e]) }}" class="inline">
                                                 @csrf

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Game\Actions;
+use App\Game\Choices;
 use App\Game\Rules;
 use App\Game\TurnProcessor;
 use App\Models\City;
@@ -252,6 +253,38 @@ class GameActionController extends Controller
         }
 
         return $this->back($game, null, $request->integer('tile') ?: null);
+    }
+
+    public function trade(Request $request, Game $game, Empire $empire): RedirectResponse
+    {
+        $this->own($request, $game);
+        abort_unless($empire->game_id === $game->id, 404);
+        $game->load('empires');
+        $player = $game->playerEmpire();
+        $give = $request->filled('give') ? (string) $request->input('give') : null;
+
+        try {
+            $line = $this->actions->tradeTech($game, $player, $empire, (string) $request->input('get'), $give);
+        } catch (InvalidArgumentException $e) {
+            return $this->back($game, $e->getMessage(), $request->integer('tile') ?: null);
+        }
+
+        return $this->back($game, $line, $request->integer('tile') ?: null, 'status');
+    }
+
+    public function choose(Request $request, Game $game): RedirectResponse
+    {
+        $this->own($request, $game);
+        $game->load(['empires.cities', 'cities']);
+        $player = $game->playerEmpire();
+
+        try {
+            $line = Choices::resolve($game, $player, (string) $request->input('option'));
+        } catch (InvalidArgumentException $e) {
+            return $this->back($game, $e->getMessage(), $request->integer('tile') ?: null);
+        }
+
+        return $this->back($game, $line, $request->integer('tile') ?: null, 'status');
     }
 
     public function greatPerson(Request $request, Game $game): RedirectResponse

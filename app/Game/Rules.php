@@ -391,6 +391,11 @@ final class Rules
         'temple' => ['artist' => 1], 'cathedral' => ['artist' => 2], 'colosseum' => ['artist' => 1], 'oracle' => ['artist' => 2], 'notre_dame' => ['artist' => 3], 'hanging_gardens' => ['artist' => 2],
     ];
 
+    /** Tech trading: turns between deals with the same rival, and gold per science point. */
+    public const TECH_TRADE_COOLDOWN = 6;
+
+    public const TECH_GOLD_RATE = 1.5;
+
     /** Raids: a lighter act of war than a siege. */
     public const RAID_MIN_ARMY = 3;
 

@@ -81,6 +81,8 @@
                 <li><b>Raid</b> a bordering enemy city to loot gold and burn its food without taking it. Needs an army of {{ Rules::RAID_MIN_ARMY }}.</li>
                 <li>Each rival has a personality and an <b>attitude</b> toward you. Gifts, trade and peace warm it; wars, conquests and tribute demands cool it. Friendly rivals do not attack you.</li>
                 <li>If your army dwarfs a neighbour's you can <b>demand tribute</b>; they pay, and resent it.</li>
+                <li>Rivals at peace who are at least neutral will <b>trade technologies</b> (🔁 techs in the Empires list), for one of yours or for gold. Friendly rivals ask less; Scholars ask more. One deal per {{ Rules::TECH_TRADE_COOLDOWN }} turns each.</li>
+                <li>Now and then a <b>dilemma</b> arrives: envoys, caravans, prophets, mercenaries, sickness, refugees. Pick one of two answers before the next turn ends, or the cautious option is taken for you.</li>
                 <li>☠ Barbarian camps pillage food from cities within 2 tiles. Clear one with an army of {{ Rules::CAMP_CLEAR_ARMY }}+ to loot gold.</li>
             </ul>
         </section>
