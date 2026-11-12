@@ -116,6 +116,20 @@
         </section>
     </div>
 
+    <section class="mt-8 rounded-lg border border-sky-900/60 bg-sky-950/20 p-5">
+        <h2 class="font-semibold text-sky-200">🧭 Interface tips</h2>
+        <ul class="mt-2 grid gap-1 text-sm text-stone-300 sm:grid-cols-2">
+            <li><b>⏭ When you end the turn</b> lists what is about to happen: builds finishing, cities growing or starving, discoveries, favours due.</li>
+            <li><b>Build cards</b> in a city panel: click to build now, Shift-click to add to the queue.</li>
+            <li><b>Fold panels</b> you rarely use by clicking their heading; the choice is remembered.</li>
+            <li><b>Big map</b>: press <kbd>B</kbd> or ⛶ for a full-width map. Scroll pans, ⌘/Ctrl + scroll zooms, <kbd>W A S D</kbd> pan.</li>
+            <li><b>Keyboard</b>: <kbd>Enter</kbd> ends the turn, arrow keys move the selection, <kbd>?</kbd> lists every shortcut.</li>
+            <li><b>Tech tree</b>: click any blue node to research it; arrows show what each discovery needs.</li>
+            <li><b>Relations web</b>: lines show war, friendship, alliances and each rival's attitude to you.</li>
+            <li><b>After the game</b>: watch the replay of the world being won, compare Score, Land and Culture charts, share the result, or start a Rematch.</li>
+        </ul>
+    </section>
+
     <section class="mt-8">
         <h2 class="text-xl font-semibold">Technologies</h2>
         <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
