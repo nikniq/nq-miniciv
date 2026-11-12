@@ -49,6 +49,7 @@ final class TurnProcessor
                     continue;
                 }
                 $effects = Economy::empireEffects($empire);
+                $empire->luxuries = Economy::luxuries($empire, $this->tiles);
                 $diff = Rules::DIFFICULTIES[$game->difficulty ?? 'prince'];
                 $happiness = Economy::happiness($empire, Economy::warsCount($game, $empire), $empire->is_ai ? 0 : $diff['player_happy']);
                 if ($empire->is_ai) {

@@ -170,7 +170,7 @@
     <div title="Settlers ready">🏕️ <b>{{ $player->settlers }}</b></div>
     <a href="#army" title="Army strength (upkeep {{ $upkeep['army'] }} gold/turn). Click for the army panel.">⚔ <b>{{ $player->army }}</b></a>
     <div title="{{ $government['blurb'] }}" class="hidden xl:block">{{ $government['icon'] }} {{ $government['name'] }}@if ($anarchy) <span class="text-red-300">(anarchy {{ $anarchy }}t)</span>@endif</div>
-    <div title="Happiness: {{ $happiness['supply'] }} supplied, {{ $happiness['demand'] }} demanded">{{ $happiness['unhappy'] ? '😠' : '🙂' }} <b class="{{ $happiness['unhappy'] ? 'text-red-400' : '' }}">{{ $happiness['balance'] >= 0 ? '+' : '' }}{{ $happiness['balance'] }}</b></div>
+    <div title="Happiness: {{ $happiness['supply'] }} supplied (luxuries and natural wonders give {{ (int) $player->luxuries }}), {{ $happiness['demand'] }} demanded">{{ $happiness['unhappy'] ? '😠' : '🙂' }} <b class="{{ $happiness['unhappy'] ? 'text-red-400' : '' }}">{{ $happiness['balance'] >= 0 ? '+' : '' }}{{ $happiness['balance'] }}</b></div>
     @if ($explored < 100)<div title="Share of the world your empire has explored">🧭 <b>{{ $explored }}%</b></div>@endif
     <div title="Share of land">🗺️ <b>{{ $landShare }}%</b> <span class="text-stone-500">of {{ $dominationShare }}%</span></div>
     <div title="Culture toward a cultural victory">🎭 <b>{{ $culture }}</b> <span class="text-stone-500">of {{ $cultureGoal }}</span></div>

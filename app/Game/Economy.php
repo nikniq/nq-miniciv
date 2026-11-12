@@ -161,7 +161,7 @@ final class Economy
     public static function happiness(Empire $empire, int $warsCount = 0, int $bonus = 0): array
     {
         $effects = self::empireEffects($empire);
-        $supply = Rules::BASE_HAPPINESS + $bonus;
+        $supply = Rules::BASE_HAPPINESS + $bonus + (int) $empire->luxuries;
         $weariness = (int) round($warsCount * Rules::WAR_WEARINESS * self::government($empire)['war_weariness']);
         $demand = $weariness;
         foreach ($empire->cities as $city) {
@@ -174,6 +174,26 @@ final class Economy
         $balance = $supply - $demand;
 
         return ['supply' => $supply, 'demand' => $demand, 'balance' => $balance, 'unhappy' => $balance < 0, 'war_weariness' => $weariness];
+    }
+
+    /** Distinct luxury resources plus natural wonders on the empire's land. */
+    public static function luxuries(Empire $empire, Collection $tiles): int
+    {
+        $kinds = [];
+        $wonders = 0;
+        foreach ($tiles as $t) {
+            if ($t->empire_id !== $empire->id) {
+                continue;
+            }
+            if ($t->resource && in_array($t->resource, Rules::LUXURIES, true)) {
+                $kinds[$t->resource] = true;
+            }
+            if ($t->feature) {
+                $wonders++;
+            }
+        }
+
+        return count($kinds) + $wonders;
     }
 
     /** Gold per turn for buildings and the army. */

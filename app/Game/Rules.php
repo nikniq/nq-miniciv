@@ -494,6 +494,9 @@ final class Rules
 
     public const BELIEF_FOR_PERSONALITY = ['Conqueror' => 'war', 'Builder' => 'forge', 'Scholar' => 'sacred', 'Merchant' => 'sea', 'Expansionist' => 'harvest', 'Cultured' => 'sacred', 'Peaceful' => 'love', 'Balanced' => 'harvest'];
 
+    /** Resources that lift spirits: each distinct one inside your borders adds a happiness. */
+    public const LUXURIES = ['gold', 'gems'];
+
     /** Raids: a lighter act of war than a siege. */
     public const RAID_MIN_ARMY = 3;
 

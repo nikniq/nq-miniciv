@@ -525,7 +525,9 @@ class GameFlowTest extends TestCase
         $player->update(['gold' => 100]);
         $this->actingAs($user)->post(route('games.scout', [$game, $capital]))->assertSessionHas('status');
         $player->refresh();
-        $this->assertSame(100 - Rules::SCOUT_COST, $player->gold);
+        // Scouts cost gold; any natural wonder they stumble on pays a reward on top.
+        $extra = $player->gold - (100 - Rules::SCOUT_COST);
+        $this->assertTrue($extra >= 0 && $extra % Rules::WONDER_DISCOVERY_GOLD === 0, "unexpected gold {$player->gold}");
         $this->assertGreaterThan($pct, Fog::percent($game, $player));
         $this->actingAs($user)->post(route('games.scout', [$game, $capital]))->assertSessionHas('error');
 
@@ -903,5 +905,24 @@ class GameFlowTest extends TestCase
         $rivalCity->update(['current_build' => 'pyramids', 'production_stored' => (int) ceil($cost * 0.8)]);
 
         $this->actingAs($user)->get(route('games.show', $game))->assertSee('through the Pyramids that '.$mine->name.' is building', false);
+    }
+
+    public function test_luxuries_and_natural_wonders_inside_borders_add_happiness(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        $mine = $game->tiles->where('empire_id', $player->id)->values();
+        $mine[0]->update(['resource' => 'gems', 'feature' => null]);
+        $mine[1]->update(['resource' => 'gems', 'feature' => null]); // a second of the same kind adds nothing
+        $mine[2]->update(['resource' => 'gold', 'feature' => null]);
+        foreach ($mine->slice(3) as $t) {
+            $t->update(['resource' => null, 'feature' => null]);
+        }
+        $this->assertSame(2, Economy::luxuries($player, $game->fresh()->tiles));
+
+        $before = Economy::happiness($player)['supply'];
+        $player->luxuries = 2;
+        $this->assertSame($before + 2, Economy::happiness($player)['supply']);
     }
 }

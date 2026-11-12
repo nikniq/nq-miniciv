@@ -88,6 +88,7 @@
             <h2 class="font-semibold text-amber-300">🙂 Happiness and gold</h2>
             <ul class="mt-2 space-y-1 text-sm text-stone-300">
                 <li>Each city keeps {{ Rules::FREE_CITIZENS }} citizens content for free and adds {{ Rules::CITY_HAPPINESS }} happiness. Monuments, temples, colosseums and courthouses add more.</li>
+                <li>Each distinct luxury resource inside your borders (gold, gems) and each natural wonder you own adds 1 happiness.</li>
                 <li>If demand exceeds supply, growth stops and production drops by a quarter.</li>
                 <li>Every {{ Rules::BUILDINGS_PER_GOLD }} buildings cost 1 gold a turn; every {{ Rules::ARMY_PER_GOLD }} army strength costs 1 gold.</li>
                 <li>With Currency, each city can run one <b>trade route</b> ({{ Rules::TRADE_ROUTE_COST }} gold for the caravan) to a city within {{ Rules::TRADE_ROUTE_RANGE }} tiles. Longer routes to bigger cities pay more. Foreign routes add science, share gold with the partner and warm relations; domestic routes add food. War cuts them.</li>

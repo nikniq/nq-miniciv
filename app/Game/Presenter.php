@@ -168,6 +168,7 @@ final class Presenter
         $player = $game->playerEmpire();
         $visible = Fog::visibleIds($game, $player, $tiles);
         $effects = Economy::empireEffects($player);
+        $player->luxuries = Economy::luxuries($player, $game->tiles); // fresh after founding or conquest this turn
         $difficultySpec = Rules::DIFFICULTIES[$game->difficulty ?? 'prince'];
         $happiness = Economy::happiness($player, Economy::warsCount($game, $player), $difficultySpec['player_happy']);
         $upkeep = Economy::upkeep($player);
