@@ -230,6 +230,8 @@ if (map) {
         const warn = e.target.dataset.warn;
         if (warn && !confirm(`End turn anyway? Right now ${warn}.`)) return e.preventDefault();
         cue('turn');
+        const btn = e.target.querySelector('button');
+        if (btn) { btn.disabled = true; btn.textContent = '⏳ The world turns…'; btn.classList.add('opacity-80'); }
     });
 
     // Advisor tips: remember dismissals per browser.
@@ -334,4 +336,11 @@ document.getElementById('keys-open')?.addEventListener('click', () => document.g
 document.addEventListener('click', (e) => {
     const card = e.target.closest('.build-cards button[name="build"]');
     if (card) card.form.querySelector('.queue-flag').value = e.shiftKey ? '1' : '0';
+});
+
+// Coming back via the back/forward cache: undo the "world turns" state.
+window.addEventListener('pageshow', (e) => {
+    if (!e.persisted) return;
+    const btn = document.querySelector('#end-turn-form button');
+    if (btn) { btn.disabled = false; btn.textContent = 'End turn ▶'; btn.classList.remove('opacity-80'); }
 });

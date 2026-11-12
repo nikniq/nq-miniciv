@@ -6,7 +6,7 @@ Game portal for Mini Civilisation, built on Laravel.
 
 A turn-based, single-player empire builder against rival AI empires on a
 shared, seeded map. Found cities, grow borders through culture, build
-granaries, libraries, markets and wonders, and research 26 technologies from
+granaries, libraries, markets and wonders, and research 25 technologies from
 Agriculture to Exploration. Five ways to win: domination (55% of the land),
 culture, science (launch the Grand Expedition), diplomacy (ally with every
 nation), or the highest score after 120 turns.

@@ -566,6 +566,18 @@ final class Rules
         return $r;
     }
 
+    /** Culture at which a city's borders next grow, or null at the largest radius. */
+    public static function nextBorderAt(int $culture): ?int
+    {
+        foreach (array_keys(self::BORDER_LEVELS) as $level) {
+            if ($culture < $level) {
+                return $level;
+            }
+        }
+
+        return null;
+    }
+
     /** How hard a city is to take. */
     public static function cityDefense(City $city, int $garrison, int $extra = 0): int
     {

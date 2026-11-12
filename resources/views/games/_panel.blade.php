@@ -49,7 +49,7 @@
             <dt class="text-stone-400">Food</dt><dd>{{ $y['food'] }} <span class="text-stone-500">({{ $y['surplus'] >= 0 ? '+' : '' }}{{ $y['surplus'] }} surplus)</span></dd>
             <dt class="text-stone-400">Production</dt><dd>{{ $y['prod'] }}@if ($happiness['unhappy']) <span class="text-red-400">(unrest)</span>@endif</dd>
             <dt class="text-stone-400">Gold / Science</dt><dd>{{ $y['gold'] }} / {{ $y['science'] }}</dd>
-            <dt class="text-stone-400">Culture</dt><dd>{{ $city->culture }} <span class="text-stone-500">(+{{ $y['culture'] }})</span></dd>
+            <dt class="text-stone-400">Culture</dt><dd>{{ $city->culture }} <span class="text-stone-500">(+{{ $y['culture'] }})</span>@if (($nb = Rules::nextBorderAt($city->culture)) !== null)<span class="block text-[10px] text-stone-500" title="Borders grow when culture reaches {{ $nb }}">borders grow at {{ $nb }}@if ($y['culture'] > 0) · {{ (int) ceil(($nb - $city->culture) / $y['culture']) }}t @endif</span>@endif</dd>
             <dt class="text-stone-400">Defence</dt><dd>{{ Rules::cityDefense($city, $player->garrison(), \App\Game\Economy::empireEffects($player)['defense'] ?? 0) }} <span class="text-stone-500" title="Your army spread over your cities">(garrison {{ $player->garrison() }})</span></dd>
             <dt class="text-stone-400">Size cap</dt><dd>{{ $selected['sizeCap'] }}@if (! $city->has('aqueduct')) <span class="text-stone-500">(Aqueduct → {{ Rules::SIZE_CAP_AQUEDUCT }})</span>@endif</dd>
         </dl>

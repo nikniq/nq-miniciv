@@ -25,7 +25,7 @@ final class DiagramSvg
      * @param  array<int, array<int, string>>  $tiers  tier => tech keys
      * @param  array<string, mixed>  $available  techs the player could research now
      */
-    public static function techTree(Empire $player, array $tiers, array $available, bool $interactive): string
+    public static function techTree(Empire $player, array $tiers, array $available, bool $interactive, int $sciencePerTurn = 0): string
     {
         $w = self::NODE_W;
         $h = self::NODE_H;
@@ -85,7 +85,8 @@ final class DiagramSvg
             }
             $icon = $known ? '✓ ' : ($avail ? ($current ? '🔬 ' : '○ ') : '🔒 ');
             $out[] = sprintf('<text x="%s" y="%s" font-size="11" font-weight="600" fill="%s">%s%s</text>', $x + 8, $y + 15, $text, $icon, e($t['name']));
-            $out[] = sprintf('<text x="%s" y="%s" font-size="9" fill="%s">%s</text>', $x + 8, $y + 28, $sub, e(mb_strimwidth($t['unlocks'], 0, 24, '…')).' · '.$t['cost'].'🔬');
+            $turns = $avail && $sciencePerTurn > 0 ? ' · '.(int) ceil(max(0, $t['cost'] - ($current ? $player->research_progress : 0)) / $sciencePerTurn).'t' : '';
+            $out[] = sprintf('<text x="%s" y="%s" font-size="9" fill="%s">%s</text>', $x + 8, $y + 28, $sub, e(mb_strimwidth($t['unlocks'], 0, $turns ? 18 : 24, '…')).' · '.$t['cost'].'🔬'.$turns);
             $out[] = '</g>';
         }
         $out[] = '</svg>';
