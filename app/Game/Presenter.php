@@ -61,9 +61,12 @@ final class Presenter
         return implode(',', [$minX * $s, $minY * $s, ($maxX - $minX + 1) * $s, ($maxY - $minY + 1) * $s]);
     }
 
-    private function chart(Game $game, $empiresById): ?string
+    /** A line per empire for one history series: 1 score, 2 land, 3 culture. */
+    private function chart(Game $game, $empiresById, int $series = 1): ?string
     {
-        $history = $game->history ?? [];
+        $history = array_values(array_filter(
+            array_map(fn ($row) => isset($row[$series]) ? [$row[0], $row[$series]] : null, $game->history ?? []),
+        ));
         if (count($history) < 2) {
             return null;
         }
@@ -369,6 +372,7 @@ final class Presenter
             'dominationShare' => (int) (Rules::DOMINATION_SHARE * 100),
             'winner' => $game->winner_empire_id ? $empiresById->get($game->winner_empire_id) : null,
             'chart' => $this->chart($game, $empiresById),
+            'charts' => array_filter(['Score' => $this->chart($game, $empiresById, 1), 'Land' => $this->chart($game, $empiresById, 2), 'Culture' => $this->chart($game, $empiresById, 3)]),
             'replay' => $game->isActive() || ! $game->replay ? null : [
                 'w' => $game->width,
                 'h' => $game->height,

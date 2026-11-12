@@ -47,10 +47,10 @@
                     <script type="application/json" id="replay-data">@json($replay)</script>
                 </div>
             @endif
-            @if ($chart)
+            @if ($charts)
                 <div class="w-full max-w-sm">
-                    <div class="mb-1 text-xs text-stone-500">Score over {{ $game->turn - 1 }} turns</div>
-                    {!! $chart !!}
+                    <div class="mb-1 text-xs text-stone-500">Over {{ $game->turn - 1 }} turns</div>
+                    @include('games._charts', ['charts' => $charts, 'chartId' => 'end'])
                 </div>
             @endif
         </div>
@@ -478,10 +478,10 @@
             </ul>
         </section>
 
-        @if ($chart && $game->isActive())
+        @if ($charts && $game->isActive())
             <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
-                <div class="flex items-baseline justify-between"><h2 class="font-semibold">Score over time</h2><span class="text-xs text-stone-500">{{ $difficulty['name'] }}</span></div>
-                <div class="mt-2">{!! $chart !!}</div>
+                <div class="flex items-baseline justify-between"><h2 class="font-semibold">Over time</h2><span class="text-xs text-stone-500">{{ $difficulty['name'] }}</span></div>
+                <div class="mt-2">@include('games._charts', ['charts' => $charts, 'chartId' => 'side'])</div>
             </section>
         @endif
 

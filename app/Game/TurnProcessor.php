@@ -711,10 +711,16 @@ final class TurnProcessor
     {
         $history = $game->history ?? [];
         $scores = [];
+        $land = [];
+        $culture = [];
+        $owned = $this->tiles->filter(fn (Tile $t) => $t->empire_id && $t->isLand())->countBy('empire_id');
         foreach ($game->empires as $e) {
             $scores[(string) $e->id] = $e->eliminated ? 0 : (int) $e->score;
+            $land[(string) $e->id] = $e->eliminated ? 0 : (int) ($owned[$e->id] ?? 0);
+            $culture[(string) $e->id] = $e->eliminated ? 0 : Economy::culture($e);
         }
-        $history[] = [$game->turn - 1, $scores];
+        // [turn, scores, land tiles, culture]; older games have only the first two.
+        $history[] = [$game->turn - 1, $scores, $land, $culture];
         $game->history = $history;
         $this->recordFrame($game);
     }
