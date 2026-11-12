@@ -568,6 +568,41 @@ final class TurnProcessor
         }
         $history[] = [$game->turn - 1, $scores];
         $game->history = $history;
+        $this->recordFrame($game);
+    }
+
+    /**
+     * One replay frame: a character per tile, '.' unowned, otherwise the
+     * owner's slot ('a' for the first empire, 'b' the next...), and uppercase
+     * where a city stands. Big maps record every other turn.
+     */
+    private function recordFrame(Game $game): void
+    {
+        $every = $game->width * $game->height > 1500 ? 2 : 1;
+        $turn = $game->turn - 1;
+        if ($turn % $every !== 0 && $game->isActive()) {
+            return;
+        }
+        $slot = [];
+        foreach ($game->empires->sortBy('id')->values() as $i => $e) {
+            $slot[$e->id] = chr(ord('a') + $i);
+        }
+        $cityTiles = [];
+        foreach ($game->empires as $e) {
+            foreach ($e->cities as $c) {
+                $cityTiles[$c->tile_id] = true;
+            }
+        }
+        $row = array_fill(0, $game->width * $game->height, '.');
+        foreach ($this->tiles as $t) {
+            if ($t->empire_id && isset($slot[$t->empire_id])) {
+                $ch = $slot[$t->empire_id];
+                $row[$t->y * $game->width + $t->x] = isset($cityTiles[$t->id]) ? strtoupper($ch) : $ch;
+            }
+        }
+        $replay = $game->replay ?? [];
+        $replay[] = [$turn, implode('', $row)];
+        $game->replay = $replay;
     }
 
     /**

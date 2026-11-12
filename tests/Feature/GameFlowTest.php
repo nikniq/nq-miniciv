@@ -580,4 +580,23 @@ class GameFlowTest extends TestCase
 
         $this->actingAs($user)->post(route('games.upgrade', $game), ['from' => 'warriors'])->assertSessionHas('error');
     }
+
+    public function test_turns_record_replay_frames_shown_when_the_game_ends(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $this->actingAs($user)->post(route('games.end-turn', $game));
+        $this->actingAs($user)->post(route('games.end-turn', $game));
+
+        $game->refresh();
+        $this->assertCount(2, $game->replay);
+        [$turn, $row] = $game->replay[1];
+        $this->assertSame(2, $turn);
+        $this->assertSame($game->width * $game->height, strlen($row));
+        $this->assertSame($game->cities()->count(), preg_match_all('/[A-Z]/', $row), 'every city marked');
+
+        $this->actingAs($user)->get(route('games.show', $game))->assertDontSee('replay-canvas', false);
+        $game->update(['status' => 'won']);
+        $this->actingAs($user)->get(route('games.show', $game))->assertSee('replay-canvas', false);
+    }
 }

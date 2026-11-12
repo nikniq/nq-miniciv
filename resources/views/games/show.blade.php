@@ -36,6 +36,17 @@
                     @endif
                 </div>
             </div>
+            @if ($replay)
+                <div class="w-full max-w-md">
+                    <div class="mb-1 flex items-center justify-between text-xs text-stone-500"><span>🎞️ Replay: how the world was won</span><span id="replay-turn">turn 0</span></div>
+                    <canvas id="replay-canvas" class="w-full rounded border border-stone-700 bg-stone-950" style="image-rendering: pixelated; aspect-ratio: {{ $replay['w'] }} / {{ $replay['h'] }}"></canvas>
+                    <div class="mt-1 flex items-center gap-2">
+                        <button type="button" id="replay-play" class="rounded bg-amber-500 px-2 py-0.5 text-xs font-medium text-stone-950 hover:bg-amber-400">▶ Play</button>
+                        <input type="range" id="replay-slider" min="0" max="{{ count($replay['frames']) - 1 }}" value="{{ count($replay['frames']) - 1 }}" class="flex-1 accent-amber-500">
+                    </div>
+                    <script type="application/json" id="replay-data">@json($replay)</script>
+                </div>
+            @endif
             @if ($chart)
                 <div class="w-full max-w-sm">
                     <div class="mb-1 text-xs text-stone-500">Score over {{ $game->turn - 1 }} turns</div>

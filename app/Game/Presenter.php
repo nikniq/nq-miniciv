@@ -312,6 +312,14 @@ final class Presenter
             'dominationShare' => (int) (Rules::DOMINATION_SHARE * 100),
             'winner' => $game->winner_empire_id ? $empiresById->get($game->winner_empire_id) : null,
             'chart' => $this->chart($game, $empiresById),
+            'replay' => $game->isActive() || ! $game->replay ? null : [
+                'w' => $game->width,
+                'h' => $game->height,
+                'land' => $tiles->sortBy(fn ($t) => $t->y * $game->width + $t->x)->map(fn ($t) => $t->isLand() ? ($t->terrain === 'mountain' ? 'm' : 'l') : 'o')->implode(''),
+                'colors' => $game->empires->sortBy('id')->values()->map(fn ($e) => $e->color)->all(),
+                'names' => $game->empires->sortBy('id')->values()->map(fn ($e) => $e->name)->all(),
+                'frames' => $game->replay,
+            ],
             'victory' => [
                 'domination' => $game->empires->filter(fn ($e) => ! $e->eliminated)->map(fn ($e) => ['empire' => $e, 'pct' => min(100, (int) round(100 * (($ownedBy[$e->id] ?? 0) / $landTotal) / Rules::DOMINATION_SHARE))])->sortByDesc('pct')->values()->take(3),
                 'culture' => $game->empires->filter(fn ($e) => ! $e->eliminated)->map(fn ($e) => ['empire' => $e, 'pct' => min(100, (int) round(100 * Economy::culture($e) / Rules::cultureGoal($game)))])->sortByDesc('pct')->values()->take(3),

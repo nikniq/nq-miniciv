@@ -284,3 +284,44 @@ if (researchForm) {
         node.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(node); } });
     });
 }
+
+// End-of-game replay: territory frames drawn on a canvas, playable and scrubbable.
+const replayData = document.getElementById('replay-data');
+if (replayData) {
+    const R = JSON.parse(replayData.textContent);
+    const canvas = document.getElementById('replay-canvas');
+    const slider = document.getElementById('replay-slider');
+    const label = document.getElementById('replay-turn');
+    const play = document.getElementById('replay-play');
+    const px = Math.max(4, Math.floor(480 / R.w));
+    canvas.width = R.w * px; canvas.height = R.h * px;
+    const ctx = canvas.getContext('2d');
+    const base = { o: '#0f2f5c', l: '#3f5f2a', m: '#57534e' };
+    const draw = (i) => {
+        const [turn, row] = R.frames[i];
+        for (let k = 0; k < R.w * R.h; k++) {
+            const x = (k % R.w) * px, y = Math.floor(k / R.w) * px, ch = row[k];
+            ctx.fillStyle = base[R.land[k]] || '#000';
+            ctx.fillRect(x, y, px, px);
+            if (ch !== '.') {
+                const slot = ch.toLowerCase().charCodeAt(0) - 97;
+                ctx.globalAlpha = 0.8; ctx.fillStyle = R.colors[slot] || '#fff'; ctx.fillRect(x, y, px, px); ctx.globalAlpha = 1;
+                if (ch !== ch.toLowerCase()) { ctx.fillStyle = '#fff'; ctx.fillRect(x + px / 4, y + px / 4, px / 2, px / 2); }
+            }
+        }
+        label.textContent = `turn ${turn}`;
+    };
+    let timer = null;
+    const stop = () => { clearInterval(timer); timer = null; play.textContent = '▶ Play'; };
+    play.addEventListener('click', () => {
+        if (timer) return stop();
+        if (+slider.value >= R.frames.length - 1) slider.value = 0;
+        play.textContent = '❚❚ Pause';
+        timer = setInterval(() => {
+            if (+slider.value >= R.frames.length - 1) return stop();
+            slider.value = +slider.value + 1; draw(+slider.value);
+        }, Math.max(40, 4000 / R.frames.length));
+    });
+    slider.addEventListener('input', () => { stop(); draw(+slider.value); });
+    draw(R.frames.length - 1);
+}
