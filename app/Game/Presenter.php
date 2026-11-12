@@ -97,6 +97,7 @@ final class Presenter
             [$cities->contains(fn ($c) => ! empty($c->queue) || count($c->buildings ?? []) > 0), 'Complete or queue a building', 'Use +Q in the city panel to line up builds.'],
             [Fog::percent($game, $player) >= 15, 'Explore 15% of the world', 'Send scouts from a city, or let your borders grow.'],
             [(int) $player->veterancy > 0, 'Win a fight: clear a camp or repel a raid', 'An army of '.Rules::CAMP_CLEAR_ARMY.'+ can clear a ☠ camp next to your land.'],
+            [(bool) $player->belief, 'Adopt a pantheon', 'At '.Rules::PANTHEON_CULTURE.' culture a banner lets you choose a belief. Monuments speed it up.'],
             [$cities->contains(fn ($c) => (bool) $c->trade_to), 'Open a trade route', 'Research Currency, then send a caravan from a city panel.'],
         ];
         $out = array_map(fn ($i) => ['done' => $i[0], 'text' => $i[1], 'hint' => $i[2]], $items);
