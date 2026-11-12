@@ -101,16 +101,16 @@
 
 {{-- A pantheon is ready to be chosen --}}
 @if ($pantheonReady)
-    <div class="mb-4 rounded-lg border border-violet-700/70 bg-violet-950/40 px-5 py-4">
+    <div class="mb-4 rounded-lg border border-violet-700/70 bg-violet-950/40 px-3 py-3 sm:px-5 sm:py-4">
         <div class="font-semibold">🛐 Your people seek a pantheon</div>
-        <p class="mt-0.5 text-sm text-stone-300">Your cities have gathered {{ Rules::PANTHEON_CULTURE }} culture. Choose the belief that will shape your people for the rest of the game.</p>
-        <form method="POST" action="{{ route('games.belief', $game) }}" class="mt-3 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
+        <p class="mt-0.5 text-xs text-stone-300 sm:text-sm">Your cities have gathered {{ Rules::PANTHEON_CULTURE }} culture. Choose the belief that will shape your people for the rest of the game.</p>
+        <form method="POST" action="{{ route('games.belief', $game) }}" class="mt-3 grid grid-cols-2 gap-1.5 text-sm sm:gap-2 lg:grid-cols-3">
             @csrf
             <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
             @foreach (Rules::BELIEFS as $key => $b)
-                <button name="belief" value="{{ $key }}" class="flex items-start gap-2 rounded border border-violet-800 bg-stone-900/70 px-3 py-2 text-left hover:border-violet-500 hover:bg-violet-950">
-                    <span class="text-xl">{{ $b['icon'] }}</span>
-                    <span><span class="block font-medium">{{ $b['name'] }}</span><span class="block text-xs text-stone-400">{{ $b['blurb'] }}</span></span>
+                <button name="belief" value="{{ $key }}" class="flex items-start gap-1.5 rounded border border-violet-800 bg-stone-900/70 px-2 py-1.5 text-left hover:border-violet-500 hover:bg-violet-950 sm:gap-2 sm:px-3 sm:py-2">
+                    <span class="text-base sm:text-xl">{{ $b['icon'] }}</span>
+                    <span class="min-w-0"><span class="block text-xs font-medium sm:text-sm">{{ $b['name'] }}</span><span class="block text-[11px] leading-snug text-stone-400 sm:text-xs">{{ $b['blurb'] }}</span></span>
                 </button>
             @endforeach
         </form>
