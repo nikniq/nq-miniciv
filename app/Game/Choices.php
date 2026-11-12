@@ -35,6 +35,17 @@ final class Choices
             }
         }
 
+        // A friendly rival may offer a technology swap (one chance in eight a turn).
+        if (mt_rand(1, 8) === 1) {
+            $actions = app(Actions::class);
+            foreach ($rivals as $r) {
+                $deal = collect($actions->techTradeOffers($game, $player, $r))->first(fn ($o) => $o['give'] !== null);
+                if ($deal && $game->attitude($player->id, $r->id) > 15) {
+                    return ['kind' => 'techdeal', 'turn' => $game->turn, 'city' => $player->cities->first()->id, 'rival' => $r->id, 'get' => $deal['get'], 'give' => $deal['give']];
+                }
+            }
+        }
+
         if (mt_rand(1, 100) > self::CHANCE) {
             return null;
         }
@@ -62,6 +73,9 @@ final class Choices
         $gold = self::goldScale($game);
 
         return match ($choice['kind']) {
+            'techdeal' => ['icon' => '📚', 'title' => "{$rivalName} offers a trade of knowledge",
+                'text' => 'Their scholars will share '.(Rules::TECHS[$choice['get'] ?? '']['name'] ?? 'a technology').' in return for '.(Rules::TECHS[$choice['give'] ?? '']['name'] ?? 'one of yours').'.',
+                'a' => 'Accept the exchange', 'b' => 'Keep our secrets'],
             'alliance' => ['icon' => '🤝', 'title' => "{$rivalName} proposes an alliance",
                 'text' => 'Their ruler writes of shared fortunes: each would join any war declared on the other, and your scouts would share their maps.',
                 'a' => 'Accept the alliance', 'b' => 'Decline politely (−3 attitude)'],
@@ -103,6 +117,15 @@ final class Choices
             throw new InvalidArgumentException("You need {$gold} gold for that.");
         }
         $line = match ($choice['kind']) {
+            'techdeal' => $a
+                ? (function () use ($game, $player, $rival, $choice) {
+                    try {
+                        return '📚 '.app(Actions::class)->tradeTech($game, $player, $rival, $choice['get'], $choice['give']);
+                    } catch (InvalidArgumentException) {
+                        return 'The offer no longer stands.';
+                    }
+                })()
+                : 'You keep your knowledge to yourselves.',
             'alliance' => $a
                 ? (function () use ($game, $player, $rival) {
                     if (! $rival || $rival->eliminated || $game->atWar($player->id, $rival->id)) {

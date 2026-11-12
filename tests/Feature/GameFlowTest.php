@@ -925,4 +925,22 @@ class GameFlowTest extends TestCase
         $player->luxuries = 2;
         $this->assertSame($before + 2, Economy::happiness($player)['supply']);
     }
+
+    public function test_a_rival_tech_swap_offer_can_be_accepted(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        $rival = $game->empires->firstWhere('is_ai', true);
+        $player->update(['technologies' => ['agriculture']]);
+        $rival->update(['technologies' => ['mining']]);
+        $game->adjustAttitude($player->id, $rival->id, 70);
+        $game->choice = ['kind' => 'techdeal', 'turn' => $game->turn, 'city' => $player->cities->first()->id, 'rival' => $rival->id, 'get' => 'mining', 'give' => 'agriculture'];
+        $game->save();
+
+        $this->actingAs($user)->get(route('games.show', $game))->assertSee('offers a trade of knowledge')->assertSee('share Mining in return for Agriculture');
+        $this->actingAs($user)->post(route('games.choose', $game), ['option' => 'a'])->assertSessionHas('status');
+        $this->assertContains('mining', $player->fresh()->technologies);
+        $this->assertContains('agriculture', $rival->fresh()->technologies);
+    }
 }
