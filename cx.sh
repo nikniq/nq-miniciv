@@ -69,18 +69,30 @@ else
   APP_RSYNC="${APP_RSYNC:-rsync -e ssh}"
 fi
 
+
+# Running ON the server (from ~/www/$PROJECT): no ssh hop is needed, so
+# every option runs its command right here instead. Detected by being
+# inside the app root, which a dev machine never is.
+ON_SERVER=0
+if [ -f "$HOME/$REMOTE_APP/artisan" ] && [[ "$(pwd -P)/" == "$(cd "$HOME/$REMOTE_APP" && pwd -P)/"* ]]; then
+  ON_SERVER=1
+  # Stand-in for ssh: drop flags and the host, run the command locally.
+  local_ssh() {
+    while [[ "${1:-}" == -* ]]; do shift; done
+    shift # host
+    if [ $# -eq 0 ]; then echo "Already on the server."; return 0; fi
+    (cd "$HOME" && bash -c "$*")
+  }
+  APP_SSH=local_ssh
+  APP_SCP="echo ⚠ Run this option from your own machine, not the server: scp"
+  APP_RSYNC="echo ⚠ Run this option from your own machine, not the server: rsync"
+fi
+
 # An alias with no ~/.ssh/config entry would fail with a confusing DNS error.
-if [[ "$REMOTE" != *@* ]] && [ "$(ssh -G "$REMOTE" 2>/dev/null | awk '/^hostname /{print $2}')" = "$REMOTE" ]; then
+if [ "$ON_SERVER" = 0 ] && [[ "$REMOTE" != *@* ]] && [ "$(ssh -G "$REMOTE" 2>/dev/null | awk '/^hostname /{print $2}')" = "$REMOTE" ]; then
   echo "⚠ No ssh alias '$REMOTE' in ~/.ssh/config. Add the Host block shown at the top of cx.sh,"
   echo "  or run with CX_REMOTE=user@host REMOTE_PORT=18765 ./cx.sh"
   echo
-fi
-
-# This script drives the server from outside. Run on the server it would
-# try to ssh to itself.
-if [ "$(hostname -s 2>/dev/null)" = "${REMOTE_HOST%%.*}" ]; then
-  echo "⚠ This looks like $REMOTE_HOST — cx.sh is the LOCAL script. Use deploy.sh here."
-  exit 1
 fi
 
 #---------------------------------------------------------------
@@ -175,7 +187,7 @@ ls -lh "$out"
 '
 
 echo =============================================================
-echo "Hi $USER@$HOSTNAME — acting on $PROJECT ($REMOTE)"
+echo "Hi $USER@$HOSTNAME — acting on $PROJECT ($REMOTE)$( [ "$ON_SERVER" = 1 ] && echo " — running ON the server, no ssh")"
 echo "Other sites configured: ${SITES[*]}"
 echo What do you want to do?
 echo -------------------------------------------------------------
