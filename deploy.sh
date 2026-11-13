@@ -11,6 +11,12 @@
 #   ./deploy.sh --verify            # run only the post-deploy checks
 #   ./deploy.sh --no-down           # deploy without maintenance mode
 #   ./deploy.sh --build             # also run npm build here (usually not)
+#   ./deploy.sh --admin=EMAIL       # …and make that (existing) account an admin
+#   ./deploy.sh --admins            # list administrators only, no deploy
+#
+# Admins: every address in ADMIN_EMAILS (.env, comma-separated) is granted
+# the admin area after each migrate (php artisan admin:sync). Accounts must
+# exist first: sign in on the site once, then deploy or run admin:sync.
 #
 # The web root is public_html/, not public/ (see bootstrap/app.php). Nothing
 # here should ever write to a public/ directory.
@@ -24,7 +30,7 @@
 #   6. (only with --build) npm build; normally assets are committed, because
 #      shared hosts cannot run Vite (thread pool errors on SiteGround)
 #   7. migrate --force
-#   8. optional seeding
+#   8. optional seeding, then admin:sync (+ --admin=EMAIL)
 #   9. storage:link, rebuild caches
 #  10. verify, then leave maintenance mode
 #
@@ -54,6 +60,7 @@ NO_DOWN=0
 BUILD=0
 ACTION=deploy
 SEEDER=""
+GRANT_ADMIN=""
 
 for arg in "$@"; do
     case "$arg" in
@@ -62,6 +69,8 @@ for arg in "$@"; do
         --seed)     SEEDER="--all" ;;
         --no-down)  NO_DOWN=1 ;;
         --build)    BUILD=1 ;;
+        --admins)   ACTION=admins ;;
+        --admin=*)  GRANT_ADMIN="${arg#--admin=}" ;;
         --*)        echo "Unknown flag: $arg"; exit 2 ;;
         *)          SEEDER="$arg" ;;
     esac
@@ -116,6 +125,13 @@ verify() {
         ok "debug mode safe"
     fi
 
+    # Someone has to be able to open /admin.
+    if php artisan admin:list 2>/dev/null | grep -q 'No administrators'; then
+        warn "no administrators — set ADMIN_EMAILS in .env or run: ./deploy.sh --admin=you@example.com"
+    else
+        ok "administrators present (php artisan admin:list)"
+    fi
+
     if grep -qE '^APP_KEY=base64:' .env; then
         ok "APP_KEY set"
     else
@@ -149,6 +165,13 @@ if [ "$ACTION" = "verify" ]; then
     trap - ERR
     verify
     exit $?
+fi
+
+if [ "$ACTION" = "admins" ]; then
+    trap - ERR
+    php artisan admin:list
+    grep -qE '^ADMIN_EMAILS=.+' .env && echo "ADMIN_EMAILS: $(grep -E '^ADMIN_EMAILS=' .env | cut -d= -f2-)" || echo "ADMIN_EMAILS is not set in .env"
+    exit 0
 fi
 
 #---------------------------------------------------------------
@@ -271,6 +294,13 @@ if [ "$SEEDER" = "--all" ]; then
 elif [ -n "$SEEDER" ]; then
     say "db:seed --class=$SEEDER"
     php artisan db:seed --class="$SEEDER" --force
+fi
+
+say "admin:sync (ADMIN_EMAILS)"
+php artisan admin:sync || warn "admin:sync failed"
+if [ -n "$GRANT_ADMIN" ]; then
+    say "admin:grant $GRANT_ADMIN"
+    php artisan admin:grant "$GRANT_ADMIN" || warn "could not grant admin to $GRANT_ADMIN (has that address signed in once?)"
 fi
 
 #---------------------------------------------------------------

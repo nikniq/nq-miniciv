@@ -43,6 +43,9 @@
                             </div>
                             <a href="{{ route('profile') }}" class="block px-4 py-2 text-stone-300 hover:bg-stone-800 hover:text-white">🏅 Profile and achievements</a>
                             <a href="{{ route('profile') }}#nickname" class="block px-4 py-2 text-stone-300 hover:bg-stone-800 hover:text-white">✏️ Change nickname</a>
+                            @if ($me->isAdmin())
+                                <a href="{{ route('admin.dashboard') }}" class="block border-t border-stone-800 px-4 py-2 text-amber-300 hover:bg-stone-800 hover:text-amber-200">🛡️ Admin</a>
+                            @endif
                             <form method="POST" action="{{ route('logout') }}" class="border-t border-stone-800">
                                 @csrf
                                 <button class="block w-full px-4 py-2 text-left text-stone-300 hover:bg-stone-800 hover:text-white">↩ Log out</button>

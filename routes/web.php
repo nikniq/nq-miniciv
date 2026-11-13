@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GameActionController;
 use App\Http\Controllers\GameController;
@@ -64,4 +65,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/games/{game}/empires/{empire}/tribute', [GameActionController::class, 'tribute'])->name('games.tribute');
     Route::post('/games/{game}/cities/{city}/raid', [GameActionController::class, 'raid'])->name('games.raid');
     Route::post('/games/{game}/clear-camp', [GameActionController::class, 'clearCamp'])->name('games.clear-camp');
+});
+
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/users', [AdminController::class, 'users'])->name('users');
+    Route::get('/games', [AdminController::class, 'games'])->name('games');
+    Route::post('/users/{user}/admin', [AdminController::class, 'toggleAdmin'])->name('users.admin');
+    Route::post('/users/{user}/reset-name', [AdminController::class, 'resetName'])->name('users.reset-name');
+    Route::delete('/users/{user}', [AdminController::class, 'destroyUser'])->name('users.destroy');
+    Route::delete('/games/{game}', [AdminController::class, 'destroyGame'])->name('games.destroy');
 });

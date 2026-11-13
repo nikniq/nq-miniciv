@@ -25,6 +25,7 @@
 # - data: seed one class, database summary, table sizes, tinker-free SQL
 #   query via db:show/db:table (40-43)
 # - queue and schedule (50-54)
+# - admins: list, grant, revoke, sync from ADMIN_EMAILS, open /admin (60-64)
 # - maintenance: verify, maintenance mode on/off, log rotate/truncate,
 #   clear expired sessions and cache, prune old backups, fix permissions,
 #   regenerate storage link (70-78)
@@ -187,6 +188,13 @@ echo "51 : QUEUE: retry all failed jobs"
 echo "52 : QUEUE: drain the queue now"
 echo "53 : QUEUE: flush failed jobs  [discards them]"
 echo "54 : SCHEDULE: what is registered, and run it once now"
+echo ----------------------------------------------
+echo "ADMINS"
+echo "60 : ADMINS: list administrators (and ADMIN_EMAILS)"
+echo "61 : ADMINS: grant admin to an email (account must exist)"
+echo "62 : ADMINS: revoke admin from an email  [confirms]"
+echo "63 : ADMINS: sync from ADMIN_EMAILS in the server .env"
+echo "64 : ADMINS: open the admin area in the browser"
 echo ----------------------------------------------
 echo MAINTENANCE
 echo "70 : VERIFY: run the post-deploy checks on their own"
@@ -708,6 +716,48 @@ EOF"
   "05" )
   banner "MONITOR: Remote Top"
   $APP_SSH -t "$REMOTE" 'top'
+  ;;
+
+
+  #-------------------------------------------------------------
+  # ADMINS
+  #-------------------------------------------------------------
+
+  "60" )
+  banner "ADMINS on $PROJECT"
+  remote "./deploy.sh --admins"
+  ;;
+
+
+  "61" )
+  banner "ADMINS: grant on $PROJECT"
+  need_param "email of the account to make an administrator"
+  [[ "$PARAM2" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]+$ ]] || { echo "That does not look like an email address."; exit 1; }
+  remote "php artisan admin:grant '$PARAM2'"
+  log_history "Granted admin to $PARAM2 on $PROJECT"
+  ;;
+
+
+  "62" )
+  banner "ADMINS: revoke on $PROJECT"
+  need_param "email of the administrator to demote"
+  [[ "$PARAM2" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]+$ ]] || { echo "That does not look like an email address."; exit 1; }
+  confirm "Remove admin rights from $PARAM2 on $PROJECT? If it is listed in ADMIN_EMAILS, the next deploy grants it again."
+  remote "php artisan admin:revoke '$PARAM2'"
+  log_history "Revoked admin from $PARAM2 on $PROJECT"
+  ;;
+
+
+  "63" )
+  banner "ADMINS: sync on $PROJECT"
+  remote "php artisan config:clear >/dev/null && php artisan admin:sync && php artisan optimize >/dev/null"
+  log_history "Synced admins on $PROJECT"
+  ;;
+
+
+  "64" )
+  banner "ADMINS: open $APP_URL/admin"
+  open "$APP_URL/admin" 2>/dev/null || xdg-open "$APP_URL/admin" 2>/dev/null || echo "$APP_URL/admin"
   ;;
 
 

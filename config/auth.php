@@ -117,4 +117,10 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    | Comma-separated emails granted the admin area on every deploy
+    | (php artisan admin:sync). Leave blank to manage admins by hand.
+    */
+    'admin_emails' => array_values(array_filter(array_map('trim', explode(',', strtolower((string) env('ADMIN_EMAILS', '')))))),
+
 ];
