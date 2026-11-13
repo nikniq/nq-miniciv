@@ -19,6 +19,25 @@
         </div>
     </div>
 
+    <section class="mt-6 rounded-lg border border-stone-800 bg-stone-900/50 p-4">
+        <h2 class="font-semibold">Account</h2>
+        <dl class="mt-2 grid gap-1 text-sm sm:grid-cols-[8rem_1fr]">
+            <dt class="text-stone-500">Email</dt><dd>{{ $user->isGuest() ? 'Not saved yet' : $user->email }}</dd>
+            <dt class="text-stone-500">Sign-in</dt><dd>{{ $user->google_id ? 'Google and email link' : ($user->isGuest() ? 'Guest, this browser only' : ($user->password ? 'Password or email link' : 'Email link')) }}</dd>
+        </dl>
+        <form method="POST" action="{{ route('profile.nickname') }}" id="nickname-form" data-check="{{ route('profile.nickname.check') }}" class="mt-4">
+            @csrf
+            @method('PUT')
+            <label for="nickname" class="text-sm text-stone-400">Nickname</label>
+            <div class="mt-1 flex gap-2">
+                <input id="nickname" name="nickname" value="{{ old('nickname', $user->name) }}" maxlength="24" autocomplete="nickname" required
+                    class="min-w-0 flex-1 rounded border border-stone-700 bg-stone-950 px-3 py-2 text-stone-100 focus:border-amber-500 focus:outline-none">
+                <button class="rounded bg-amber-500 px-4 py-2 font-medium text-stone-950 hover:bg-amber-400 disabled:opacity-50">Save</button>
+            </div>
+            <p id="nickname-status" class="mt-1 min-h-5 text-xs {{ $errors->has('nickname') ? 'text-red-400' : 'text-stone-500' }}" aria-live="polite">{{ $errors->first('nickname') ?: '3 to 24 characters. Letters, numbers, spaces, dots, dashes and underscores.' }}</p>
+        </form>
+    </section>
+
     <dl class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
         @foreach (['games' => 'Games', 'finished' => 'Finished', 'wins' => 'Wins', 'best' => 'Best score', 'turns' => 'Turns played'] as $k => $label)
             <div class="rounded-lg border border-stone-800 bg-stone-900/50 p-3 text-center">

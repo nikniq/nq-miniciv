@@ -413,3 +413,36 @@ document.querySelector('.share-result')?.addEventListener('click', async (e) => 
         });
     });
 })();
+
+// Profile: check nickname availability as the player types.
+(() => {
+    const form = document.getElementById('nickname-form');
+    if (!form) return;
+    const input = form.querySelector('#nickname');
+    const status = document.getElementById('nickname-status');
+    const button = form.querySelector('button');
+    const original = input.value.trim();
+    let timer, seq = 0;
+    const show = (text, tone) => {
+        status.textContent = text;
+        status.className = 'mt-1 min-h-5 text-xs ' + ({ ok: 'text-emerald-400', bad: 'text-red-400' }[tone] ?? 'text-stone-500');
+    };
+    input.addEventListener('input', () => {
+        clearTimeout(timer);
+        const value = input.value.trim().replace(/\s+/g, ' ');
+        if (value === original) { show('This is your current nickname.'); button.disabled = true; return; }
+        show('Checking…');
+        timer = setTimeout(async () => {
+            const mine = ++seq;
+            try {
+                const res = await fetch(form.dataset.check + '?nickname=' + encodeURIComponent(value), { headers: { Accept: 'application/json' } });
+                const data = await res.json();
+                if (mine !== seq) return;
+                show(data.available ? `✓ ${data.nickname} is available.` : data.message, data.available ? 'ok' : 'bad');
+                button.disabled = !data.available;
+            } catch {
+                if (mine === seq) { show('Could not check right now. You can still try saving.'); button.disabled = false; }
+            }
+        }, 300);
+    });
+})();

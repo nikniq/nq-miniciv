@@ -6,6 +6,7 @@ use App\Http\Controllers\GameController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\MagicLinkController;
 use App\Http\Controllers\PlayController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'portal.home')->name('home');
@@ -32,6 +33,8 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 Route::middleware('auth')->group(function () {
     Route::get('/games', [GameController::class, 'index'])->name('games.index');
     Route::get('/profile', [GameController::class, 'profile'])->name('profile');
+    Route::get('/profile/nickname', [ProfileController::class, 'checkNickname'])->middleware('throttle:60,1')->name('profile.nickname.check');
+    Route::put('/profile/nickname', [ProfileController::class, 'updateNickname'])->middleware('throttle:10,1')->name('profile.nickname');
     Route::post('/games', [GameController::class, 'store'])->name('games.store');
     Route::get('/games/{game}', [GameController::class, 'show'])->name('games.show');
     Route::get('/games/{game}/panel', [GameController::class, 'panel'])->name('games.panel');

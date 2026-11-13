@@ -169,4 +169,23 @@ class AuthTest extends TestCase
 
         return $this->post($url);
     }
+
+    public function test_nickname_check_and_change(): void
+    {
+        User::factory()->create(['name' => 'Cleopatra']);
+        $user = User::factory()->create(['name' => 'Ada']);
+        $this->actingAs($user);
+
+        $this->get(route('profile'))->assertOk()->assertSee('Nickname');
+        $this->getJson(route('profile.nickname.check', ['nickname' => 'cleopatra']))->assertJson(['available' => false, 'message' => 'That nickname is taken.']);
+        $this->getJson(route('profile.nickname.check', ['nickname' => 'ab']))->assertJson(['available' => false]);
+        $this->getJson(route('profile.nickname.check', ['nickname' => 'Admin']))->assertJson(['available' => false]);
+        $this->getJson(route('profile.nickname.check', ['nickname' => '<b>x</b>']))->assertJson(['available' => false]);
+        $this->getJson(route('profile.nickname.check', ['nickname' => '  Queen   Ada ']))->assertJson(['available' => true, 'nickname' => 'Queen Ada']);
+
+        $this->put(route('profile.nickname'), ['nickname' => 'CLEOPATRA'])->assertSessionHasErrors('nickname');
+        $this->assertSame('Ada', $user->fresh()->name);
+        $this->put(route('profile.nickname'), ['nickname' => '  Queen   Ada '])->assertSessionHasNoErrors();
+        $this->assertSame('Queen Ada', $user->fresh()->name);
+    }
 }
