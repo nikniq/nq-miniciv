@@ -8,6 +8,7 @@ use App\Notifications\MagicLink;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 class AuthTest extends TestCase
@@ -51,7 +52,7 @@ class AuthTest extends TestCase
             return $n->isNew;
         });
 
-        $this->get($url)->assertRedirect(route('games.index'));
+        $this->openLink($url)->assertRedirect(route('games.index'));
         $this->assertAuthenticated();
         $user = User::where('email', 'ada.lovelace@example.com')->firstOrFail();
         $this->assertSame('Ada Lovelace', $user->name);
@@ -61,6 +62,7 @@ class AuthTest extends TestCase
         // Single use: the same link is refused afterwards.
         $this->post(route('logout'));
         $this->get($url)->assertRedirect(route('login'))->assertSessionHasErrors('email');
+        $this->post($url)->assertRedirect(route('login'))->assertSessionHasErrors('email');
         $this->assertGuest();
     }
 
@@ -72,7 +74,7 @@ class AuthTest extends TestCase
         $game = Game::firstOrFail();
 
         $url = URL::temporarySignedRoute('magic.verify', now()->addMinutes(30), ['email' => 'ruler@example.com', 'guest' => $guest->id]);
-        $this->get($url)->assertRedirect(route('games.index'));
+        $this->openLink($url)->assertRedirect(route('games.index'));
         $this->assertAuthenticatedAs($guest->fresh());
         $this->assertSame('ruler@example.com', $guest->fresh()->email);
         $this->assertFalse($guest->fresh()->isGuest());
@@ -87,7 +89,7 @@ class AuthTest extends TestCase
         $game = Game::firstOrFail();
 
         $url = URL::temporarySignedRoute('magic.verify', now()->addMinutes(30), ['email' => 'old@example.com', 'guest' => $guest->id]);
-        $this->get($url)->assertRedirect(route('games.index'));
+        $this->openLink($url)->assertRedirect(route('games.index'));
         $this->assertAuthenticatedAs($existing);
         $this->assertSame($existing->id, $game->fresh()->user_id);
         $this->assertDatabaseMissing('users', ['id' => $guest->id]);
@@ -141,10 +143,30 @@ class AuthTest extends TestCase
         auth()->logout();
 
         // The victim opens it in their own browser: they get a fresh account, not the attacker's.
-        $this->get($url)->assertRedirect(route('games.index'));
+        $this->openLink($url)->assertRedirect(route('games.index'));
         $victim = User::where('email', 'victim@example.com')->firstOrFail();
         $this->assertNotSame($attacker->id, $victim->id);
         $this->assertTrue($attacker->fresh()->isGuest());
         $this->assertAuthenticatedAs($victim);
+    }
+
+    public function test_opening_the_link_does_not_use_it_up(): void
+    {
+        // A mail scanner fetching the link must change nothing.
+        $url = URL::temporarySignedRoute('magic.verify', now()->addMinutes(30), ['email' => 'scan@example.com']);
+        $this->get($url)->assertOk()->assertSee('Sign in');
+        $this->get($url)->assertOk();
+        $this->assertGuest();
+        $this->assertDatabaseMissing('users', ['email' => 'scan@example.com']);
+
+        $this->openLink($url)->assertRedirect(route('games.index'));
+        $this->assertAuthenticated();
+    }
+
+    private function openLink(string $url): TestResponse
+    {
+        $this->get($url)->assertOk()->assertSee('Sign in');
+
+        return $this->post($url);
     }
 }

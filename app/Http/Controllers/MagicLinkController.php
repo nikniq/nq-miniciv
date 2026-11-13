@@ -40,10 +40,31 @@ class MagicLinkController extends Controller
         return view('auth.sent', ['email' => $email, 'isNew' => ! $existing]);
     }
 
+    /**
+     * Opening the link only shows a confirm button. Mail scanners and link
+     * previews fetch links with GET, and must not use up the link.
+     */
+    public function show(Request $request): RedirectResponse|View
+    {
+        if (! $request->hasValidSignature()) {
+            return redirect()->route('login')->withErrors(['email' => 'That link has expired. Request a new one.']);
+        }
+        if (cache()->has($this->usedKey($request))) {
+            return redirect()->route('login')->withErrors(['email' => 'That link was already used. Request a new one.']);
+        }
+
+        return view('auth.confirm', ['email' => Str::lower((string) $request->query('email')), 'action' => $request->fullUrl()]);
+    }
+
     public function verify(Request $request): RedirectResponse
     {
         if (! $request->hasValidSignature()) {
-            return redirect()->route('login')->withErrors(['email' => 'That link has expired or was already used. Request a new one.']);
+            return redirect()->route('login')->withErrors(['email' => 'That link has expired. Request a new one.']);
+        }
+        // Single use, checked before anything changes.
+        $key = $this->usedKey($request);
+        if (! cache()->add($key, true, now()->addMinutes((int) config('auth.magic_link_minutes', 30) + 1))) {
+            return redirect()->route('login')->withErrors(['email' => 'That link was already used. Request a new one.']);
         }
         $email = Str::lower((string) $request->query('email'));
         // Only the guest who asked for the link, opening it in the same browser,
@@ -66,18 +87,15 @@ class MagicLinkController extends Controller
         }
         $user->forceFill(['email_verified_at' => $user->email_verified_at ?? now()])->save();
 
-        // Links are single use: signing in rotates the session, and a second
-        // visit is refused by the cache marker below.
-        $key = 'magic:'.sha1($request->fullUrl());
-        if (cache()->has($key)) {
-            return redirect()->route('login')->withErrors(['email' => 'That link was already used. Request a new one.']);
-        }
-        cache()->put($key, true, now()->addMinutes((int) config('auth.magic_link_minutes', 30) + 1));
-
         Auth::login($user, remember: true);
         $request->session()->regenerate();
 
         return redirect()->intended(route('games.index'))->with('status', 'Email confirmed. Your empire is saved to '.$user->email.'.');
+    }
+
+    private function usedKey(Request $request): string
+    {
+        return 'magic:'.sha1((string) $request->query('signature'));
     }
 
     private function nameFor(string $email): string
