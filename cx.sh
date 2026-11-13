@@ -11,9 +11,8 @@
 # ⚠ Runs on your LOCAL machine only — never copy this to the server.
 #   Its counterpart on the server is deploy.sh (pull + migrate + caches).
 #
-# Requires a vars.sh next to it defining REMOTE, PROJECT, APP_SSH, etc.
-# See vars.sh.example. vars.sh is gitignored because it holds host and
-# account details.
+# Needs no settings file: defaults are built in, and the server login is
+# an ssh alias 'miniciv' (see Settings below). vars.sh is optional.
 #
 # Version 1.0 (Mini Civilisation)
 # - adapted from the ApiSpi cx.sh 2.4; the billing, pricing and connector
@@ -36,19 +35,46 @@
 #================================================================
 clear
 
-if [ ! -f ./vars.sh ]; then
-  echo "vars.sh not found next to cx.sh — copy vars.sh.example to vars.sh and fill it in."
-  exit 1
-fi
-source ./vars.sh
+# Settings. Everything has a working default; no vars.sh is needed.
+# Override any value from the environment (CX_REMOTE=user@host ./cx.sh 20),
+# or keep personal overrides in an optional, gitignored vars.sh.
+#
+# The server login comes from an SSH host alias, so no account names live
+# in the repo. Add this once to ~/.ssh/config (SiteGround > Devs > SSH Keys
+# Manager shows the username; the port is 18765):
+#
+#   Host miniciv
+#     HostName miniciv.nikniq.com
+#     User u123-yourusername
+#     Port 18765
+#     IdentityFile ~/.ssh/id_ed25519
+[ -f ./vars.sh ] && source ./vars.sh
 
-# Defaults for settings added after vars.sh files were already in use, so
-# an existing vars.sh keeps working without being edited.
+PROJECT="${PROJECT:-miniciv.nikniq.com}"
+REMOTE="${REMOTE:-${CX_REMOTE:-miniciv}}"   # ssh alias or user@host
+REMOTE_HOST="${REMOTE_HOST:-${REMOTE#*@}}"
+SITES=("${SITES[@]:-$PROJECT}")
 REMOTE_APP="${REMOTE_APP:-www/$PROJECT}"     # app root on the server, relative to ~
 APP_URL="${APP_URL:-https://$PROJECT}"       # what the health options check
 LOG_OUTPUT="${LOG_OUTPUT:-./log/remote.out}"
 LOCAL_BACKUPS="${LOCAL_BACKUPS:-$HOME/backups/$PROJECT}"
-APP_RSYNC="${APP_RSYNC:-rsync -e 'ssh -p ${REMOTE_PORT:-22}'}"
+# The port lives in ~/.ssh/config with the alias; set REMOTE_PORT only for a user@host REMOTE.
+if [ -n "${REMOTE_PORT:-}" ]; then
+  APP_SSH="${APP_SSH:-ssh -p $REMOTE_PORT}"
+  APP_SCP="${APP_SCP:-scp -P $REMOTE_PORT}"
+  APP_RSYNC="${APP_RSYNC:-rsync -e 'ssh -p $REMOTE_PORT'}"
+else
+  APP_SSH="${APP_SSH:-ssh}"
+  APP_SCP="${APP_SCP:-scp}"
+  APP_RSYNC="${APP_RSYNC:-rsync -e ssh}"
+fi
+
+# An alias with no ~/.ssh/config entry would fail with a confusing DNS error.
+if [[ "$REMOTE" != *@* ]] && [ "$(ssh -G "$REMOTE" 2>/dev/null | awk '/^hostname /{print $2}')" = "$REMOTE" ]; then
+  echo "⚠ No ssh alias '$REMOTE' in ~/.ssh/config. Add the Host block shown at the top of cx.sh,"
+  echo "  or run with CX_REMOTE=user@host REMOTE_PORT=18765 ./cx.sh"
+  echo
+fi
 
 # This script drives the server from outside. Run on the server it would
 # try to ssh to itself.

@@ -104,8 +104,9 @@ Two scripts, mirroring the layout used by the other sites:
   live, caches, health and TLS expiry, logs, config readout, disk, versions,
   database inspection, queue and schedule, maintenance mode, log rotation,
   pruning, permissions, key rotation, backups (dump, pull, restore, prune)
-  and cron setup. Copy `vars.sh.example` to `vars.sh` first; it is
-  gitignored.
+  and cron setup. No settings file is needed: it connects through an ssh
+  alias `miniciv` in `~/.ssh/config` (the Host block is at the top of
+  `cx.sh`), or `CX_REMOTE=user@host REMOTE_PORT=18765 ./cx.sh`.
 
 Built assets are expected to be committed (`./cx.sh 27`) because shared
 hosts rarely have node.
