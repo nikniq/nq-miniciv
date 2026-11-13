@@ -188,4 +188,13 @@ class AuthTest extends TestCase
         $this->put(route('profile.nickname'), ['nickname' => '  Queen   Ada '])->assertSessionHasNoErrors();
         $this->assertSame('Queen Ada', $user->fresh()->name);
     }
+
+    public function test_profile_menu_shows_google_photo_or_initial(): void
+    {
+        $this->actingAs(User::factory()->create(['name' => 'Ada', 'avatar' => 'https://lh3.googleusercontent.com/a/photo']));
+        $this->get(route('games.index'))->assertOk()->assertSee('Profile menu')->assertSee('https://lh3.googleusercontent.com/a/photo')->assertSee('Log out');
+
+        $this->actingAs(User::factory()->create(['name' => 'zeno', 'avatar' => null]));
+        $this->get(route('games.index'))->assertOk()->assertSee('Profile menu')->assertSee('>Z</span>', false);
+    }
 }

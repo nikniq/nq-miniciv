@@ -446,3 +446,12 @@ document.querySelector('.share-result')?.addEventListener('click', async (e) => 
         }, 300);
     });
 })();
+
+// Profile menu: close on outside click or Escape.
+document.addEventListener('click', (e) => {
+    document.querySelectorAll('details.profile-menu[open]').forEach((d) => { if (!d.contains(e.target)) d.open = false; });
+});
+document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    document.querySelectorAll('details.profile-menu[open]').forEach((d) => { d.open = false; d.querySelector('summary').focus(); });
+});

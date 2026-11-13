@@ -7,7 +7,7 @@
 <div class="mx-auto max-w-3xl">
     <div class="flex items-center gap-4">
         @if ($user->avatar)
-            <img src="{{ $user->avatar }}" alt="" class="h-12 w-12 rounded-full">
+            <img src="{{ $user->avatar }}" alt="" referrerpolicy="no-referrer" class="h-12 w-12 rounded-full">
         @else
             <div class="flex h-12 w-12 items-center justify-center rounded-full bg-stone-800 text-xl">👤</div>
         @endif

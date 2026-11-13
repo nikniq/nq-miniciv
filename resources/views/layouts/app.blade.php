@@ -22,16 +22,33 @@
                 <a href="{{ route('hall') }}" class="hidden rounded px-2 py-1 text-stone-400 hover:bg-stone-800 hover:text-white sm:inline">Hall of Fame</a>
                 @auth
                     <a href="{{ route('games.index') }}" class="rounded px-2 py-1 text-stone-300 hover:bg-stone-800 hover:text-white">My games</a>
-                    <a href="{{ route('profile') }}" class="rounded px-2 py-1 text-stone-300 hover:bg-stone-800 hover:text-white" title="Stats and achievements">🏅</a>
-                    @if (auth()->user()->isGuest())
+                    @php $me = auth()->user(); @endphp
+                    @if ($me->isGuest())
                         <a href="{{ route('register') }}" class="rounded bg-amber-500 px-3 py-1 font-medium text-stone-950 hover:bg-amber-400" title="You are playing as a guest. Register to keep your games on any device.">Save progress</a>
-                    @else
-                        <span class="hidden text-stone-500 sm:inline">{{ auth()->user()->name }}</span>
                     @endif
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button class="rounded px-2 py-1 text-stone-300 hover:bg-stone-800 hover:text-white">Log out</button>
-                    </form>
+                    <details class="profile-menu relative">
+                        <summary class="flex cursor-pointer list-none items-center gap-2 rounded-full py-0.5 pl-0.5 pr-2 text-stone-300 hover:bg-stone-800 hover:text-white [&::-webkit-details-marker]:hidden" aria-label="Profile menu">
+                            @if ($me->avatar)
+                                <img src="{{ $me->avatar }}" alt="" referrerpolicy="no-referrer" class="h-7 w-7 rounded-full object-cover">
+                            @else
+                                <span class="flex h-7 w-7 items-center justify-center rounded-full bg-stone-700 text-xs font-semibold text-stone-100">{{ mb_strtoupper(mb_substr($me->name, 0, 1)) }}</span>
+                            @endif
+                            <span class="hidden max-w-32 truncate sm:inline">{{ $me->name }}</span>
+                            <span class="text-xs text-stone-500" aria-hidden="true">▾</span>
+                        </summary>
+                        <div class="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-lg border border-stone-700 bg-stone-900 shadow-xl shadow-black/50">
+                            <div class="border-b border-stone-800 px-4 py-3">
+                                <p class="truncate font-medium text-stone-100">{{ $me->name }}</p>
+                                <p class="truncate text-xs text-stone-500">{{ $me->isGuest() ? 'Guest player' : $me->email }}</p>
+                            </div>
+                            <a href="{{ route('profile') }}" class="block px-4 py-2 text-stone-300 hover:bg-stone-800 hover:text-white">🏅 Profile and achievements</a>
+                            <a href="{{ route('profile') }}#nickname" class="block px-4 py-2 text-stone-300 hover:bg-stone-800 hover:text-white">✏️ Change nickname</a>
+                            <form method="POST" action="{{ route('logout') }}" class="border-t border-stone-800">
+                                @csrf
+                                <button class="block w-full px-4 py-2 text-left text-stone-300 hover:bg-stone-800 hover:text-white">↩ Log out</button>
+                            </form>
+                        </div>
+                    </details>
                 @else
                     <a href="{{ route('login') }}" class="rounded px-2 py-1 text-stone-300 hover:bg-stone-800 hover:text-white">Log in</a>
                     <form method="POST" action="{{ route('play') }}">
