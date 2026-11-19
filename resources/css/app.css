@@ -53,3 +53,57 @@
 aside section.folded > :not(:first-child) { display: none; }
 aside section.foldable > :first-child h2::after, aside section.foldable > h2::after { content: ' ▾'; color: #78716c; font-size: 0.75em; }
 aside section.foldable.folded > :first-child h2::after, aside section.foldable.folded > h2::after { content: ' ▸'; }
+
+/* Game side panel: tabs instead of one long column. On wide screens it sits
+   beside the map at viewport height and scrolls inside itself. */
+.side-tabs {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 2px;
+    padding: 3px;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--color-stone-800);
+    border-radius: 0.5rem;
+    background: color-mix(in srgb, var(--color-stone-900) 92%, transparent);
+    backdrop-filter: blur(6px);
+}
+.side-tabs button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    padding: 0.35rem 0.1rem;
+    border-radius: 0.375rem;
+    font-size: 0.68rem;
+    line-height: 1.1;
+    color: var(--color-stone-400);
+    cursor: pointer;
+}
+.side-tabs button:hover { background: var(--color-stone-800); color: var(--color-stone-100); }
+.side-tabs button[aria-selected='true'] { background: var(--color-amber-500); color: var(--color-stone-950); font-weight: 600; }
+.side-tabs button:focus-visible { outline: 2px solid var(--color-amber-400); outline-offset: 1px; }
+@media (min-width: 1024px) {
+    .side-panel:not(.side-wide) {
+        position: sticky;
+        top: 0.75rem;
+        align-self: start;
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100vh - 1.5rem);
+    }
+    .side-panel:not(.side-wide) .side-panes {
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding-right: 2px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--color-stone-700) transparent;
+    }
+}
+/* Big-map mode: tabs stay, and the open pane lays its cards out in columns. */
+.side-panel.side-wide .side-pane:not([hidden]) {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+    align-items: start;
+    gap: 1rem;
+}
+.side-panel.side-wide .side-pane > * { margin-top: 0 !important; }

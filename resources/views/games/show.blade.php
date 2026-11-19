@@ -261,382 +261,401 @@
     </div>
 
     {{-- Side panel --}}
-    <aside class="space-y-4">
-        @if ($checklist)
-            @php $doneCount = collect($checklist)->where('done', true)->count(); @endphp
-            <section class="advisor-tip rounded-lg border border-emerald-800/60 bg-emerald-950/20 p-4 text-sm" data-tip="first-steps-{{ $game->id }}">
-                <div class="flex items-center justify-between">
-                    <h2 class="font-semibold text-emerald-200">🧭 First steps <span class="text-xs font-normal text-stone-400">{{ $doneCount }}/{{ count($checklist) }}</span></h2>
-                    <button type="button" class="dismiss-tip text-xs text-stone-500 hover:text-stone-200" title="Hide for this game">✕</button>
+    <aside id="side" class="side-panel min-w-0">
+        <nav class="side-tabs" role="tablist" aria-label="Game panels">
+            <button type="button" role="tab" id="tab-here" data-tab="here" aria-controls="pane-here" aria-selected="true" title="Here"><span aria-hidden="true">📍</span><span class="side-tab-label">Here</span></button>
+            <button type="button" role="tab" id="tab-empire" data-tab="empire" aria-controls="pane-empire" aria-selected="false" title="Empire"><span aria-hidden="true">🏛️</span><span class="side-tab-label">Empire</span></button>
+            <button type="button" role="tab" id="tab-research" data-tab="research" aria-controls="pane-research" aria-selected="false" title="Research"><span aria-hidden="true">🔬</span><span class="side-tab-label">Research</span></button>
+            <button type="button" role="tab" id="tab-rivals" data-tab="rivals" aria-controls="pane-rivals" aria-selected="false" title="Rivals"><span aria-hidden="true">🤝</span><span class="side-tab-label">Rivals</span></button>
+            <button type="button" role="tab" id="tab-progress" data-tab="progress" aria-controls="pane-progress" aria-selected="false" title="Progress"><span aria-hidden="true">🏆</span><span class="side-tab-label">Progress</span></button>
+            <button type="button" role="tab" id="tab-log" data-tab="log" aria-controls="pane-log" aria-selected="false" title="Log"><span aria-hidden="true">📜</span><span class="side-tab-label">Log</span></button>
+        </nav>
+        <div class="side-panes">
+        <div class="side-pane space-y-4" id="pane-here" data-pane="here" role="tabpanel" aria-labelledby="tab-here">
+            @if ($checklist)
+                @php $doneCount = collect($checklist)->where('done', true)->count(); @endphp
+                <section class="advisor-tip rounded-lg border border-emerald-800/60 bg-emerald-950/20 p-4 text-sm" data-tip="first-steps-{{ $game->id }}">
+                    <div class="flex items-center justify-between">
+                        <h2 class="font-semibold text-emerald-200">🧭 First steps <span class="text-xs font-normal text-stone-400">{{ $doneCount }}/{{ count($checklist) }}</span></h2>
+                        <button type="button" class="dismiss-tip text-xs text-stone-500 hover:text-stone-200" title="Hide for this game">✕</button>
+                    </div>
+                    <div class="mt-2 h-1 w-full rounded bg-stone-800"><div class="h-1 rounded bg-emerald-500" style="width: {{ (int) round(100 * $doneCount / count($checklist)) }}%"></div></div>
+                    <ul class="mt-2 space-y-1 text-xs">
+                        @foreach ($checklist as $item)
+                            <li class="flex gap-2 {{ $item['done'] ? 'text-stone-500 line-through' : 'text-stone-200' }}" @unless ($item['done']) title="{{ $item['hint'] }}" @endunless>
+                                <span class="shrink-0">{{ $item['done'] ? '✅' : '⬜' }}</span>
+                                <span>{{ $item['text'] }}@unless ($item['done'])<span class="block text-[11px] text-stone-500 no-underline">{{ $item['hint'] }}</span>@endunless</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                </section>
+            @endif
+            @if ($briefing)
+                <section class="rounded-lg border border-sky-900/60 bg-sky-950/20 p-3 text-xs">
+                    <h2 class="text-sm font-semibold text-sky-200">⏭ When you end the turn</h2>
+                    <ul class="mt-1.5 space-y-0.5">
+                        @foreach ($briefing as [$icon, $text, $tileId])
+                            <li class="flex gap-2"><span class="w-4 shrink-0 text-center">{{ $icon }}</span>@if ($tileId)<a href="?tile={{ $tileId }}" data-tile="{{ $tileId }}" class="map-tile-link text-stone-200 hover:underline">{{ $text }}</a>@else<span class="text-stone-200">{{ $text }}</span>@endif</li>
+                        @endforeach
+                    </ul>
+                </section>
+            @endif
+            {{-- Selected tile / city (also served alone by games.panel) --}}
+            @include('games._panel')
+        </div>
+        <div class="side-pane space-y-4" id="pane-empire" data-pane="empire" role="tabpanel" aria-labelledby="tab-empire" hidden>
+            {{-- Army --}}
+            <section id="army" class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
+                <div class="flex items-baseline justify-between"><h2 class="font-semibold">Army · strength {{ $army['strength'] }}@if ($army['fighting'] > $army['strength']) <span class="text-amber-300" title="Veterancy lifts fighting strength">→ {{ $army['fighting'] }}</span>@endif</h2><span class="text-xs text-stone-500">upkeep {{ $army['upkeep'] }} gold/turn</span></div>
+                <p class="mt-1 text-xs text-stone-400">Your units form one field army. It garrisons every city equally (<b class="text-stone-200">{{ $army['garrison'] }}</b> per city, the shield on each city marker) and can strike any enemy city that borders your land.</p>
+                @if ($army['units']->isNotEmpty() || $army['untracked'])
+                    <ul class="mt-2 grid grid-cols-2 gap-1 text-xs">
+                        @foreach ($army['units'] as $u)
+                            <li class="flex items-center justify-between rounded border border-stone-800 bg-stone-900 px-2 py-1"><span>⚔ {{ $u['name'] }} × {{ $u['n'] }}</span><span class="text-stone-500">{{ $u['n'] * $u['strength'] }}</span></li>
+                        @endforeach
+                        @if ($army['untracked'])<li class="flex items-center justify-between rounded border border-stone-800 bg-stone-900 px-2 py-1"><span>⚔ Levies</span><span class="text-stone-500">{{ $army['untracked'] }}</span></li>@endif
+                    </ul>
+                @else
+                    <p class="mt-2 text-xs text-amber-300/90">No army yet. Choose a unit in a city's build menu; it joins the army when finished.</p>
+                @endif
+                <div class="mt-2 flex items-center gap-2 text-xs" title="Battles, raids and cleared camps give experience. Each rank adds {{ (int) (Rules::VETERAN_BONUS * 100) }}% fighting strength.">
+                    <span class="text-amber-200">🎖️ {{ $army['rank'] }}</span>
+                    <span class="flex gap-0.5">@for ($i = 1; $i <= 3; $i++)<span class="inline-block h-2 w-3 rounded-sm {{ $army['rankNum'] >= $i ? 'bg-amber-400' : 'bg-stone-700' }}"></span>@endfor</span>
+                    <span class="text-stone-500">{{ $army['nextAt'] !== null ? $army['xp'].'/'.$army['nextAt'].' xp to next rank' : 'highest rank' }}</span>
                 </div>
-                <div class="mt-2 h-1 w-full rounded bg-stone-800"><div class="h-1 rounded bg-emerald-500" style="width: {{ (int) round(100 * $doneCount / count($checklist)) }}%"></div></div>
-                <ul class="mt-2 space-y-1 text-xs">
-                    @foreach ($checklist as $item)
-                        <li class="flex gap-2 {{ $item['done'] ? 'text-stone-500 line-through' : 'text-stone-200' }}" @unless ($item['done']) title="{{ $item['hint'] }}" @endunless>
-                            <span class="shrink-0">{{ $item['done'] ? '✅' : '⬜' }}</span>
-                            <span>{{ $item['text'] }}@unless ($item['done'])<span class="block text-[11px] text-stone-500 no-underline">{{ $item['hint'] }}</span>@endunless</span>
-                        </li>
-                    @endforeach
-                </ul>
-            </section>
-        @endif
-        @if ($briefing)
-            <section class="rounded-lg border border-sky-900/60 bg-sky-950/20 p-3 text-xs">
-                <h2 class="text-sm font-semibold text-sky-200">⏭ When you end the turn</h2>
-                <ul class="mt-1.5 space-y-0.5">
-                    @foreach ($briefing as [$icon, $text, $tileId])
-                        <li class="flex gap-2"><span class="w-4 shrink-0 text-center">{{ $icon }}</span>@if ($tileId)<a href="?tile={{ $tileId }}" data-tile="{{ $tileId }}" class="map-tile-link text-stone-200 hover:underline">{{ $text }}</a>@else<span class="text-stone-200">{{ $text }}</span>@endif</li>
-                    @endforeach
-                </ul>
-            </section>
-        @endif
-        {{-- Selected tile / city (also served alone by games.panel) --}}
-        @include('games._panel')
-
-        {{-- Army --}}
-        <section id="army" class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
-            <div class="flex items-baseline justify-between"><h2 class="font-semibold">Army · strength {{ $army['strength'] }}@if ($army['fighting'] > $army['strength']) <span class="text-amber-300" title="Veterancy lifts fighting strength">→ {{ $army['fighting'] }}</span>@endif</h2><span class="text-xs text-stone-500">upkeep {{ $army['upkeep'] }} gold/turn</span></div>
-            <p class="mt-1 text-xs text-stone-400">Your units form one field army. It garrisons every city equally (<b class="text-stone-200">{{ $army['garrison'] }}</b> per city, the shield on each city marker) and can strike any enemy city that borders your land.</p>
-            @if ($army['units']->isNotEmpty() || $army['untracked'])
-                <ul class="mt-2 grid grid-cols-2 gap-1 text-xs">
-                    @foreach ($army['units'] as $u)
-                        <li class="flex items-center justify-between rounded border border-stone-800 bg-stone-900 px-2 py-1"><span>⚔ {{ $u['name'] }} × {{ $u['n'] }}</span><span class="text-stone-500">{{ $u['n'] * $u['strength'] }}</span></li>
-                    @endforeach
-                    @if ($army['untracked'])<li class="flex items-center justify-between rounded border border-stone-800 bg-stone-900 px-2 py-1"><span>⚔ Levies</span><span class="text-stone-500">{{ $army['untracked'] }}</span></li>@endif
-                </ul>
-            @else
-                <p class="mt-2 text-xs text-amber-300/90">No army yet. Choose a unit in a city's build menu; it joins the army when finished.</p>
-            @endif
-            <div class="mt-2 flex items-center gap-2 text-xs" title="Battles, raids and cleared camps give experience. Each rank adds {{ (int) (Rules::VETERAN_BONUS * 100) }}% fighting strength.">
-                <span class="text-amber-200">🎖️ {{ $army['rank'] }}</span>
-                <span class="flex gap-0.5">@for ($i = 1; $i <= 3; $i++)<span class="inline-block h-2 w-3 rounded-sm {{ $army['rankNum'] >= $i ? 'bg-amber-400' : 'bg-stone-700' }}"></span>@endfor</span>
-                <span class="text-stone-500">{{ $army['nextAt'] !== null ? $army['xp'].'/'.$army['nextAt'].' xp to next rank' : 'highest rank' }}</span>
-            </div>
-            @foreach ($army['upgrades'] as $from => $up)
-                @if ($game->isActive())
-                    <form method="POST" action="{{ route('games.upgrade', $game) }}" class="mt-2">
-                        @csrf
-                        <input type="hidden" name="from" value="{{ $from }}">
-                        <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
-                        <button class="w-full rounded border px-2 py-1 text-xs {{ $player->gold >= $up['gold'] ? 'border-amber-800 text-amber-200 hover:bg-amber-950' : 'cursor-not-allowed border-stone-800 text-stone-500' }}" @disabled($player->gold < $up['gold'])>
-                            ⬆ Retrain {{ $up['n'] }} {{ Rules::UNITS[$from]['name'] }} as {{ Rules::UNITS[$up['to']]['name'] }} (+{{ $up['n'] * (Rules::UNITS[$up['to']]['strength'] - Rules::UNITS[$from]['strength']) }} strength) for {{ $up['gold'] }} gold
-                        </button>
-                    </form>
-                @endif
-            @endforeach
-            @if ($army['inProduction']->isNotEmpty())
-                <div class="mt-2 text-xs text-stone-500">Training: {{ $army['inProduction']->map(fn ($p) => $p['unit']['name'].' in '.$p['city']->name)->join(', ') }}</div>
-            @endif
-        </section>
-
-        {{-- Government --}}
-        <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
-            <div class="flex items-baseline justify-between"><h2 class="font-semibold">{{ $government['icon'] }} {{ $government['name'] }}</h2>@if ($anarchy)<span class="text-xs text-red-300">anarchy, {{ $anarchy }}t left</span>@endif</div>
-            <p class="mt-1 text-xs text-stone-400">{{ $government['blurb'] }}</p>
-            @if ($governments && $game->isActive() && ! $anarchy)
-                <form method="POST" action="{{ route('games.government', $game) }}" class="mt-2 flex gap-2" onsubmit="return confirm('Change government? Production and science are halved for {{ Rules::ANARCHY_TURNS }} turns of anarchy.')">
-                    @csrf
-                    <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
-                    <select name="government" class="min-w-0 flex-1 rounded border border-stone-700 bg-stone-900 px-2 py-1.5 text-xs focus:border-amber-500 focus:outline-none">
-                        @foreach ($governments as $key => $g)
-                            <option value="{{ $key }}">{{ $g['icon'] }} {{ $g['name'] }} — {{ $g['blurb'] }}</option>
-                        @endforeach
-                    </select>
-                    <button class="rounded border border-stone-600 px-3 py-1.5 text-xs hover:bg-stone-800">Adopt</button>
-                </form>
-            @elseif (! $governments)
-                <p class="mt-1 text-xs text-stone-500">New governments unlock with Code of Laws, Philosophy, Theology and Economics.</p>
-            @endif
-        </section>
-
-        {{-- Great people --}}
-        <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
-            <div class="flex items-baseline justify-between"><h2 class="font-semibold">🔭 Great people</h2><span class="text-xs text-stone-500">{{ $greatProgress['have'] }}/{{ $greatProgress['need'] }} points</span></div>
-            <div class="mt-2 h-1.5 w-full overflow-hidden rounded bg-stone-800"><div class="h-full bg-violet-500" style="width: {{ min(100, (int) ($greatProgress['have'] / max(1, $greatProgress['need']) * 100)) }}%"></div></div>
-            @if ($greatProgress['kinds'])
-                <p class="mt-1 text-[11px] text-stone-500">Leaning: @foreach (collect($greatProgress['kinds'])->sortDesc() as $k => $n){{ Rules::GREAT_PEOPLE[$k]['icon'] }} {{ $n }}@if (! $loop->last) · @endif @endforeach</p>
-            @else
-                <p class="mt-1 text-[11px] text-stone-500">Libraries, workshops, markets and temples earn points each turn; wonders earn more.</p>
-            @endif
-            @foreach ($greatPeople as $kind => $n)
-                @php $gp = Rules::GREAT_PEOPLE[$kind]; @endphp
-                <form method="POST" action="{{ route('games.great-person', $game) }}" class="mt-2 rounded border border-violet-700/60 bg-violet-950/30 p-2">
-                    @csrf
-                    <input type="hidden" name="kind" value="{{ $kind }}">
-                    <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
-                    <div class="flex items-center gap-2"><span class="text-xl">{{ $gp['icon'] }}</span><div class="min-w-0 flex-1"><div class="font-medium">{{ $gp['name'] }}@if ($n > 1) <span class="text-stone-400">×{{ $n }}</span>@endif</div><div class="text-[11px] text-stone-400">{{ $gp['blurb'] }}</div></div></div>
+                @foreach ($army['upgrades'] as $from => $up)
                     @if ($game->isActive())
-                        <div class="mt-2 flex gap-2">
-                            @if (in_array($kind, ['engineer', 'artist'], true))
-                                <select name="city" class="min-w-0 flex-1 rounded border border-stone-700 bg-stone-900 px-2 py-1 text-xs">
-                                    @foreach ($player->cities as $c)
-                                        <option value="{{ $c->id }}" @selected($selTile && $c->tile_id === $selTile->id)>{{ $c->name }}@if ($kind === 'engineer') — {{ $c->current_build ? \App\Game\Economy::buildName($c->current_build) : 'idle' }}@endif</option>
-                                    @endforeach
-                                </select>
-                            @endif
-                            <button class="rounded bg-violet-700 px-3 py-1 text-xs font-medium hover:bg-violet-600">{{ $gp['verb'] }}</button>
-                        </div>
+                        <form method="POST" action="{{ route('games.upgrade', $game) }}" class="mt-2">
+                            @csrf
+                            <input type="hidden" name="from" value="{{ $from }}">
+                            <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                            <button class="w-full rounded border px-2 py-1 text-xs {{ $player->gold >= $up['gold'] ? 'border-amber-800 text-amber-200 hover:bg-amber-950' : 'cursor-not-allowed border-stone-800 text-stone-500' }}" @disabled($player->gold < $up['gold'])>
+                                ⬆ Retrain {{ $up['n'] }} {{ Rules::UNITS[$from]['name'] }} as {{ Rules::UNITS[$up['to']]['name'] }} (+{{ $up['n'] * (Rules::UNITS[$up['to']]['strength'] - Rules::UNITS[$from]['strength']) }} strength) for {{ $up['gold'] }} gold
+                            </button>
+                        </form>
                     @endif
-                </form>
-            @endforeach
-        </section>
-
-        {{-- Research --}}
-        <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
-            <h2 class="font-semibold">Research</h2>
-            @if ($research)
-                <div class="mt-2 flex justify-between text-xs text-stone-400"><span>{{ $research['name'] }}</span><span>{{ $research['progress'] }}/{{ $research['cost'] }}@if ($research['turns'] !== null) · {{ $research['turns'] }}t @endif</span></div>
-                <div class="mt-1 h-1.5 rounded bg-stone-800"><div class="h-1.5 rounded bg-sky-500" style="width: {{ 100 * $research['progress'] / $research['cost'] }}%"></div></div>
-            @elseif ($availableTechs)
-                <p class="mt-1 text-xs text-amber-300">Choose what to research. Science is banked until you do.</p>
-            @else
-                <p class="mt-1 text-xs text-stone-400">Everything is known.</p>
-            @endif
-            @if ($availableTechs && $game->isActive())
-                <form method="POST" action="{{ route('games.research', $game) }}" class="mt-2 flex gap-2">
-                    @csrf
-                    <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
-                    <select name="tech" class="min-w-0 flex-1 rounded border border-stone-700 bg-stone-900 px-2 py-1.5 text-xs focus:border-amber-500 focus:outline-none">
-                        @foreach ($availableTechs as $key => $t)
-                            <option value="{{ $key }}" @selected($key === $player->current_tech)>{{ $t['name'] }} ({{ $t['cost'] }}) — {{ $t['unlocks'] }}</option>
-                        @endforeach
-                    </select>
-                    <button class="rounded border border-stone-600 px-3 py-1.5 text-xs hover:bg-stone-800">{{ $research ? 'Switch' : 'Research' }}</button>
-                </form>
-            @endif
-            <details class="mt-3 text-xs" @if ($researchUnset) open @endif>
-                <summary class="cursor-pointer text-stone-400 hover:text-white">Tech tree ({{ count($player->technologies ?? []) }}/{{ count(Rules::TECHS) }} known)</summary>
-                <p class="mt-1 text-[10px] text-stone-500"><span class="text-emerald-300">✓ known</span> · <span class="text-sky-300">○ available, click to research</span> · <span class="text-amber-300">gold frame = current</span> · 🔒 locked. Arrows show what each discovery needs. Scroll sideways.</p>
-                <div class="mt-2 overflow-x-auto rounded border border-stone-800 bg-stone-950/60 p-2">{!! $techTreeSvg !!}</div>
-                @if ($game->isActive())
-                    <form method="POST" action="{{ route('games.research', $game) }}" id="research-pick" class="hidden">
-                        @csrf
-                        <input type="hidden" name="tech" value="">
-                        <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
-                    </form>
-                @endif
-            </details>
-        </section>
-
-        {{-- Empires --}}
-        <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
-            <h2 class="font-semibold">Empires</h2>
-            <details class="mt-2 text-xs" open>
-                <summary class="cursor-pointer text-stone-400 hover:text-white">Relations web</summary>
-                <div class="mx-auto mt-1 max-w-xs">{!! $relationsSvg !!}</div>
-                <p class="text-[10px] text-stone-500"><span class="text-red-400">red dashes = war</span> · <span class="text-blue-300">thick blue = alliance</span> · <span class="text-emerald-300">green = friendly</span>, thicker the warmer · <span class="text-orange-300">orange dots = wary</span> · grey = neutral. Numbers are attitudes toward you. Hover a line for details.</p>
-            </details>
-            <ul class="mt-2 divide-y divide-stone-800/80">
-                @foreach ($rivals as $r)
-                    @php $e = $r['empire']; $me = $e->id === $player->id; @endphp
-                    <li class="py-2 {{ $e->eliminated ? 'opacity-50' : '' }}">
-                        <div class="flex items-center justify-between gap-2">
-                            <div class="flex min-w-0 items-center gap-2">
-                                <span class="inline-block h-3 w-3 shrink-0 rounded-sm" style="background: {{ $e->color }}"></span>
-                                <span class="truncate font-medium {{ $me ? 'text-amber-200' : '' }}">{{ Rules::crest($e->name) }} {{ $e->name }}</span>
-                                @if ($e->eliminated)<span class="text-xs text-stone-500">eliminated</span>
-                                @elseif ($r['relation'] && $r['relation']['state'] === 'war')<span class="rounded bg-red-900/60 px-1.5 text-[10px] text-red-200">at war</span>
-                                @elseif ($r['allied'])<span class="rounded bg-blue-900/60 px-1.5 text-[10px] text-blue-200" title="Allies join each other's defensive wars and share maps">🤝 ally</span>
-                                @elseif ($r['personality'])<span class="rounded bg-stone-800 px-1.5 text-[10px] {{ $r['attitude'] < -10 ? 'text-red-300' : ($r['attitude'] > 15 ? 'text-emerald-300' : 'text-stone-400') }}" title="{{ $r['personality']['trait'] }}: {{ $r['personality']['blurb'] }}@if ($e->trait && isset(Rules::TRAITS[$e->trait])) {{ Rules::TRAITS[$e->trait]['name'] }}: {{ Rules::TRAITS[$e->trait]['blurb'] }}@endif @if ($e->belief && isset(Rules::BELIEFS[$e->belief])) Worships the {{ Rules::BELIEFS[$e->belief]['name'] }}.@endif Attitude {{ $r['attitude'] }}.">@if ($e->trait && isset(Rules::TRAITS[$e->trait])){{ Rules::TRAITS[$e->trait]['icon'] }} @endif @if ($e->belief && isset(Rules::BELIEFS[$e->belief])){{ Rules::BELIEFS[$e->belief]['icon'] }} @endif{{ $r['personality']['trait'] }} · {{ $r['attitudeLabel'] }}</span>@endif
-                            </div>
-                            <span class="shrink-0 font-semibold">{{ $e->eliminated ? '✝' : $r['score'] }}</span>
-                        </div>
-                        @if ($r['quest'] && $game->isActive())
-                            <div class="mt-1 rounded border border-amber-800/60 bg-amber-950/30 px-2 py-1 text-[11px] text-amber-100" title="Keep it for +{{ \App\Game\Quests::REWARD_ATTITUDE }} attitude">📜 Asks you to {{ $r['quest']['text'] }} · <span class="text-amber-300/80">{{ $r['quest']['left'] }} {{ Str::plural('turn', $r['quest']['left']) }} left</span></div>
-                        @endif
-                        @if ($r['trades'])
-                            <ul class="trades mt-1 hidden space-y-1 rounded border border-sky-900/60 bg-sky-950/20 p-2 text-xs">
-                                @foreach ($r['trades'] as $t)
-                                    <li class="flex flex-wrap items-center justify-between gap-1">
-                                        <span><b>{{ Rules::TECHS[$t['get']]['name'] }}</b> <span class="text-stone-500">({{ Rules::TECHS[$t['get']]['cost'] }} 🔬)</span></span>
-                                        <span class="flex gap-1">
-                                            @if ($t['give'])
-                                                <form method="POST" action="{{ route('games.trade', [$game, $e]) }}" class="inline">
-                                                    @csrf
-                                                    <input type="hidden" name="get" value="{{ $t['get'] }}"><input type="hidden" name="give" value="{{ $t['give'] }}">
-                                                    <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
-                                                    <button class="rounded border border-sky-800 px-1.5 py-0.5 text-[10px] text-sky-200 hover:bg-sky-900">for {{ Rules::TECHS[$t['give']]['name'] }}</button>
-                                                </form>
-                                            @endif
-                                            <form method="POST" action="{{ route('games.trade', [$game, $e]) }}" class="inline">
-                                                @csrf
-                                                <input type="hidden" name="get" value="{{ $t['get'] }}">
-                                                <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
-                                                <button class="rounded border border-amber-800 px-1.5 py-0.5 text-[10px] text-amber-200 hover:bg-amber-950 disabled:opacity-40" @disabled($player->gold < $t['gold'])>for {{ $t['gold'] }} 💰</button>
-                                            </form>
-                                        </span>
-                                    </li>
-                                @endforeach
-                                <li class="text-[10px] text-stone-500">One deal per {{ Rules::TECH_TRADE_COOLDOWN }} turns with each rival. Friendlier rivals ask less.</li>
-                            </ul>
-                        @endif
-                        <div class="mt-1 flex items-center justify-between gap-2 text-xs text-stone-400">
-                            <span>{{ $r['cities'] }} {{ Str::plural('city', $r['cities']) }} · {{ $r['share'] }}% land · ⚔ {{ $r['army'] }} · 🎭 {{ $r['culture'] }} · 🔬 {{ $r['techs'] }}</span>
-                            @if ($r['relation'] && ! $e->eliminated && $game->isActive())
-                                <span class="flex shrink-0 items-center gap-1">
-                                    @if ($r['relation']['state'] === 'war')
-                                        <form method="POST" action="{{ route('games.peace', [$game, $e]) }}" class="inline">
-                                            @csrf
-                                            <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
-                                            <button class="rounded border px-1.5 py-0.5 text-[10px] {{ $r['peaceLikely'] ? 'border-emerald-700 text-emerald-200 hover:bg-emerald-950' : 'border-stone-700 text-stone-400 hover:bg-stone-800' }}" title="{{ $r['peaceLikely'] ? 'They would accept' : 'They may refuse' }}">☮ peace</button>
-                                        </form>
-                                    @else
-                                        <form method="POST" action="{{ route('games.gift', [$game, $e]) }}" class="inline">
-                                            @csrf
-                                            <input type="hidden" name="gold" value="50">
-                                            <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
-                                            <button class="rounded border border-stone-700 px-1.5 py-0.5 text-[10px] text-stone-400 hover:border-emerald-700 hover:text-emerald-200 disabled:opacity-40" title="Gift 50 gold (+5 attitude)" @disabled($player->gold < 50)>🎁 50</button>
-                                        </form>
-                                        @if ($r['canAlly'])
-                                            <form method="POST" action="{{ route('games.alliance', [$game, $e]) }}" class="inline">
-                                                @csrf
-                                                <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
-                                                <button class="rounded border border-blue-700 px-1.5 py-0.5 text-[10px] text-blue-200 hover:bg-blue-950" title="They are devoted to you: form an alliance">🤝 ally</button>
-                                            </form>
-                                        @elseif ($r['allied'])
-                                            <form method="POST" action="{{ route('games.alliance', [$game, $e]) }}" class="inline" onsubmit="return confirm(@js('End the alliance with '.$e->name.'? They will resent it.'))">
-                                                @csrf
-                                                <input type="hidden" name="dissolve" value="1">
-                                                <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
-                                                <button class="rounded border border-stone-700 px-1.5 py-0.5 text-[10px] text-stone-400 hover:bg-stone-800" title="End the alliance">✂ ally</button>
-                                            </form>
-                                        @endif
-                                        @if ($r['trades'])
-                                            <button type="button" class="rounded border border-sky-800 px-1.5 py-0.5 text-[10px] text-sky-200 hover:bg-sky-950" onclick="this.closest('li').querySelector('.trades').classList.toggle('hidden')" title="They will trade technologies">🔁 techs</button>
-                                        @endif
-                                        @if ($r['canTribute'])
-                                            <form method="POST" action="{{ route('games.tribute', [$game, $e]) }}" class="inline">
-                                                @csrf
-                                                <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
-                                                <button class="rounded border border-amber-800 px-1.5 py-0.5 text-[10px] text-amber-200 hover:bg-amber-950" title="Your army dwarfs theirs: demand gold">💰 tribute</button>
-                                            </form>
-                                        @endif
-                                        @if ($r['warProblem'] === null)
-                                            <form method="POST" action="{{ route('games.war', [$game, $e]) }}" class="inline" onsubmit="return confirm(@js('Declare war on '.$e->name.'?'.($r['theirAllies'] ? ' Their allies will join them: '.implode(', ', $r['theirAllies']).'.' : '').($r['allied'] ? ' They are your ally: this is a betrayal the world will remember.' : '')))">
-                                                @csrf
-                                                <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
-                                                <button class="rounded border border-stone-700 px-1.5 py-0.5 text-[10px] text-stone-400 hover:border-red-800 hover:text-red-200">⚔ war</button>
-                                            </form>
-                                        @else
-                                            <span class="text-[10px] text-stone-500" title="{{ $r['warProblem'] }}">treaty</span>
-                                        @endif
-                                    @endif
-                                </span>
-                            @endif
-                        </div>
-                    </li>
                 @endforeach
-            </ul>
-        </section>
-
-        @if ($charts && $game->isActive())
-            <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
-                <div class="flex items-baseline justify-between"><h2 class="font-semibold">Over time</h2><span class="text-xs text-stone-500">{{ $difficulty['name'] }}</span></div>
-                <div class="mt-2">@include('games._charts', ['charts' => $charts, 'chartId' => 'side'])</div>
+                @if ($army['inProduction']->isNotEmpty())
+                    <div class="mt-2 text-xs text-stone-500">Training: {{ $army['inProduction']->map(fn ($p) => $p['unit']['name'].' in '.$p['city']->name)->join(', ') }}</div>
+                @endif
             </section>
-        @endif
 
-        @if ($game->isActive())
+            {{-- Government --}}
             <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
-                <h2 class="font-semibold">Demographics</h2>
+                <div class="flex items-baseline justify-between"><h2 class="font-semibold">{{ $government['icon'] }} {{ $government['name'] }}</h2>@if ($anarchy)<span class="text-xs text-red-300">anarchy, {{ $anarchy }}t left</span>@endif</div>
+                <p class="mt-1 text-xs text-stone-400">{{ $government['blurb'] }}</p>
+                @if ($governments && $game->isActive() && ! $anarchy)
+                    <form method="POST" action="{{ route('games.government', $game) }}" class="mt-2 flex gap-2" onsubmit="return confirm('Change government? Production and science are halved for {{ Rules::ANARCHY_TURNS }} turns of anarchy.')">
+                        @csrf
+                        <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                        <select name="government" class="min-w-0 flex-1 rounded border border-stone-700 bg-stone-900 px-2 py-1.5 text-xs focus:border-amber-500 focus:outline-none">
+                            @foreach ($governments as $key => $g)
+                                <option value="{{ $key }}">{{ $g['icon'] }} {{ $g['name'] }} — {{ $g['blurb'] }}</option>
+                            @endforeach
+                        </select>
+                        <button class="rounded border border-stone-600 px-3 py-1.5 text-xs hover:bg-stone-800">Adopt</button>
+                    </form>
+                @elseif (! $governments)
+                    <p class="mt-1 text-xs text-stone-500">New governments unlock with Code of Laws, Philosophy, Theology and Economics.</p>
+                @endif
+            </section>
+
+            {{-- Great people --}}
+            <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
+                <div class="flex items-baseline justify-between"><h2 class="font-semibold">🔭 Great people</h2><span class="text-xs text-stone-500">{{ $greatProgress['have'] }}/{{ $greatProgress['need'] }} points</span></div>
+                <div class="mt-2 h-1.5 w-full overflow-hidden rounded bg-stone-800"><div class="h-full bg-violet-500" style="width: {{ min(100, (int) ($greatProgress['have'] / max(1, $greatProgress['need']) * 100)) }}%"></div></div>
+                @if ($greatProgress['kinds'])
+                    <p class="mt-1 text-[11px] text-stone-500">Leaning: @foreach (collect($greatProgress['kinds'])->sortDesc() as $k => $n){{ Rules::GREAT_PEOPLE[$k]['icon'] }} {{ $n }}@if (! $loop->last) · @endif @endforeach</p>
+                @else
+                    <p class="mt-1 text-[11px] text-stone-500">Libraries, workshops, markets and temples earn points each turn; wonders earn more.</p>
+                @endif
+                @foreach ($greatPeople as $kind => $n)
+                    @php $gp = Rules::GREAT_PEOPLE[$kind]; @endphp
+                    <form method="POST" action="{{ route('games.great-person', $game) }}" class="mt-2 rounded border border-violet-700/60 bg-violet-950/30 p-2">
+                        @csrf
+                        <input type="hidden" name="kind" value="{{ $kind }}">
+                        <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                        <div class="flex items-center gap-2"><span class="text-xl">{{ $gp['icon'] }}</span><div class="min-w-0 flex-1"><div class="font-medium">{{ $gp['name'] }}@if ($n > 1) <span class="text-stone-400">×{{ $n }}</span>@endif</div><div class="text-[11px] text-stone-400">{{ $gp['blurb'] }}</div></div></div>
+                        @if ($game->isActive())
+                            <div class="mt-2 flex gap-2">
+                                @if (in_array($kind, ['engineer', 'artist'], true))
+                                    <select name="city" class="min-w-0 flex-1 rounded border border-stone-700 bg-stone-900 px-2 py-1 text-xs">
+                                        @foreach ($player->cities as $c)
+                                            <option value="{{ $c->id }}" @selected($selTile && $c->tile_id === $selTile->id)>{{ $c->name }}@if ($kind === 'engineer') — {{ $c->current_build ? \App\Game\Economy::buildName($c->current_build) : 'idle' }}@endif</option>
+                                        @endforeach
+                                    </select>
+                                @endif
+                                <button class="rounded bg-violet-700 px-3 py-1 text-xs font-medium hover:bg-violet-600">{{ $gp['verb'] }}</button>
+                            </div>
+                        @endif
+                    </form>
+                @endforeach
+            </section>
+
+            {{-- Cities list --}}
+            <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
+                <h2 class="font-semibold">Your cities</h2>
                 <table class="mt-2 w-full text-xs">
-                    <thead class="text-stone-500"><tr><th class="text-left font-normal"></th><th class="text-right font-normal">You</th><th class="text-right font-normal">Rank</th><th class="text-right font-normal">Best</th></tr></thead>
+                    <thead class="text-stone-500"><tr><th class="text-left font-normal">City</th><th class="font-normal" title="Food surplus">🌾</th><th class="font-normal" title="Production">⚒</th><th class="font-normal" title="Gold / Science">💰/🔬</th><th class="text-right font-normal">Building</th></tr></thead>
                     <tbody>
-                        @foreach ($demographics as $d)
-                            <tr>
-                                <td class="py-0.5 text-stone-400">{{ $d['icon'] }} {{ $d['label'] }}</td>
-                                <td class="text-right">{{ $d['mine'] }}</td>
-                                <td class="text-right {{ $d['rank'] === 1 ? 'text-emerald-300' : ($d['rank'] === $d['of'] ? 'text-red-300' : 'text-stone-300') }}">#{{ $d['rank'] }}<span class="text-stone-600">/{{ $d['of'] }}</span></td>
-                                <td class="text-right text-stone-500">{{ $d['best'] }}</td>
-                            </tr>
-                        @endforeach
+                    @foreach ($player->cities as $c)
+                        @php $cy = $cityYields[$c->id]; $cost = Economy::buildCost($c->current_build ?? ''); $left = ($cost !== null && $cy['prod'] > 0) ? (int) ceil(max(0, $cost - $c->production_stored) / $cy['prod']) : null; @endphp
+                        <tr class="{{ $selTile && $selTile->id === $c->tile_id ? 'text-amber-200' : '' }}">
+                            <td><a href="{{ route('games.show', ['game' => $game, 'tile' => $c->tile_id]) }}" class="map-tile-link hover:text-amber-300" data-tile="{{ $c->tile_id }}">{{ $c->name }} <span class="text-stone-500">{{ $c->population }}</span></a></td>
+                            <td class="text-center {{ $cy['surplus'] < 0 ? 'text-red-400' : '' }}">{{ $cy['surplus'] >= 0 ? '+' : '' }}{{ $cy['surplus'] }}</td>
+                            <td class="text-center">{{ $cy['prod'] }}</td>
+                            <td class="text-center text-stone-400">{{ $cy['gold'] }}/{{ $cy['science'] }}</td>
+                            <td class="truncate text-right text-stone-400">{{ Economy::buildName($c->current_build) }}@if ($left !== null) <span class="text-stone-600">{{ $left }}t</span>@endif</td>
+                        </tr>
+                    @endforeach
                     </tbody>
                 </table>
             </section>
-
+        </div>
+        <div class="side-pane space-y-4" id="pane-research" data-pane="research" role="tabpanel" aria-labelledby="tab-research" hidden>
+            {{-- Research --}}
             <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
-                <div class="flex items-baseline justify-between"><h2 class="font-semibold">Road to victory</h2><span class="text-xs text-stone-500">{{ $victory['turnsLeft'] }} turns left</span></div>
-                <div class="mt-2 grid gap-3 text-xs sm:grid-cols-2">
-                    <div class="sm:col-span-2">
-                        <div class="text-stone-400" title="Half for knowing every technology, half for building the Grand Expedition">⛵ Science (all techs, then the Grand Expedition)</div>
-                        @foreach ($victory['science'] as $v)
-                            <div class="mt-1 flex items-center gap-2"><span class="inline-block h-2 w-2 rounded-sm" style="background: {{ $v['empire']->color }}"></span><span class="w-16 truncate {{ $v['empire']->id === $player->id ? 'text-amber-200' : '' }}">{{ $v['empire']->name }}</span><span class="h-1.5 flex-1 rounded bg-stone-800"><span class="block h-1.5 rounded" style="width: {{ $v['pct'] }}%; background: {{ $v['empire']->color }}"></span></span><span class="w-20 text-right {{ $v['launch'] !== null ? 'text-red-300' : 'text-stone-400' }}">{{ $v['launch'] !== null ? '⛵ '.$v['launch'].'% built' : $v['pct'].'%' }}</span></div>
-                        @endforeach
-                    </div>
-                    <div class="sm:col-span-2">
-                        <div class="text-stone-400" title="Be allied with every other surviving empire, from turn {{ intdiv($game->max_turns, 2) + 1 }}">🤝 Diplomacy (ally with every nation, from turn {{ intdiv($game->max_turns, 2) + 1 }})</div>
-                        @foreach ($victory['diplomacy'] as $v)
-                            <div class="mt-1 flex items-center gap-2"><span class="inline-block h-2 w-2 rounded-sm" style="background: {{ $v['empire']->color }}"></span><span class="w-16 truncate {{ $v['empire']->id === $player->id ? 'text-amber-200' : '' }}">{{ $v['empire']->name }}</span><span class="h-1.5 flex-1 rounded bg-stone-800"><span class="block h-1.5 rounded" style="width: {{ $v['pct'] }}%; background: {{ $v['empire']->color }}"></span></span><span class="w-20 text-right text-stone-400">{{ $v['allies'] }}/{{ $v['of'] }} allies</span></div>
-                        @endforeach
-                    </div>
-                    <div>
-                        <div class="text-stone-400">🗺️ Domination ({{ $dominationShare }}% of land)</div>
-                        @foreach ($victory['domination'] as $v)
-                            <div class="mt-1 flex items-center gap-2"><span class="inline-block h-2 w-2 rounded-sm" style="background: {{ $v['empire']->color }}"></span><span class="w-16 truncate {{ $v['empire']->id === $player->id ? 'text-amber-200' : '' }}">{{ $v['empire']->name }}</span><span class="h-1.5 flex-1 rounded bg-stone-800"><span class="block h-1.5 rounded" style="width: {{ $v['pct'] }}%; background: {{ $v['empire']->color }}"></span></span><span class="w-8 text-right text-stone-400">{{ $v['pct'] }}%</span></div>
-                        @endforeach
-                    </div>
-                    <div>
-                        <div class="text-stone-400">🎭 Culture ({{ $cultureGoal }})</div>
-                        @foreach ($victory['culture'] as $v)
-                            <div class="mt-1 flex items-center gap-2"><span class="inline-block h-2 w-2 rounded-sm" style="background: {{ $v['empire']->color }}"></span><span class="w-16 truncate {{ $v['empire']->id === $player->id ? 'text-amber-200' : '' }}">{{ $v['empire']->name }}</span><span class="h-1.5 flex-1 rounded bg-stone-800"><span class="block h-1.5 rounded" style="width: {{ $v['pct'] }}%; background: {{ $v['empire']->color }}"></span></span><span class="w-8 text-right text-stone-400">{{ $v['pct'] }}%</span></div>
-                        @endforeach
-                    </div>
-                </div>
+                <h2 class="font-semibold">Research</h2>
+                @if ($research)
+                    <div class="mt-2 flex justify-between text-xs text-stone-400"><span>{{ $research['name'] }}</span><span>{{ $research['progress'] }}/{{ $research['cost'] }}@if ($research['turns'] !== null) · {{ $research['turns'] }}t @endif</span></div>
+                    <div class="mt-1 h-1.5 rounded bg-stone-800"><div class="h-1.5 rounded bg-sky-500" style="width: {{ 100 * $research['progress'] / $research['cost'] }}%"></div></div>
+                @elseif ($availableTechs)
+                    <p class="mt-1 text-xs text-amber-300">Choose what to research. Science is banked until you do.</p>
+                @else
+                    <p class="mt-1 text-xs text-stone-400">Everything is known.</p>
+                @endif
+                @if ($availableTechs && $game->isActive())
+                    <form method="POST" action="{{ route('games.research', $game) }}" class="mt-2 flex gap-2">
+                        @csrf
+                        <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                        <select name="tech" class="min-w-0 flex-1 rounded border border-stone-700 bg-stone-900 px-2 py-1.5 text-xs focus:border-amber-500 focus:outline-none">
+                            @foreach ($availableTechs as $key => $t)
+                                <option value="{{ $key }}" @selected($key === $player->current_tech)>{{ $t['name'] }} ({{ $t['cost'] }}) — {{ $t['unlocks'] }}</option>
+                            @endforeach
+                        </select>
+                        <button class="rounded border border-stone-600 px-3 py-1.5 text-xs hover:bg-stone-800">{{ $research ? 'Switch' : 'Research' }}</button>
+                    </form>
+                @endif
+                <details class="mt-3 text-xs" @if ($researchUnset) open @endif>
+                    <summary class="cursor-pointer text-stone-400 hover:text-white">Tech tree ({{ count($player->technologies ?? []) }}/{{ count(Rules::TECHS) }} known)</summary>
+                    <p class="mt-1 text-[10px] text-stone-500"><span class="text-emerald-300">✓ known</span> · <span class="text-sky-300">○ available, click to research</span> · <span class="text-amber-300">gold frame = current</span> · 🔒 locked. Arrows show what each discovery needs. Scroll sideways.</p>
+                    <div class="mt-2 overflow-x-auto rounded border border-stone-800 bg-stone-950/60 p-2">{!! $techTreeSvg !!}</div>
+                    @if ($game->isActive())
+                        <form method="POST" action="{{ route('games.research', $game) }}" id="research-pick" class="hidden">
+                            @csrf
+                            <input type="hidden" name="tech" value="">
+                            <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                        </form>
+                    @endif
+                </details>
             </section>
-        @endif
-
-        @if ($wonderRaces->isNotEmpty() && $game->isActive())
+        </div>
+        <div class="side-pane space-y-4" id="pane-rivals" data-pane="rivals" role="tabpanel" aria-labelledby="tab-rivals" hidden>
+            {{-- Empires --}}
             <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
-                <h2 class="font-semibold">Wonder races</h2>
-                <ul class="mt-2 space-y-1 text-xs">
-                    @foreach ($wonderRaces as $w)
-                        <li class="flex items-center gap-2">
-                            <span class="inline-block h-2.5 w-2.5 rounded-sm" style="background: {{ $w['empire']?->color }}"></span>
-                            <span class="flex-1 truncate">{{ $w['empire']?->name }} · {{ $w['wonder'] }}</span>
-                            <span class="h-1.5 w-16 rounded bg-stone-800"><span class="block h-1.5 rounded bg-amber-500" style="width: {{ $w['pct'] }}%"></span></span>
-                            <span class="w-8 text-right text-stone-400">{{ $w['pct'] }}%</span>
+                <h2 class="font-semibold">Empires</h2>
+                <details class="mt-2 text-xs" open>
+                    <summary class="cursor-pointer text-stone-400 hover:text-white">Relations web</summary>
+                    <div class="mx-auto mt-1 max-w-xs">{!! $relationsSvg !!}</div>
+                    <p class="text-[10px] text-stone-500"><span class="text-red-400">red dashes = war</span> · <span class="text-blue-300">thick blue = alliance</span> · <span class="text-emerald-300">green = friendly</span>, thicker the warmer · <span class="text-orange-300">orange dots = wary</span> · grey = neutral. Numbers are attitudes toward you. Hover a line for details.</p>
+                </details>
+                <ul class="mt-2 divide-y divide-stone-800/80">
+                    @foreach ($rivals as $r)
+                        @php $e = $r['empire']; $me = $e->id === $player->id; @endphp
+                        <li class="py-2 {{ $e->eliminated ? 'opacity-50' : '' }}">
+                            <div class="flex items-center justify-between gap-2">
+                                <div class="flex min-w-0 items-center gap-2">
+                                    <span class="inline-block h-3 w-3 shrink-0 rounded-sm" style="background: {{ $e->color }}"></span>
+                                    <span class="truncate font-medium {{ $me ? 'text-amber-200' : '' }}">{{ Rules::crest($e->name) }} {{ $e->name }}</span>
+                                    @if ($e->eliminated)<span class="text-xs text-stone-500">eliminated</span>
+                                    @elseif ($r['relation'] && $r['relation']['state'] === 'war')<span class="rounded bg-red-900/60 px-1.5 text-[10px] text-red-200">at war</span>
+                                    @elseif ($r['allied'])<span class="rounded bg-blue-900/60 px-1.5 text-[10px] text-blue-200" title="Allies join each other's defensive wars and share maps">🤝 ally</span>
+                                    @elseif ($r['personality'])<span class="rounded bg-stone-800 px-1.5 text-[10px] {{ $r['attitude'] < -10 ? 'text-red-300' : ($r['attitude'] > 15 ? 'text-emerald-300' : 'text-stone-400') }}" title="{{ $r['personality']['trait'] }}: {{ $r['personality']['blurb'] }}@if ($e->trait && isset(Rules::TRAITS[$e->trait])) {{ Rules::TRAITS[$e->trait]['name'] }}: {{ Rules::TRAITS[$e->trait]['blurb'] }}@endif @if ($e->belief && isset(Rules::BELIEFS[$e->belief])) Worships the {{ Rules::BELIEFS[$e->belief]['name'] }}.@endif Attitude {{ $r['attitude'] }}.">@if ($e->trait && isset(Rules::TRAITS[$e->trait])){{ Rules::TRAITS[$e->trait]['icon'] }} @endif @if ($e->belief && isset(Rules::BELIEFS[$e->belief])){{ Rules::BELIEFS[$e->belief]['icon'] }} @endif{{ $r['personality']['trait'] }} · {{ $r['attitudeLabel'] }}</span>@endif
+                                </div>
+                                <span class="shrink-0 font-semibold">{{ $e->eliminated ? '✝' : $r['score'] }}</span>
+                            </div>
+                            @if ($r['quest'] && $game->isActive())
+                                <div class="mt-1 rounded border border-amber-800/60 bg-amber-950/30 px-2 py-1 text-[11px] text-amber-100" title="Keep it for +{{ \App\Game\Quests::REWARD_ATTITUDE }} attitude">📜 Asks you to {{ $r['quest']['text'] }} · <span class="text-amber-300/80">{{ $r['quest']['left'] }} {{ Str::plural('turn', $r['quest']['left']) }} left</span></div>
+                            @endif
+                            @if ($r['trades'])
+                                <ul class="trades mt-1 hidden space-y-1 rounded border border-sky-900/60 bg-sky-950/20 p-2 text-xs">
+                                    @foreach ($r['trades'] as $t)
+                                        <li class="flex flex-wrap items-center justify-between gap-1">
+                                            <span><b>{{ Rules::TECHS[$t['get']]['name'] }}</b> <span class="text-stone-500">({{ Rules::TECHS[$t['get']]['cost'] }} 🔬)</span></span>
+                                            <span class="flex gap-1">
+                                                @if ($t['give'])
+                                                    <form method="POST" action="{{ route('games.trade', [$game, $e]) }}" class="inline">
+                                                        @csrf
+                                                        <input type="hidden" name="get" value="{{ $t['get'] }}"><input type="hidden" name="give" value="{{ $t['give'] }}">
+                                                        <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                                                        <button class="rounded border border-sky-800 px-1.5 py-0.5 text-[10px] text-sky-200 hover:bg-sky-900">for {{ Rules::TECHS[$t['give']]['name'] }}</button>
+                                                    </form>
+                                                @endif
+                                                <form method="POST" action="{{ route('games.trade', [$game, $e]) }}" class="inline">
+                                                    @csrf
+                                                    <input type="hidden" name="get" value="{{ $t['get'] }}">
+                                                    <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                                                    <button class="rounded border border-amber-800 px-1.5 py-0.5 text-[10px] text-amber-200 hover:bg-amber-950 disabled:opacity-40" @disabled($player->gold < $t['gold'])>for {{ $t['gold'] }} 💰</button>
+                                                </form>
+                                            </span>
+                                        </li>
+                                    @endforeach
+                                    <li class="text-[10px] text-stone-500">One deal per {{ Rules::TECH_TRADE_COOLDOWN }} turns with each rival. Friendlier rivals ask less.</li>
+                                </ul>
+                            @endif
+                            <div class="mt-1 flex items-center justify-between gap-2 text-xs text-stone-400">
+                                <span>{{ $r['cities'] }} {{ Str::plural('city', $r['cities']) }} · {{ $r['share'] }}% land · ⚔ {{ $r['army'] }} · 🎭 {{ $r['culture'] }} · 🔬 {{ $r['techs'] }}</span>
+                                @if ($r['relation'] && ! $e->eliminated && $game->isActive())
+                                    <span class="flex shrink-0 items-center gap-1">
+                                        @if ($r['relation']['state'] === 'war')
+                                            <form method="POST" action="{{ route('games.peace', [$game, $e]) }}" class="inline">
+                                                @csrf
+                                                <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                                                <button class="rounded border px-1.5 py-0.5 text-[10px] {{ $r['peaceLikely'] ? 'border-emerald-700 text-emerald-200 hover:bg-emerald-950' : 'border-stone-700 text-stone-400 hover:bg-stone-800' }}" title="{{ $r['peaceLikely'] ? 'They would accept' : 'They may refuse' }}">☮ peace</button>
+                                            </form>
+                                        @else
+                                            <form method="POST" action="{{ route('games.gift', [$game, $e]) }}" class="inline">
+                                                @csrf
+                                                <input type="hidden" name="gold" value="50">
+                                                <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                                                <button class="rounded border border-stone-700 px-1.5 py-0.5 text-[10px] text-stone-400 hover:border-emerald-700 hover:text-emerald-200 disabled:opacity-40" title="Gift 50 gold (+5 attitude)" @disabled($player->gold < 50)>🎁 50</button>
+                                            </form>
+                                            @if ($r['canAlly'])
+                                                <form method="POST" action="{{ route('games.alliance', [$game, $e]) }}" class="inline">
+                                                    @csrf
+                                                    <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                                                    <button class="rounded border border-blue-700 px-1.5 py-0.5 text-[10px] text-blue-200 hover:bg-blue-950" title="They are devoted to you: form an alliance">🤝 ally</button>
+                                                </form>
+                                            @elseif ($r['allied'])
+                                                <form method="POST" action="{{ route('games.alliance', [$game, $e]) }}" class="inline" onsubmit="return confirm(@js('End the alliance with '.$e->name.'? They will resent it.'))">
+                                                    @csrf
+                                                    <input type="hidden" name="dissolve" value="1">
+                                                    <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                                                    <button class="rounded border border-stone-700 px-1.5 py-0.5 text-[10px] text-stone-400 hover:bg-stone-800" title="End the alliance">✂ ally</button>
+                                                </form>
+                                            @endif
+                                            @if ($r['trades'])
+                                                <button type="button" class="rounded border border-sky-800 px-1.5 py-0.5 text-[10px] text-sky-200 hover:bg-sky-950" onclick="this.closest('li').querySelector('.trades').classList.toggle('hidden')" title="They will trade technologies">🔁 techs</button>
+                                            @endif
+                                            @if ($r['canTribute'])
+                                                <form method="POST" action="{{ route('games.tribute', [$game, $e]) }}" class="inline">
+                                                    @csrf
+                                                    <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                                                    <button class="rounded border border-amber-800 px-1.5 py-0.5 text-[10px] text-amber-200 hover:bg-amber-950" title="Your army dwarfs theirs: demand gold">💰 tribute</button>
+                                                </form>
+                                            @endif
+                                            @if ($r['warProblem'] === null)
+                                                <form method="POST" action="{{ route('games.war', [$game, $e]) }}" class="inline" onsubmit="return confirm(@js('Declare war on '.$e->name.'?'.($r['theirAllies'] ? ' Their allies will join them: '.implode(', ', $r['theirAllies']).'.' : '').($r['allied'] ? ' They are your ally: this is a betrayal the world will remember.' : '')))">
+                                                    @csrf
+                                                    <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                                                    <button class="rounded border border-stone-700 px-1.5 py-0.5 text-[10px] text-stone-400 hover:border-red-800 hover:text-red-200">⚔ war</button>
+                                                </form>
+                                            @else
+                                                <span class="text-[10px] text-stone-500" title="{{ $r['warProblem'] }}">treaty</span>
+                                            @endif
+                                        @endif
+                                    </span>
+                                @endif
+                            </div>
                         </li>
                     @endforeach
                 </ul>
             </section>
-        @endif
 
-        {{-- Cities list --}}
-        <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
-            <h2 class="font-semibold">Your cities</h2>
-            <table class="mt-2 w-full text-xs">
-                <thead class="text-stone-500"><tr><th class="text-left font-normal">City</th><th class="font-normal" title="Food surplus">🌾</th><th class="font-normal" title="Production">⚒</th><th class="font-normal" title="Gold / Science">💰/🔬</th><th class="text-right font-normal">Building</th></tr></thead>
-                <tbody>
-                @foreach ($player->cities as $c)
-                    @php $cy = $cityYields[$c->id]; $cost = Economy::buildCost($c->current_build ?? ''); $left = ($cost !== null && $cy['prod'] > 0) ? (int) ceil(max(0, $cost - $c->production_stored) / $cy['prod']) : null; @endphp
-                    <tr class="{{ $selTile && $selTile->id === $c->tile_id ? 'text-amber-200' : '' }}">
-                        <td><a href="{{ route('games.show', ['game' => $game, 'tile' => $c->tile_id]) }}" class="map-tile-link hover:text-amber-300" data-tile="{{ $c->tile_id }}">{{ $c->name }} <span class="text-stone-500">{{ $c->population }}</span></a></td>
-                        <td class="text-center {{ $cy['surplus'] < 0 ? 'text-red-400' : '' }}">{{ $cy['surplus'] >= 0 ? '+' : '' }}{{ $cy['surplus'] }}</td>
-                        <td class="text-center">{{ $cy['prod'] }}</td>
-                        <td class="text-center text-stone-400">{{ $cy['gold'] }}/{{ $cy['science'] }}</td>
-                        <td class="truncate text-right text-stone-400">{{ Economy::buildName($c->current_build) }}@if ($left !== null) <span class="text-stone-600">{{ $left }}t</span>@endif</td>
-                    </tr>
-                @endforeach
-                </tbody>
-            </table>
-        </section>
+            @if ($wonderRaces->isNotEmpty() && $game->isActive())
+                <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
+                    <h2 class="font-semibold">Wonder races</h2>
+                    <ul class="mt-2 space-y-1 text-xs">
+                        @foreach ($wonderRaces as $w)
+                            <li class="flex items-center gap-2">
+                                <span class="inline-block h-2.5 w-2.5 rounded-sm" style="background: {{ $w['empire']?->color }}"></span>
+                                <span class="flex-1 truncate">{{ $w['empire']?->name }} · {{ $w['wonder'] }}</span>
+                                <span class="h-1.5 w-16 rounded bg-stone-800"><span class="block h-1.5 rounded bg-amber-500" style="width: {{ $w['pct'] }}%"></span></span>
+                                <span class="w-8 text-right text-stone-400">{{ $w['pct'] }}%</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                </section>
+            @endif
+        </div>
+        <div class="side-pane space-y-4" id="pane-progress" data-pane="progress" role="tabpanel" aria-labelledby="tab-progress" hidden>
+            @unless ($game->isActive())<p class="px-1 text-sm text-stone-500">The game is over. The final charts and replay are above the map.</p>@endunless
+            @if ($charts && $game->isActive())
+                <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
+                    <div class="flex items-baseline justify-between"><h2 class="font-semibold">Over time</h2><span class="text-xs text-stone-500">{{ $difficulty['name'] }}</span></div>
+                    <div class="mt-2">@include('games._charts', ['charts' => $charts, 'chartId' => 'side'])</div>
+                </section>
+            @endif
 
-        {{-- Chronicle --}}
-        @if ($chronicle)
-            <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
-                <h2 class="font-semibold">Chronicle</h2>
-                @foreach ($chronicle as $i => $entry)
-                    <details class="mt-2 text-xs" @if ($i === 0) open @endif>
-                        <summary class="cursor-pointer text-stone-400 hover:text-white">Turn {{ $entry['turn'] }} <span class="text-stone-600">· {{ count($entry['events']) }} {{ Str::plural('event', count($entry['events'])) }}</span></summary>
-                        <ul class="mt-1 space-y-0.5 text-stone-300">
-                            @foreach ($entry['events'] as $e)
-                                <li>· {{ $e }}</li>
+            @if ($game->isActive())
+                <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
+                    <h2 class="font-semibold">Demographics</h2>
+                    <table class="mt-2 w-full text-xs">
+                        <thead class="text-stone-500"><tr><th class="text-left font-normal"></th><th class="text-right font-normal">You</th><th class="text-right font-normal">Rank</th><th class="text-right font-normal">Best</th></tr></thead>
+                        <tbody>
+                            @foreach ($demographics as $d)
+                                <tr>
+                                    <td class="py-0.5 text-stone-400">{{ $d['icon'] }} {{ $d['label'] }}</td>
+                                    <td class="text-right">{{ $d['mine'] }}</td>
+                                    <td class="text-right {{ $d['rank'] === 1 ? 'text-emerald-300' : ($d['rank'] === $d['of'] ? 'text-red-300' : 'text-stone-300') }}">#{{ $d['rank'] }}<span class="text-stone-600">/{{ $d['of'] }}</span></td>
+                                    <td class="text-right text-stone-500">{{ $d['best'] }}</td>
+                                </tr>
                             @endforeach
-                        </ul>
-                    </details>
-                @endforeach
-            </section>
-        @endif
+                        </tbody>
+                    </table>
+                </section>
+
+                <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
+                    <div class="flex items-baseline justify-between"><h2 class="font-semibold">Road to victory</h2><span class="text-xs text-stone-500">{{ $victory['turnsLeft'] }} turns left</span></div>
+                    <div class="mt-2 grid gap-3 text-xs sm:grid-cols-2">
+                        <div class="sm:col-span-2">
+                            <div class="text-stone-400" title="Half for knowing every technology, half for building the Grand Expedition">⛵ Science (all techs, then the Grand Expedition)</div>
+                            @foreach ($victory['science'] as $v)
+                                <div class="mt-1 flex items-center gap-2"><span class="inline-block h-2 w-2 rounded-sm" style="background: {{ $v['empire']->color }}"></span><span class="w-16 truncate {{ $v['empire']->id === $player->id ? 'text-amber-200' : '' }}">{{ $v['empire']->name }}</span><span class="h-1.5 flex-1 rounded bg-stone-800"><span class="block h-1.5 rounded" style="width: {{ $v['pct'] }}%; background: {{ $v['empire']->color }}"></span></span><span class="w-20 text-right {{ $v['launch'] !== null ? 'text-red-300' : 'text-stone-400' }}">{{ $v['launch'] !== null ? '⛵ '.$v['launch'].'% built' : $v['pct'].'%' }}</span></div>
+                            @endforeach
+                        </div>
+                        <div class="sm:col-span-2">
+                            <div class="text-stone-400" title="Be allied with every other surviving empire, from turn {{ intdiv($game->max_turns, 2) + 1 }}">🤝 Diplomacy (ally with every nation, from turn {{ intdiv($game->max_turns, 2) + 1 }})</div>
+                            @foreach ($victory['diplomacy'] as $v)
+                                <div class="mt-1 flex items-center gap-2"><span class="inline-block h-2 w-2 rounded-sm" style="background: {{ $v['empire']->color }}"></span><span class="w-16 truncate {{ $v['empire']->id === $player->id ? 'text-amber-200' : '' }}">{{ $v['empire']->name }}</span><span class="h-1.5 flex-1 rounded bg-stone-800"><span class="block h-1.5 rounded" style="width: {{ $v['pct'] }}%; background: {{ $v['empire']->color }}"></span></span><span class="w-20 text-right text-stone-400">{{ $v['allies'] }}/{{ $v['of'] }} allies</span></div>
+                            @endforeach
+                        </div>
+                        <div>
+                            <div class="text-stone-400">🗺️ Domination ({{ $dominationShare }}% of land)</div>
+                            @foreach ($victory['domination'] as $v)
+                                <div class="mt-1 flex items-center gap-2"><span class="inline-block h-2 w-2 rounded-sm" style="background: {{ $v['empire']->color }}"></span><span class="w-16 truncate {{ $v['empire']->id === $player->id ? 'text-amber-200' : '' }}">{{ $v['empire']->name }}</span><span class="h-1.5 flex-1 rounded bg-stone-800"><span class="block h-1.5 rounded" style="width: {{ $v['pct'] }}%; background: {{ $v['empire']->color }}"></span></span><span class="w-8 text-right text-stone-400">{{ $v['pct'] }}%</span></div>
+                            @endforeach
+                        </div>
+                        <div>
+                            <div class="text-stone-400">🎭 Culture ({{ $cultureGoal }})</div>
+                            @foreach ($victory['culture'] as $v)
+                                <div class="mt-1 flex items-center gap-2"><span class="inline-block h-2 w-2 rounded-sm" style="background: {{ $v['empire']->color }}"></span><span class="w-16 truncate {{ $v['empire']->id === $player->id ? 'text-amber-200' : '' }}">{{ $v['empire']->name }}</span><span class="h-1.5 flex-1 rounded bg-stone-800"><span class="block h-1.5 rounded" style="width: {{ $v['pct'] }}%; background: {{ $v['empire']->color }}"></span></span><span class="w-8 text-right text-stone-400">{{ $v['pct'] }}%</span></div>
+                            @endforeach
+                        </div>
+                    </div>
+                </section>
+            @endif
+        </div>
+        <div class="side-pane space-y-4" id="pane-log" data-pane="log" role="tabpanel" aria-labelledby="tab-log" hidden>
+            {{-- Chronicle --}}
+            @if ($chronicle)
+                <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
+                    <h2 class="font-semibold">Chronicle</h2>
+                    @foreach ($chronicle as $i => $entry)
+                        <details class="mt-2 text-xs" @if ($i === 0) open @endif>
+                            <summary class="cursor-pointer text-stone-400 hover:text-white">Turn {{ $entry['turn'] }} <span class="text-stone-600">· {{ count($entry['events']) }} {{ Str::plural('event', count($entry['events'])) }}</span></summary>
+                            <ul class="mt-1 space-y-0.5 text-stone-300">
+                                @foreach ($entry['events'] as $e)
+                                    <li>· {{ $e }}</li>
+                                @endforeach
+                            </ul>
+                        </details>
+                    @endforeach
+                </section>
+            @endif
+            @unless ($chronicle)<p class="px-1 text-sm text-stone-500">Nothing has happened yet. End a turn and the chronicle begins.</p>@endunless
+        </div>
+        </div>
     </aside>
 </div>
 <dialog id="keys-dialog" class="m-auto w-80 max-w-[92vw] rounded-lg border border-stone-700 bg-stone-900 p-5 text-sm text-stone-200 shadow-2xl backdrop:bg-black/60">
@@ -645,6 +664,7 @@
         <dt><kbd class="rounded border border-stone-600 px-1.5">Enter</kbd></dt><dd>End turn</dd>
         <dt><kbd class="rounded border border-stone-600 px-1.5">← ↑ → ↓</kbd></dt><dd>Move the selected tile</dd>
         <dt><kbd class="rounded border border-stone-600 px-1.5">W A S D</kbd></dt><dd>Pan the map</dd>
+        <dt><kbd class="rounded border border-stone-600 px-1.5">[ ]</kbd></dt><dd>Previous / next side panel tab</dd>
         <dt><kbd class="rounded border border-stone-600 px-1.5">Scroll</kbd></dt><dd>Pan the map (Shift for sideways)</dd>
         <dt><kbd class="rounded border border-stone-600 px-1.5">⌘/Ctrl + scroll</kbd></dt><dd>Zoom</dd>
         <dt><kbd class="rounded border border-stone-600 px-1.5">B</kbd></dt><dd>Big map: full width, panels below</dd>

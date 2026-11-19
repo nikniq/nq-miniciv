@@ -61,9 +61,7 @@ if (map) {
         wide = on;
         if (grid) grid.style.gridTemplateColumns = on ? '1fr' : '';
         map.style.maxHeight = on ? '86vh' : '78vh';
-        if (aside) Object.assign(aside.style, on
-            ? { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(20rem, 1fr))', alignItems: 'start', gap: '1rem' }
-            : { display: '', gridTemplateColumns: '', alignItems: '', gap: '' });
+        aside?.classList.toggle('side-wide', on);
         document.querySelector('[data-zoom="wide"]')?.classList.toggle('ring-1', on);
         try { localStorage.setItem('miniciv.wide', on ? '1' : '0'); } catch {}
     };
@@ -392,7 +390,7 @@ document.querySelector('.share-result')?.addEventListener('click', async (e) => 
     let folded = [];
     try { folded = JSON.parse(localStorage.getItem(KEY)) || []; } catch {}
     const save = () => { try { localStorage.setItem(KEY, JSON.stringify(folded)); } catch {} };
-    aside.querySelectorAll(':scope > section').forEach((section) => {
+    aside.querySelectorAll('.side-pane > section').forEach((section) => {
         if (section.id === 'tile-panel' || section.classList.contains('advisor-tip')) return;
         const head = section.firstElementChild;
         const h2 = head?.matches('h2') ? head : head?.querySelector('h2');
@@ -455,3 +453,67 @@ document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
     document.querySelectorAll('details.profile-menu[open]').forEach((d) => { d.open = false; d.querySelector('summary').focus(); });
 });
+
+// Side panel tabs. The open tab is remembered per game; picking a tile on the
+// map shows "Here"; links into a hidden tab (e.g. the top bar's army link)
+// open it. Keys: [ and ] step through tabs.
+(() => {
+    const side = document.getElementById('side');
+    if (!side) return;
+    const tabs = [...side.querySelectorAll('[data-tab]')];
+    const panes = side.querySelector('.side-panes');
+    const game = document.getElementById('map')?.dataset.game ?? '';
+    const KEY = 'miniciv.tab.' + game;
+    const show = (name, { focus = false, remember = true } = {}) => {
+        const tab = tabs.find((t) => t.dataset.tab === name) ?? tabs[0];
+        tabs.forEach((t) => {
+            const on = t === tab;
+            t.setAttribute('aria-selected', on ? 'true' : 'false');
+            t.tabIndex = on ? 0 : -1;
+            side.querySelector('#pane-' + t.dataset.tab).hidden = !on;
+        });
+        if (panes) panes.scrollTop = 0;
+        if (focus) tab.focus();
+        if (remember) { try { sessionStorage.setItem(KEY, tab.dataset.tab); } catch {} }
+    };
+    tabs.forEach((t, i) => {
+        t.addEventListener('click', () => show(t.dataset.tab));
+        t.addEventListener('keydown', (e) => {
+            const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+            if (e.key === 'Home' || e.key === 'End' || step) {
+                e.preventDefault();
+                e.stopPropagation();
+                const j = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : (i + step + tabs.length) % tabs.length;
+                show(tabs[j].dataset.tab, { focus: true });
+            }
+        });
+    });
+    // A selected tile in the URL means the player came for that tile.
+    let start = null;
+    try { start = sessionStorage.getItem(KEY); } catch {}
+    if (new URLSearchParams(location.search).has('tile')) start = 'here';
+    show(start ?? 'here', { remember: false });
+
+    // Map clicks and city links fill the "Here" tab.
+    document.getElementById('map')?.addEventListener('click', () => show('here'));
+    document.addEventListener('click', (e) => {
+        const tileLink = e.target.closest('.map-tile-link');
+        if (tileLink) { show('here'); return; }
+        const a = e.target.closest('a[href^="#"]');
+        const target = a && a.getAttribute('href').length > 1 ? document.querySelector(a.getAttribute('href')) : null;
+        const pane = target?.closest('.side-pane');
+        if (pane && pane.hidden) {
+            e.preventDefault();
+            show(pane.dataset.pane);
+            requestAnimationFrame(() => target.scrollIntoView({ block: 'start', behavior: 'smooth' }));
+        }
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
+        if (e.target.closest?.('input, select, textarea, [contenteditable]')) return;
+        if (e.key !== '[' && e.key !== ']') return;
+        const i = tabs.findIndex((t) => t.getAttribute('aria-selected') === 'true');
+        show(tabs[(i + (e.key === ']' ? 1 : -1) + tabs.length) % tabs.length].dataset.tab);
+        e.preventDefault();
+    });
+})();
