@@ -17,7 +17,7 @@ class AuthController extends Controller
             return redirect()->route('games.index');
         }
 
-        return view('auth.login', ['google' => $this->googleEnabled()]);
+        return view('auth.login', ['social' => SocialAuthController::available()]);
     }
 
     public function login(Request $request): RedirectResponse
@@ -43,7 +43,7 @@ class AuthController extends Controller
             return redirect()->route('games.index');
         }
 
-        return view('auth.register', ['google' => $this->googleEnabled(), 'guest' => $request->user()]);
+        return view('auth.register', ['social' => SocialAuthController::available(), 'guest' => $request->user()]);
     }
 
     public function register(Request $request): RedirectResponse
@@ -81,6 +81,6 @@ class AuthController extends Controller
 
     public static function googleEnabled(): bool
     {
-        return (bool) config('services.google.client_id');
+        return SocialAuthController::enabled('google');
     }
 }

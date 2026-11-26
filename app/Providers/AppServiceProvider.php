@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Auth\NikniqProvider;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Socialite\Facades\Socialite;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +21,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Socialite::extend('nikniq', fn ($app) => Socialite::buildProvider(NikniqProvider::class, config('services.nikniq'))
+            ->scopes(config('services.nikniq.scopes', [])));
     }
 }

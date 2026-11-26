@@ -4,10 +4,10 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GameActionController;
 use App\Http\Controllers\GameController;
-use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\MagicLinkController;
 use App\Http\Controllers\PlayController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SocialAuthController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'portal.home')->name('home');
@@ -26,8 +26,10 @@ Route::post('/register', [AuthController::class, 'register'])->middleware('throt
 Route::post('/auth/email', [MagicLinkController::class, 'send'])->middleware('throttle:5,1')->name('magic.send');
 Route::get('/auth/email/verify', [MagicLinkController::class, 'show'])->middleware('throttle:20,1')->name('magic.verify');
 Route::post('/auth/email/verify', [MagicLinkController::class, 'verify'])->middleware('throttle:20,1')->name('magic.confirm');
-Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('google.redirect');
-Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
+foreach (array_keys(SocialAuthController::PROVIDERS) as $provider) {
+    Route::get("/auth/{$provider}", [SocialAuthController::class, 'redirect'])->defaults('provider', $provider)->name("{$provider}.redirect");
+    Route::get("/auth/{$provider}/callback", [SocialAuthController::class, 'callback'])->defaults('provider', $provider)->middleware('throttle:20,1')->name("{$provider}.callback");
+}
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 

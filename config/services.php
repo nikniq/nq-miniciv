@@ -34,6 +34,19 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI', '/auth/google/callback'),
     ],
 
+    // "Sign in with nikniq" (OAuth 2, Passport-style endpoints by default).
+    // Leave NIKNIQ_CLIENT_ID blank to hide the button.
+    'nikniq' => [
+        'client_id' => env('NIKNIQ_CLIENT_ID'),
+        'client_secret' => env('NIKNIQ_CLIENT_SECRET'),
+        'redirect' => env('NIKNIQ_REDIRECT_URI', '/auth/nikniq/callback'),
+        'url' => env('NIKNIQ_URL', 'https://nikniq.com'),
+        'authorize_path' => env('NIKNIQ_AUTHORIZE_PATH', '/oauth/authorize'),
+        'token_path' => env('NIKNIQ_TOKEN_PATH', '/oauth/token'),
+        'user_path' => env('NIKNIQ_USER_PATH', '/api/user'),
+        'scopes' => array_filter(explode(' ', (string) env('NIKNIQ_SCOPES', ''))),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
