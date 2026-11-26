@@ -150,12 +150,18 @@
         <button type="button" id="keys-open" class="hidden text-xs text-stone-400 hover:text-white sm:inline" title="Keyboard shortcuts (?)">⌨ keys</button>
         <a href="{{ route('guide') }}" target="_blank" class="text-xs text-stone-400 hover:text-white" title="How to play">? help</a>
         @if ($game->isActive())
+            @php $turnWarn = collect([$researchUnset ? 'No research selected' : null, $settlersWaiting ? 'Settlers waiting to found a city' : null, $idleCities->isNotEmpty() ? 'Cities idling on Wealth' : null, $player->canAdoptPolicy() ? 'A policy is ready to adopt' : null, $pantheonReady ? 'A pantheon is ready to choose' : null])->filter()->values(); @endphp
             <form method="POST" action="{{ route('games.end-turn', $game) }}" id="end-turn-form"
-                  data-warn="{{ collect([$researchUnset ? 'no research is selected' : null, $settlersWaiting ? 'settlers are waiting to found a city' : null, $idleCities->isNotEmpty() ? 'cities are idling on Wealth' : null])->filter()->join('; ') }}">
+                  class="relative" data-warn="{{ $turnWarn->toJson() }}">
                 @csrf
                 <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
                 <input type="hidden" name="turn" value="{{ $game->turn }}">
-                <button class="rounded bg-amber-500 px-5 py-1.5 font-semibold text-stone-950 shadow hover:bg-amber-400" title="Enter">End turn ▶</button>
+                <button class="end-turn-btn rounded bg-amber-500 px-5 py-1.5 font-semibold text-stone-950 shadow hover:bg-amber-400" title="{{ $turnWarn->isEmpty() ? 'End turn (Enter)' : 'Before you end the turn: '.$turnWarn->join('; ') }}">End turn ▶@if ($turnWarn->isNotEmpty())<span class="ml-1.5 rounded-full bg-stone-950/80 px-1.5 text-xs text-amber-300" aria-label="{{ $turnWarn->count() }} things waiting">{{ $turnWarn->count() }}</span>@endif</button>
+                <div class="end-turn-warn absolute right-0 top-full z-40 mt-2 hidden w-64 rounded-lg border border-amber-700 bg-stone-900 p-3 text-xs text-stone-200 shadow-xl shadow-black/50" role="alert">
+                    <p class="font-semibold text-amber-300">Still to do this turn:</p>
+                    <ul class="mt-1 list-inside list-disc space-y-0.5">@foreach ($turnWarn as $w)<li>{{ $w }}</li>@endforeach</ul>
+                    <p class="mt-2 text-stone-400">Press <b class="text-stone-200">End turn</b> again to end it anyway.</p>
+                </div>
             </form>
         @endif
     </div>

@@ -236,10 +236,21 @@ if (map) {
     }
 
     document.getElementById('end-turn-form')?.addEventListener('submit', (e) => {
-        const warn = e.target.dataset.warn;
-        if (warn && !confirm(`End turn anyway? Right now ${warn}.`)) return e.preventDefault();
+        // Unfinished business: the first press shows what is waiting, the second ends the turn.
+        const form = e.target, pop = form.querySelector('.end-turn-warn');
+        let warn = [];
+        try { warn = JSON.parse(form.dataset.warn || '[]'); } catch {}
+        if (warn.length && pop && form.dataset.armed !== '1') {
+            e.preventDefault();
+            form.dataset.armed = '1';
+            pop.classList.remove('hidden');
+            clearTimeout(form._disarm);
+            form._disarm = setTimeout(() => { form.dataset.armed = ''; pop.classList.add('hidden'); }, 6000);
+            return;
+        }
+        pop?.classList.add('hidden');
         cue('turn');
-        const btn = e.target.querySelector('button');
+        const btn = form.querySelector('button');
         if (btn) { btn.disabled = true; btn.textContent = '⏳ The world turns…'; btn.classList.add('opacity-80'); }
     });
 
@@ -276,6 +287,7 @@ if (map) {
             f.requestSubmit();
             return;
         }
+        if (e.key === 'Escape') { const f = document.getElementById('end-turn-form'); if (f?.dataset.armed) { f.dataset.armed = ''; f.querySelector('.end-turn-warn')?.classList.add('hidden'); } }
         if (e.key === '?') { const d = document.getElementById('keys-dialog'); d?.open ? d.close() : d?.showModal(); e.preventDefault(); return; }
         // Arrow keys move the selection one tile.
         if (e.key?.toLowerCase() === 'b' && !e.metaKey && !e.ctrlKey && !e.altKey) { setWide(!wide); e.preventDefault(); return; }
