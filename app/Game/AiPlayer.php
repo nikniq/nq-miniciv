@@ -397,4 +397,21 @@ final class AiPlayer
     {
         return $this->actions->bestSite($game, $empire, $tiles);
     }
+
+    /** Adopt the policy this personality prefers, or the first still open. */
+    public function choosePolicy(Empire $empire): void
+    {
+        $mind = Rules::personality($empire->name);
+        $wanted = array_merge(Rules::POLICY_FOR_PERSONALITY[$mind['trait']] ?? [], array_keys(Rules::POLICIES));
+        foreach ($wanted as $policy) {
+            if (! $empire->hasPolicy($policy)) {
+                try {
+                    $this->actions->adoptPolicy($empire, $policy);
+                } catch (InvalidArgumentException) {
+                }
+
+                return;
+            }
+        }
+    }
 }

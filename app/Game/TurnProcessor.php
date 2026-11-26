@@ -68,6 +68,7 @@ final class TurnProcessor
                 }
                 $science = 0;
                 $gold = 0;
+                $cultureMade = 0;
 
                 // Golden ages: happiness surplus accrues points; enough points
                 // start an age of extra production and gold.
@@ -118,7 +119,23 @@ final class TurnProcessor
                     $this->growth($city, $y, $empire);
                     $gold += $this->production($game, $city, $empire, $y, $wondersBuilt);
                     $this->culture($city, $y, $empire);
+                    $cultureMade += $y['culture'];
                     $city->save();
+                }
+
+                // Policies: this turn's culture also fills the policy meter.
+                $couldAdopt = $empire->canAdoptPolicy();
+                $empire->policy_points += $cultureMade;
+                if ($empire->is_ai) {
+                    while ($empire->canAdoptPolicy()) {
+                        $before = count($empire->policies ?? []);
+                        $this->ai->choosePolicy($empire);
+                        if (count($empire->policies ?? []) === $before) {
+                            break;
+                        }
+                    }
+                } elseif (! $couldAdopt && $empire->canAdoptPolicy()) {
+                    $this->note($empire, '📜 Your culture can support a new policy. Choose one in the Empire tab.');
                 }
 
                 $gold += Economy::tradeGold($game, $empire, $this->tiles);

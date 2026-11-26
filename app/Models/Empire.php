@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['game_id', 'user_id', 'name', 'color', 'is_ai', 'eliminated', 'gold', 'settlers', 'army', 'units', 'veterancy', 'golden_age_until', 'golden_points', 'great_progress', 'great_people', 'great_count', 'explored', 'government', 'trait', 'belief', 'luxuries', 'anarchy_until', 'captures', 'technologies', 'current_tech', 'research_progress', 'score'])]
+#[Fillable(['game_id', 'user_id', 'name', 'color', 'is_ai', 'eliminated', 'gold', 'settlers', 'army', 'units', 'veterancy', 'golden_age_until', 'golden_points', 'great_progress', 'great_people', 'great_count', 'explored', 'government', 'trait', 'belief', 'luxuries', 'policies', 'policy_points', 'anarchy_until', 'captures', 'technologies', 'current_tech', 'research_progress', 'score'])]
 class Empire extends Model
 {
     protected function casts(): array
@@ -20,7 +20,24 @@ class Empire extends Model
             'units' => 'array',
             'great_progress' => 'array',
             'great_people' => 'array',
+            'policies' => 'array',
         ];
+    }
+
+    public function hasPolicy(string $key): bool
+    {
+        return in_array($key, $this->policies ?? [], true);
+    }
+
+    /** Culture needed for the next policy. */
+    public function nextPolicyCost(): int
+    {
+        return Rules::policyCost(count($this->policies ?? []));
+    }
+
+    public function canAdoptPolicy(): bool
+    {
+        return $this->policy_points >= $this->nextPolicyCost() && count($this->policies ?? []) < count(Rules::POLICIES);
     }
 
     public function game(): BelongsTo

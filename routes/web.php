@@ -52,6 +52,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/games/{game}/empires/{empire}/trade', [GameActionController::class, 'trade'])->name('games.trade');
     Route::post('/games/{game}/great-person', [GameActionController::class, 'greatPerson'])->name('games.great-person');
     Route::post('/games/{game}/government', [GameActionController::class, 'government'])->name('games.government');
+    Route::post('/games/{game}/policy', [GameActionController::class, 'policy'])->name('games.policy');
     Route::post('/games/{game}/cities/{city}/build', [GameActionController::class, 'build'])->name('games.build');
     Route::post('/games/{game}/cities/{city}/rename', [GameActionController::class, 'rename'])->name('games.rename');
     Route::post('/games/{game}/cities/{city}/route', [GameActionController::class, 'route'])->name('games.route');

@@ -878,6 +878,24 @@ final class Actions
         $empire->save();
     }
 
+    /** Adopt a policy with the culture gathered in the policy meter. */
+    public function adoptPolicy(Empire $empire, string $policy): void
+    {
+        if (! isset(Rules::POLICIES[$policy])) {
+            throw new InvalidArgumentException('Unknown policy.');
+        }
+        if ($empire->hasPolicy($policy)) {
+            throw new InvalidArgumentException(Rules::POLICIES[$policy]['name'].' is already adopted.');
+        }
+        $cost = $empire->nextPolicyCost();
+        if ($empire->policy_points < $cost) {
+            throw new InvalidArgumentException("The next policy needs {$cost} culture in the policy meter; you have {$empire->policy_points}.");
+        }
+        $empire->policy_points -= $cost;
+        $empire->policies = [...($empire->policies ?? []), $policy];
+        $empire->save();
+    }
+
     public function setFocus(City $city, string $focus): void
     {
         if (! isset(Rules::FOCUS[$focus])) {

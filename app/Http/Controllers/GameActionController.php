@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Game\Economy;
 use App\Game\Actions;
 use App\Game\Choices;
+use App\Game\Economy;
 use App\Game\Quests;
 use App\Game\Rules;
 use App\Game\TurnProcessor;
@@ -50,6 +50,20 @@ class GameActionController extends Controller
         }
 
         return $this->back($game, "{$city->name} has been founded.", $tile->id, 'status');
+    }
+
+    public function policy(Request $request, Game $game): RedirectResponse
+    {
+        $this->own($request, $game);
+        $empire = $game->playerEmpire();
+        $key = (string) $request->input('policy');
+        try {
+            $this->actions->adoptPolicy($empire, $key);
+        } catch (InvalidArgumentException $e) {
+            return $this->back($game, $e->getMessage());
+        }
+
+        return $this->back($game, Rules::POLICIES[$key]['icon'].' '.Rules::POLICIES[$key]['name'].' adopted: '.Rules::POLICIES[$key]['blurb'], null, 'status');
     }
 
     public function build(Request $request, Game $game, City $city): RedirectResponse

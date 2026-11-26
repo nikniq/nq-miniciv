@@ -109,6 +109,11 @@ final class Economy
                 $effects[$k] = ($effects[$k] ?? 0) + $v;
             }
         }
+        foreach ($empire->policies ?? [] as $policy) {
+            foreach (Rules::POLICIES[$policy]['effects'] ?? [] as $k => $v) {
+                $effects[$k] = ($effects[$k] ?? 0) + $v;
+            }
+        }
         $gov = Rules::GOVERNMENTS[$empire->government ?? 'despotism'] ?? Rules::GOVERNMENTS['despotism'];
         foreach ($gov['per_city'] as $k => $v) {
             $effects[$k] = ($effects[$k] ?? 0) + $v;

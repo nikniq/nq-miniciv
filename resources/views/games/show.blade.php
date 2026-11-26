@@ -162,7 +162,7 @@
 </div>
 
 @php
-    $alertsActive = $game->isActive() && ($pantheonReady || $raidsIncoming->isNotEmpty() || $happiness['unhappy'] || $player->settlers > 0 || $idleCities->isNotEmpty() || $tips);
+    $alertsActive = $game->isActive() && ($player->canAdoptPolicy() || $pantheonReady || $raidsIncoming->isNotEmpty() || $happiness['unhappy'] || $player->settlers > 0 || $idleCities->isNotEmpty() || $tips);
 @endphp
 @if ($alertsActive)
 <div id="alerts" class="mb-4 divide-y divide-stone-800/80 overflow-hidden rounded-lg border border-stone-800 bg-stone-900/60 text-sm">
@@ -183,6 +183,14 @@
         <div class="flex items-center gap-3 bg-red-950/30 px-3 py-2 text-red-200">
             <span aria-hidden="true">😠</span>
             <span class="flex-1"><b>Unrest:</b> {{ $happiness['supply'] }} happiness for a demand of {{ $happiness['demand'] }}. No growth and −25% production until you build monuments or temples.</span>
+        </div>
+    @endif
+
+    @if ($player->canAdoptPolicy())
+        <div class="flex items-center gap-3 bg-fuchsia-950/30 px-3 py-2">
+            <span aria-hidden="true">📜</span>
+            <span class="flex-1"><b>A new policy is ready.</b> <span class="text-stone-400">Your culture can support another policy.</span></span>
+            <a href="#policies" class="rounded bg-fuchsia-600 px-2.5 py-0.5 text-xs font-medium text-white hover:bg-fuchsia-500">Choose</a>
         </div>
     @endif
 
@@ -372,6 +380,36 @@
                     </form>
                 @elseif (! $governments)
                     <p class="mt-1 text-xs text-stone-500">New governments unlock with Code of Laws, Philosophy, Theology and Economics.</p>
+                @endif
+            </section>
+
+            {{-- Policies --}}
+            @php $policyCost = $player->nextPolicyCost(); $policyReady = $player->canAdoptPolicy() && $game->isActive(); $adopted = $player->policies ?? []; @endphp
+            <section id="policies" class="rounded-lg border {{ $policyReady ? 'border-amber-600/70' : 'border-stone-800' }} bg-stone-900/60 p-4 text-sm">
+                <div class="flex items-baseline justify-between"><h2 class="font-semibold">📜 Policies</h2><span class="text-xs text-stone-500">{{ count($adopted) }}/{{ count(Rules::POLICIES) }} adopted</span></div>
+                @if (count($adopted) < count(Rules::POLICIES))
+                    <div class="mt-2 flex justify-between text-xs text-stone-400"><span>Next policy</span><span>{{ min($player->policy_points, $policyCost) }}/{{ $policyCost }} culture</span></div>
+                    <div class="mt-1 h-1.5 rounded bg-stone-800"><div class="h-1.5 rounded bg-fuchsia-500" style="width: {{ min(100, (int) round(100 * $player->policy_points / max(1, $policyCost))) }}%"></div></div>
+                    <p class="mt-1 text-[11px] text-stone-500">Every point of culture your cities make also fills this meter. Culture victory progress is not spent.</p>
+                @endif
+                @if ($adopted)
+                    <div class="mt-2 flex flex-wrap gap-1">
+                        @foreach ($adopted as $k)
+                            <span class="rounded border border-fuchsia-800/60 bg-fuchsia-950/30 px-1.5 py-0.5 text-[11px] text-fuchsia-100" title="{{ Rules::POLICIES[$k]['blurb'] }}">{{ Rules::POLICIES[$k]['icon'] }} {{ Rules::POLICIES[$k]['name'] }}</span>
+                        @endforeach
+                    </div>
+                @endif
+                @if ($game->isActive() && count($adopted) < count(Rules::POLICIES))
+                    <form method="POST" action="{{ route('games.policy', $game) }}" class="mt-3 grid grid-cols-2 gap-1">
+                        @csrf
+                        @foreach (Rules::POLICIES as $k => $pol)
+                            @continue(in_array($k, $adopted, true))
+                            <button name="policy" value="{{ $k }}" @disabled(! $policyReady) class="flex items-start gap-1.5 rounded border border-stone-800 bg-stone-950/50 px-1.5 py-1 text-left enabled:hover:border-fuchsia-600 disabled:cursor-not-allowed disabled:opacity-50" title="{{ $policyReady ? 'Adopt '.$pol['name'] : 'Fill the meter to adopt' }}">
+                                <span class="leading-none">{{ $pol['icon'] }}</span>
+                                <span class="min-w-0"><span class="block text-[11px] font-medium text-stone-200">{{ $pol['name'] }}</span><span class="block text-[10px] leading-snug text-stone-500">{{ $pol['blurb'] }}</span></span>
+                            </button>
+                        @endforeach
+                    </form>
                 @endif
             </section>
 

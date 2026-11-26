@@ -987,4 +987,48 @@ class GameFlowTest extends TestCase
             ->assertSessionHas('status');
         $this->assertSame('warriors', $capital->fresh()->current_build);
     }
+
+    public function test_policies_fill_with_culture_and_can_be_adopted(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $player = $game->playerEmpire();
+        $this->assertFalse($player->canAdoptPolicy());
+
+        // The meter fills from culture each turn.
+        $this->actingAs($user)->post(route('games.end-turn', $game));
+        $this->assertGreaterThan(0, $player->fresh()->policy_points);
+
+        // Not enough culture yet: refused.
+        $this->actingAs($user)->post(route('games.policy', $game), ['policy' => 'commerce'])->assertSessionHas('error');
+        $this->assertSame([], $player->fresh()->policies ?? []);
+
+        $player->forceFill(['policy_points' => Rules::policyCost(0) + 5])->save();
+        $this->actingAs($user)->get(route('games.show', $game))->assertSee('A new policy is ready.');
+        $before = Economy::empireEffects($player->fresh())['gold'] ?? 0;
+        $this->actingAs($user)->post(route('games.policy', $game), ['policy' => 'commerce'])->assertSessionHas('status');
+        $player = $player->fresh();
+        $this->assertSame(['commerce'], $player->policies);
+        $this->assertSame(5, $player->policy_points);
+        $this->assertSame($before + 2, Economy::empireEffects($player)['gold']);
+        $this->assertSame(Rules::policyCost(1), $player->nextPolicyCost());
+
+        // No second copy, no unknown keys.
+        $player->forceFill(['policy_points' => 10_000])->save();
+        $this->actingAs($user)->post(route('games.policy', $game), ['policy' => 'commerce'])->assertSessionHas('error');
+        $this->actingAs($user)->post(route('games.policy', $game), ['policy' => 'nonsense'])->assertSessionHas('error');
+    }
+
+    public function test_ai_rivals_adopt_policies_that_suit_them(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $rival = $game->empires->firstWhere('is_ai', true);
+        $rival->forceFill(['policy_points' => Rules::policyCost(0) - 1])->save();
+        $this->actingAs($user)->post(route('games.end-turn', $game));
+        $rival = $rival->fresh();
+        $this->assertCount(1, $rival->policies ?? []);
+        $trait = Rules::personality($rival->name)['trait'];
+        $this->assertSame(Rules::POLICY_FOR_PERSONALITY[$trait][0], $rival->policies[0]);
+    }
 }

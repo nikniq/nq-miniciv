@@ -357,6 +357,41 @@ final class Rules
      * `happy` is per city; `war_weariness` scales the happiness cost of war;
      * `defense` is added to every city. Switching causes anarchy.
      */
+    /**
+     * Policies: culture also fills a policy meter (it is not spent, so the
+     * culture victory is not slowed). Each adoption costs more than the last.
+     * `effects` use the same keys as wonders' empire_effects (per city,
+     * except defense/drill/route_gold, which apply empire-wide).
+     */
+    public const POLICIES = [
+        'tradition' => ['name' => 'Tradition', 'icon' => '🏺', 'effects' => ['food' => 1], 'blurb' => '+1 food in every city.'],
+        'liberty' => ['name' => 'Liberty', 'icon' => '🗽', 'effects' => ['prod' => 1], 'blurb' => '+1 production in every city.'],
+        'commerce' => ['name' => 'Commerce', 'icon' => '💰', 'effects' => ['gold' => 2], 'blurb' => '+2 gold in every city.'],
+        'rationalism' => ['name' => 'Rationalism', 'icon' => '📐', 'effects' => ['science' => 2], 'blurb' => '+2 science in every city.'],
+        'piety' => ['name' => 'Piety', 'icon' => '🙏', 'effects' => ['happy' => 1], 'blurb' => '+1 happiness in every city.'],
+        'aesthetics' => ['name' => 'Aesthetics', 'icon' => '🎨', 'effects' => ['culture' => 2], 'blurb' => '+2 culture in every city.'],
+        'honor' => ['name' => 'Honor', 'icon' => '🛡️', 'effects' => ['defense' => 3, 'drill' => 1], 'blurb' => '+3 city defence, and the army trains in peacetime.'],
+        'mercantilism' => ['name' => 'Mercantilism', 'icon' => '🐪', 'effects' => ['route_gold' => 2, 'gold' => 1], 'blurb' => '+2 gold per trade route, +1 gold in every city.'],
+    ];
+
+    /** Policies each AI personality reaches for first (keyed by personality trait). */
+    public const POLICY_FOR_PERSONALITY = [
+        'Conqueror' => ['honor', 'liberty', 'commerce'],
+        'Builder' => ['liberty', 'aesthetics', 'tradition'],
+        'Scholar' => ['rationalism', 'tradition', 'aesthetics'],
+        'Merchant' => ['commerce', 'mercantilism', 'rationalism'],
+        'Expansionist' => ['tradition', 'liberty', 'piety'],
+        'Cultured' => ['aesthetics', 'piety', 'rationalism'],
+        'Peaceful' => ['piety', 'aesthetics', 'commerce'],
+        'Balanced' => ['tradition', 'liberty', 'rationalism'],
+    ];
+
+    /** Culture needed for the next policy when $adopted are already held. */
+    public static function policyCost(int $adopted): int
+    {
+        return 60 + 90 * $adopted + 40 * $adopted * $adopted;
+    }
+
     public const GOVERNMENTS = [
         'despotism' => ['name' => 'Despotism', 'icon' => '👑', 'tech' => null, 'per_city' => ['prod' => 0], 'happy' => 0, 'war_weariness' => 1.0, 'defense' => 0,
             'blurb' => 'The starting government. No bonuses, no penalties.'],
