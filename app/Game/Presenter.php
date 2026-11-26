@@ -283,6 +283,9 @@ final class Presenter
             }
         }
 
+        // What each city could build, for the build menus in the city list.
+        $cityBuildOptions = $player->cities->mapWithKeys(fn ($c) => [$c->id => Economy::buildOptions($c, $player, $wondersBuilt)])->all();
+
         // Cities producing Wealth although something useful could be built.
         $idleCities = $player->cities->filter(function ($c) use ($player, $wondersBuilt) {
             if ($c->current_build !== 'wealth' && $c->current_build !== null) {
@@ -436,6 +439,7 @@ final class Presenter
             'techTreeSvg' => DiagramSvg::techTree($player, Economy::techTiers(), $player->availableTechs(), $game->isActive(), $totals['science']),
             'relationsSvg' => DiagramSvg::relations($game, $game->empires, $player),
             'cityYields' => $cityYields,
+            'cityBuildOptions' => $cityBuildOptions,
             'settlersWaiting' => $player->settlers > 0,
             'bestSite' => $bestSite,
             'foundableCount' => count($foundable),

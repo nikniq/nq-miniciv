@@ -58,7 +58,8 @@ aside section.foldable.folded > :first-child h2::after, aside section.foldable.f
    beside the map at viewport height and scrolls inside itself. */
 .side-tabs {
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    grid-auto-flow: column;
     gap: 2px;
     padding: 3px;
     margin-bottom: 0.75rem;
@@ -107,3 +108,13 @@ aside section.foldable.folded > :first-child h2::after, aside section.foldable.f
     gap: 1rem;
 }
 .side-panel.side-wide .side-pane > * { margin-top: 0 !important; }
+
+/* Phones and tablets: the panel sits under the map, so its tab bar sticks
+   to the top while scrolling and a Map button jumps back up. */
+@media (max-width: 1023.98px) {
+    .side-tabs { position: sticky; top: 0; z-index: 30; border-radius: 0 0 0.5rem 0.5rem; }
+}
+.side-tabs .side-map-btn { color: var(--color-sky-300); }
+/* City skyline: a banner, not a poster. */
+.city-skyline svg { width: 100%; height: auto; max-height: 4rem; object-fit: cover; }
+@media (min-width: 1024px) { .side-tabs .side-map-btn { display: none; } }

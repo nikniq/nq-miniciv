@@ -84,6 +84,14 @@
         @yield('content')
     </main>
 
+    @if (View::getSection('footer') === 'compact')
+    <footer class="border-t border-stone-800 px-4 py-2 text-xs text-stone-500">
+        <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2">
+            <a href="https://nikniq.com" class="hover:text-white">← Back to nikniq.com</a>
+            <span><a href="{{ route('guide') }}" class="hover:text-white">How to play</a> · <a href="{{ route('hall') }}" class="hover:text-white">Hall of Fame</a> · © {{ date('Y') }} {{ config('app.name') }}</span>
+        </div>
+    </footer>
+    @else
     <footer class="mt-8 border-t border-stone-800 bg-stone-900/40">
         <div class="mx-auto grid max-w-7xl gap-6 px-4 py-8 text-sm sm:grid-cols-2 lg:grid-cols-4">
             <div>
@@ -124,5 +132,6 @@
             <p class="mx-auto max-w-7xl px-4 py-3 text-xs text-stone-600">© {{ date('Y') }} {{ config('app.name') }} · a <a href="https://nikniq.com" class="text-stone-400 hover:text-white">nikniq.com</a> game</p>
         </div>
     </footer>
+    @endif
 </body>
 </html>

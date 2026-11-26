@@ -468,6 +468,9 @@ document.addEventListener('keydown', (e) => {
     const side = document.getElementById('side');
     if (!side) return;
     const tabs = [...side.querySelectorAll('[data-tab]')];
+    side.querySelector('[data-to-map]')?.addEventListener('click', () => {
+        document.getElementById('map')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
     const panes = side.querySelector('.side-panes');
     const game = document.getElementById('map')?.dataset.game ?? '';
     const KEY = 'miniciv.tab.' + game;
@@ -480,6 +483,9 @@ document.addEventListener('keydown', (e) => {
             side.querySelector('#pane-' + t.dataset.tab).hidden = !on;
         });
         if (panes) panes.scrollTop = 0;
+        // Under the map (phones), bring the top of the new tab into view.
+        const underMap = !window.matchMedia('(min-width: 1024px)').matches;
+        if (remember && underMap && side.getBoundingClientRect().top < 0) side.scrollIntoView({ block: 'start' });
         if (focus) tab.focus();
         if (remember) { try { sessionStorage.setItem(KEY, tab.dataset.tab); } catch {} }
     };

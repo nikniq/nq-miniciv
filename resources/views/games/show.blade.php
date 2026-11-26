@@ -10,6 +10,8 @@
     $tileUrl = fn ($t) => route('games.show', ['game' => $game, 'tile' => $t->id]);
 @endphp
 
+@section('footer', 'compact')
+
 @section('content')
 @if (! $game->isActive())
     <div class="mb-4 rounded-lg border {{ $game->status === 'won' ? 'border-amber-600 bg-amber-950/50' : 'border-stone-700 bg-stone-900' }} px-5 py-4">
@@ -281,6 +283,7 @@
             <button type="button" role="tab" id="tab-rivals" data-tab="rivals" aria-controls="pane-rivals" aria-selected="false" title="Rivals"><span aria-hidden="true">🤝</span><span class="side-tab-label">Rivals</span></button>
             <button type="button" role="tab" id="tab-progress" data-tab="progress" aria-controls="pane-progress" aria-selected="false" title="Progress"><span aria-hidden="true">🏆</span><span class="side-tab-label">Progress</span></button>
             <button type="button" role="tab" id="tab-log" data-tab="log" aria-controls="pane-log" aria-selected="false" title="Log"><span aria-hidden="true">📜</span><span class="side-tab-label">Log</span></button>
+            <button type="button" class="side-map-btn lg:hidden" data-to-map title="Back to the map"><span aria-hidden="true">🗺</span><span class="side-tab-label">Map</span></button>
         </nav>
         <div class="side-panes">
         <div class="side-pane space-y-4" id="pane-here" data-pane="here" role="tabpanel" aria-labelledby="tab-here">
@@ -417,7 +420,33 @@
                             <td class="text-center {{ $cy['surplus'] < 0 ? 'text-red-400' : '' }}">{{ $cy['surplus'] >= 0 ? '+' : '' }}{{ $cy['surplus'] }}</td>
                             <td class="text-center">{{ $cy['prod'] }}</td>
                             <td class="text-center text-stone-400">{{ $cy['gold'] }}/{{ $cy['science'] }}</td>
-                            <td class="truncate text-right text-stone-400">{{ Economy::buildName($c->current_build) }}@if ($left !== null) <span class="text-stone-600">{{ $left }}t</span>@endif</td>
+                            <td class="text-right">
+                            @if ($game->isActive())
+                                <form method="POST" action="{{ route('games.build', [$game, $c]) }}" class="city-build-form inline-flex items-center gap-1">
+                                    @csrf
+                                    <input type="hidden" name="from" value="list">
+                                    <select name="build" aria-label="What {{ $c->name }} builds" onchange="this.form.requestSubmit()" class="max-w-[8.5rem] rounded border border-stone-700 bg-stone-950 py-0.5 pl-1 pr-5 text-xs text-stone-200 focus:border-amber-500 focus:outline-none">
+                                        @php $opts = $cityBuildOptions[$c->id] ?? []; @endphp
+                                        @if ($c->current_build && ! isset($opts[$c->current_build]))<option value="{{ $c->current_build }}" selected>{{ Economy::buildName($c->current_build) }}</option>@endif
+                                        @foreach (['building' => 'Buildings', 'wonder' => 'Wonders', 'unit' => 'Units', 'project' => 'Projects'] as $kind => $label)
+                                            @php $group = array_filter($opts, fn ($o) => $o['kind'] === $kind); @endphp
+                                            @if ($group)
+                                                <optgroup label="{{ $label }}">
+                                                    @foreach ($group as $key => $o)
+                                                        @php $t = $cy['prod'] > 0 && $o['cost'] ? (int) ceil(max(0, $o['cost'] - ($c->current_build === $key ? $c->production_stored : 0)) / $cy['prod']) : null; @endphp
+                                                        <option value="{{ $key }}" @selected($c->current_build === $key)>{{ $o['name'] }}@if ($t) ({{ $t }}t)@endif</option>
+                                                    @endforeach
+                                                </optgroup>
+                                            @endif
+                                        @endforeach
+                                    </select>
+                                    <noscript><button class="text-xs text-amber-400">Set</button></noscript>
+                                </form>
+                                @if ($left !== null)<span class="block text-[10px] text-stone-600">{{ $left }}t left</span>@endif
+                            @else
+                                <span class="text-stone-400">{{ Economy::buildName($c->current_build) }}</span>
+                            @endif
+                        </td>
                         </tr>
                     @endforeach
                     </tbody>
@@ -466,8 +495,8 @@
             {{-- Empires --}}
             <section class="rounded-lg border border-stone-800 bg-stone-900/60 p-4 text-sm">
                 <h2 class="font-semibold">Empires</h2>
-                <details class="mt-2 text-xs" open>
-                    <summary class="cursor-pointer text-stone-400 hover:text-white">Relations web</summary>
+                <details class="mt-2 text-xs">
+                    <summary class="cursor-pointer text-stone-400 hover:text-white">Relations web <span class="text-stone-600">· who is at war or allied</span></summary>
                     <div class="mx-auto mt-1 max-w-xs">{!! $relationsSvg !!}</div>
                     <p class="text-[10px] text-stone-500"><span class="text-red-400">red dashes = war</span> · <span class="text-blue-300">thick blue = alliance</span> · <span class="text-emerald-300">green = friendly</span>, thicker the warmer · <span class="text-orange-300">orange dots = wary</span> · grey = neutral. Numbers are attitudes toward you. Hover a line for details.</p>
                 </details>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Game\Economy;
 use App\Game\Actions;
 use App\Game\Choices;
 use App\Game\Quests;
@@ -61,6 +62,10 @@ class GameActionController extends Controller
             $this->actions->setBuild($city, $empire, $key, $this->wondersBuilt($game), $request->boolean('queue'));
         } catch (InvalidArgumentException $e) {
             return $this->back($game, $e->getMessage(), $city->tile_id);
+        }
+        // From the city list: stay on the list rather than jumping to the city.
+        if ($request->input('from') === 'list') {
+            return $this->back($game, 'Set '.$city->name.' to build '.Economy::buildName($key).'.', null, 'status');
         }
 
         return $this->back($game, null, $city->tile_id);

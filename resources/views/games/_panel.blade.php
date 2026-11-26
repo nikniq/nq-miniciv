@@ -43,7 +43,7 @@
 
     @if ($city && $city->empire_id === $player->id)
         @php $y = $selected['cityYields']; @endphp
-        <div class="mt-3">{!! $selected['skyline'] !!}</div>
+        <div class="city-skyline mt-2 max-h-16 overflow-hidden rounded">{!! $selected['skyline'] !!}</div>
         @if ($city->buildings)
             <div class="mt-2 flex flex-wrap gap-1">
                 @foreach ($city->buildings as $b)
@@ -52,14 +52,14 @@
                 @endforeach
             </div>
         @endif
-        <dl class="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-            <dt class="text-stone-400">Food</dt><dd>{{ $y['food'] }} <span class="text-stone-500">({{ $y['surplus'] >= 0 ? '+' : '' }}{{ $y['surplus'] }} surplus)</span></dd>
-            <dt class="text-stone-400">Production</dt><dd>{{ $y['prod'] }}@if ($happiness['unhappy']) <span class="text-red-400">(unrest)</span>@endif</dd>
-            <dt class="text-stone-400">Gold / Science</dt><dd>{{ $y['gold'] }} / {{ $y['science'] }}</dd>
-            <dt class="text-stone-400">Culture</dt><dd>{{ $city->culture }} <span class="text-stone-500">(+{{ $y['culture'] }})</span>@if (($nb = Rules::nextBorderAt($city->culture)) !== null)<span class="block text-[10px] text-stone-500" title="Borders grow when culture reaches {{ $nb }}">borders grow at {{ $nb }}@if ($y['culture'] > 0) · {{ (int) ceil(($nb - $city->culture) / $y['culture']) }}t @endif</span>@endif</dd>
-            <dt class="text-stone-400">Defence</dt><dd>{{ Rules::cityDefense($city, $player->garrison(), \App\Game\Economy::empireEffects($player)['defense'] ?? 0) }} <span class="text-stone-500" title="Your army spread over your cities">(garrison {{ $player->garrison() }})</span></dd>
-            <dt class="text-stone-400">Size cap</dt><dd>{{ $selected['sizeCap'] }}@if (! $city->has('aqueduct')) <span class="text-stone-500">(Aqueduct → {{ Rules::SIZE_CAP_AQUEDUCT }})</span>@endif</dd>
-        </dl>
+        <div class="mt-2 grid grid-cols-3 gap-1 text-[11px]">
+            <div class="rounded bg-stone-950/60 px-1.5 py-1" title="Food (surplus)">🌾 {{ $y['food'] }} <span class="{{ $y['surplus'] < 0 ? 'text-red-400' : 'text-stone-500' }}">({{ $y['surplus'] >= 0 ? '+' : '' }}{{ $y['surplus'] }})</span></div>
+            <div class="rounded bg-stone-950/60 px-1.5 py-1" title="Production">⚒ {{ $y['prod'] }}@if ($happiness['unhappy']) <span class="text-red-400">(unrest)</span>@endif</div>
+            <div class="rounded bg-stone-950/60 px-1.5 py-1" title="Gold / Science">💰🔬 {{ $y['gold'] }} / {{ $y['science'] }}</div>
+            <div class="col-span-2 rounded bg-stone-950/60 px-1.5 py-1" title="Culture">🎭 {{ $city->culture }} <span class="text-stone-500">(+{{ $y['culture'] }})</span>@if (($nb = Rules::nextBorderAt($city->culture)) !== null)<span class="block text-[10px] text-stone-500" title="Borders grow when culture reaches {{ $nb }}">borders grow at {{ $nb }}@if ($y['culture'] > 0) · {{ (int) ceil(($nb - $city->culture) / $y['culture']) }}t @endif</span>@endif</div>
+            <div class="rounded bg-stone-950/60 px-1.5 py-1" title="Defence">🛡 {{ Rules::cityDefense($city, $player->garrison(), \App\Game\Economy::empireEffects($player)['defense'] ?? 0) }} <span class="text-stone-500" title="Your army spread over your cities">(garrison {{ $player->garrison() }})</span></div>
+            <div class="col-span-3 rounded bg-stone-950/60 px-1.5 py-1" title="Size cap">⬆ Size cap {{ $selected['sizeCap'] }}@if (! $city->has('aqueduct')) <span class="text-stone-500">(Aqueduct → {{ Rules::SIZE_CAP_AQUEDUCT }})</span>@endif</div>
+        </div>
 
         <div class="mt-3">
             <div class="flex justify-between text-xs text-stone-400"><span>Growth</span><span>{{ $city->food_stored }}/{{ $city->foodToGrow() }}@if ($selected['turnsToGrow']) · {{ $selected['turnsToGrow'] }}t @elseif ($y['surplus'] < 0) · <span class="text-red-400">starving</span> @elseif ($happiness['unhappy']) · <span class="text-red-400">halted by unrest</span> @endif</span></div>
@@ -84,43 +84,6 @@
         </div>
 
         @if ($game->isActive())
-            <form method="POST" action="{{ route('games.focus', [$game, $city]) }}" class="mt-3 flex items-center gap-2 text-xs">
-                @csrf
-                <span class="text-stone-400">Focus</span>
-                <select name="focus" onchange="this.form.requestSubmit()" class="min-w-0 flex-1 rounded border border-stone-700 bg-stone-900 px-2 py-1 focus:border-amber-500 focus:outline-none">
-                    @foreach (Rules::FOCUS as $key => $f)
-                        <option value="{{ $key }}" @selected($key === ($city->focus ?? 'balanced'))>{{ $f['name'] }}</option>
-                    @endforeach
-                </select>
-                <noscript><button class="rounded border border-stone-600 px-2 py-1">Set</button></noscript>
-            </form>
-            @if (($selected['routeOptions'] ?? null) !== null)
-                <div class="mt-3 rounded border border-amber-900/50 bg-amber-950/20 p-2 text-xs">
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="text-amber-200">🐪 Trade route</span>
-                        @if ($selected['route'])
-                            @php $ry = $selected['route']['yield']; @endphp
-                            <span class="text-stone-300">to <b>{{ $selected['route']['to']->name }}</b>: +{{ $ry['gold'] }} 💰@if ($ry['science']) +{{ $ry['science'] }} 🔬@endif @if ($ry['food']) +{{ $ry['food'] }} 🌾@endif</span>
-                        @else
-                            <span class="text-stone-500">none yet</span>
-                        @endif
-                    </div>
-                    @if ($selected['routeOptions'] && $game->isActive())
-                        <form method="POST" action="{{ route('games.route', [$game, $city]) }}" class="mt-2 flex gap-2">
-                            @csrf
-                            <select name="to" class="min-w-0 flex-1 rounded border border-stone-700 bg-stone-900 px-2 py-1 focus:border-amber-500 focus:outline-none">
-                                @foreach ($selected['routeOptions'] as $o)
-                                    @continue($selected['route'] && $selected['route']['to']->id === $o['city']->id)
-                                    <option value="{{ $o['city']->id }}">{{ $o['city']->name }}@if ($o['owner']->id !== $player->id) ({{ $o['owner']->name }})@endif · +{{ $o['yield']['gold'] }} 💰@if ($o['yield']['science']) +{{ $o['yield']['science'] }} 🔬@endif @if ($o['yield']['food']) +{{ $o['yield']['food'] }} 🌾@endif</option>
-                                @endforeach
-                            </select>
-                            <button class="shrink-0 rounded border border-amber-800 px-2 py-1 text-amber-200 hover:bg-amber-950 disabled:opacity-40" @disabled($player->gold < Rules::TRADE_ROUTE_COST)>{{ $selected['route'] ? 'Redirect' : 'Send caravan' }} ({{ Rules::TRADE_ROUTE_COST }} 💰)</button>
-                        </form>
-                    @elseif (! $selected['routeOptions'])
-                        <p class="mt-1 text-stone-500">No city within {{ Rules::TRADE_ROUTE_RANGE }} tiles to trade with yet.</p>
-                    @endif
-                </div>
-            @endif
             @if ($y['pillaged'] ?? 0)
                 <div class="mt-2 rounded border border-red-900 bg-red-950/40 px-2 py-1 text-xs text-red-200">☠ Barbarians nearby pillage −{{ 2 * $y['pillaged'] }} food. Clear the camp.</div>
             @endif
@@ -151,23 +114,6 @@
                         </div>
                     @endif
                 @endforeach
-            </form>
-            <form method="POST" action="{{ route('games.build', [$game, $city]) }}" class="mt-2 flex gap-2">
-                @csrf
-                <select name="build" class="min-w-0 flex-1 rounded border border-stone-700 bg-stone-900 px-2 py-1.5 text-xs focus:border-amber-500 focus:outline-none">
-                    @foreach (['building' => 'Buildings', 'wonder' => 'Wonders', 'unit' => 'Units', 'project' => 'Projects'] as $kind => $label)
-                        @php $opts = array_filter($selected['buildOptions'], fn ($o) => $o['kind'] === $kind); @endphp
-                        @if ($opts)
-                            <optgroup label="{{ $label }}">
-                                @foreach ($opts as $key => $o)
-                                    <option value="{{ $key }}" @selected($key === $city->current_build) title="{{ $o['blurb'] }}">{{ Rules::BUILDINGS[$key]['icon'] ?? ($kind === 'unit' ? '⚔' : ($key === 'settlers' ? '🏕️' : '💰')) }} {{ $o['name'] }}@if ($o['cost']) ({{ $o['cost'] }})@endif — {{ $o['blurb'] }}</option>
-                                @endforeach
-                            </optgroup>
-                        @endif
-                    @endforeach
-                </select>
-                <button class="rounded border border-stone-600 px-3 py-1.5 text-xs hover:bg-stone-800" title="Build this now">Set</button>
-                <button name="queue" value="1" class="rounded border border-stone-700 px-2 py-1.5 text-xs text-stone-300 hover:bg-stone-800" title="Add to the queue">+Q</button>
             </form>
             @if ($city->queue)
                 <ol class="mt-2 space-y-0.5 text-xs text-stone-400">
@@ -204,6 +150,65 @@
                     </button>
                 </form>
             @endif
+            <details class="city-options mt-3 rounded border border-stone-800 text-xs">
+                <summary class="cursor-pointer select-none px-2 py-1.5 text-stone-400 hover:text-stone-200">City options <span class="text-stone-600">· focus, trade route, queue by list</span></summary>
+                <div class="space-y-3 border-t border-stone-800 p-2">
+            <form method="POST" action="{{ route('games.focus', [$game, $city]) }}" class="flex items-center gap-2 text-xs">
+                @csrf
+                <span class="text-stone-400">Focus</span>
+                <select name="focus" onchange="this.form.requestSubmit()" class="min-w-0 flex-1 rounded border border-stone-700 bg-stone-900 px-2 py-1 focus:border-amber-500 focus:outline-none">
+                    @foreach (Rules::FOCUS as $key => $f)
+                        <option value="{{ $key }}" @selected($key === ($city->focus ?? 'balanced'))>{{ $f['name'] }}</option>
+                    @endforeach
+                </select>
+                <noscript><button class="rounded border border-stone-600 px-2 py-1">Set</button></noscript>
+            </form>
+            @if (($selected['routeOptions'] ?? null) !== null)
+                <div class="rounded border border-amber-900/50 bg-amber-950/20 p-2 text-xs">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-amber-200">🐪 Trade route</span>
+                        @if ($selected['route'])
+                            @php $ry = $selected['route']['yield']; @endphp
+                            <span class="text-stone-300">to <b>{{ $selected['route']['to']->name }}</b>: +{{ $ry['gold'] }} 💰@if ($ry['science']) +{{ $ry['science'] }} 🔬@endif @if ($ry['food']) +{{ $ry['food'] }} 🌾@endif</span>
+                        @else
+                            <span class="text-stone-500">none yet</span>
+                        @endif
+                    </div>
+                    @if ($selected['routeOptions'] && $game->isActive())
+                        <form method="POST" action="{{ route('games.route', [$game, $city]) }}" class="mt-2 flex gap-2">
+                            @csrf
+                            <select name="to" class="min-w-0 flex-1 rounded border border-stone-700 bg-stone-900 px-2 py-1 focus:border-amber-500 focus:outline-none">
+                                @foreach ($selected['routeOptions'] as $o)
+                                    @continue($selected['route'] && $selected['route']['to']->id === $o['city']->id)
+                                    <option value="{{ $o['city']->id }}">{{ $o['city']->name }}@if ($o['owner']->id !== $player->id) ({{ $o['owner']->name }})@endif · +{{ $o['yield']['gold'] }} 💰@if ($o['yield']['science']) +{{ $o['yield']['science'] }} 🔬@endif @if ($o['yield']['food']) +{{ $o['yield']['food'] }} 🌾@endif</option>
+                                @endforeach
+                            </select>
+                            <button class="shrink-0 rounded border border-amber-800 px-2 py-1 text-amber-200 hover:bg-amber-950 disabled:opacity-40" @disabled($player->gold < Rules::TRADE_ROUTE_COST)>{{ $selected['route'] ? 'Redirect' : 'Send caravan' }} ({{ Rules::TRADE_ROUTE_COST }} 💰)</button>
+                        </form>
+                    @elseif (! $selected['routeOptions'])
+                        <p class="mt-1 text-stone-500">No city within {{ Rules::TRADE_ROUTE_RANGE }} tiles to trade with yet.</p>
+                    @endif
+                </div>
+            @endif
+            <form method="POST" action="{{ route('games.build', [$game, $city]) }}" class="flex gap-2">
+                @csrf
+                <select name="build" class="min-w-0 flex-1 rounded border border-stone-700 bg-stone-900 px-2 py-1.5 text-xs focus:border-amber-500 focus:outline-none">
+                    @foreach (['building' => 'Buildings', 'wonder' => 'Wonders', 'unit' => 'Units', 'project' => 'Projects'] as $kind => $label)
+                        @php $opts = array_filter($selected['buildOptions'], fn ($o) => $o['kind'] === $kind); @endphp
+                        @if ($opts)
+                            <optgroup label="{{ $label }}">
+                                @foreach ($opts as $key => $o)
+                                    <option value="{{ $key }}" @selected($key === $city->current_build) title="{{ $o['blurb'] }}">{{ Rules::BUILDINGS[$key]['icon'] ?? ($kind === 'unit' ? '⚔' : ($key === 'settlers' ? '🏕️' : '💰')) }} {{ $o['name'] }}@if ($o['cost']) ({{ $o['cost'] }})@endif — {{ $o['blurb'] }}</option>
+                                @endforeach
+                            </optgroup>
+                        @endif
+                    @endforeach
+                </select>
+                <button class="rounded border border-stone-600 px-3 py-1.5 text-xs hover:bg-stone-800" title="Build this now">Set</button>
+                <button name="queue" value="1" class="rounded border border-stone-700 px-2 py-1.5 text-xs text-stone-300 hover:bg-stone-800" title="Add to the queue">+Q</button>
+            </form>
+                </div>
+            </details>
         @endif
 
     @elseif ($city)
