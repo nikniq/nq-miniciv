@@ -253,8 +253,15 @@ if (map) {
             dismissed.push(el.dataset.tip);
             try { localStorage.setItem(tipKey, JSON.stringify(dismissed.slice(-50))); } catch {}
             el.remove();
+            tidyAlerts();
         });
     });
+    // The alerts card goes away once its last row is dismissed.
+    function tidyAlerts() {
+        const card = document.getElementById('alerts');
+        if (card && !card.children.length) card.remove();
+    }
+    tidyAlerts();
 
     document.addEventListener('keydown', (e) => {
         if (['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(document.activeElement?.tagName)) return;

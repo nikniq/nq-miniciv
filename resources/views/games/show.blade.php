@@ -99,38 +99,6 @@
     </div>
 @endif
 
-{{-- A pantheon is ready to be chosen --}}
-@if ($pantheonReady)
-    <div class="mb-4 rounded-lg border border-violet-700/70 bg-violet-950/40 px-3 py-3 sm:px-5 sm:py-4">
-        <div class="font-semibold">🛐 Your people seek a pantheon</div>
-        <p class="mt-0.5 text-xs text-stone-300 sm:text-sm">Your cities have gathered {{ Rules::PANTHEON_CULTURE }} culture. Choose the belief that will shape your people for the rest of the game.</p>
-        <form method="POST" action="{{ route('games.belief', $game) }}" class="mt-3 grid grid-cols-2 gap-1.5 text-sm sm:gap-2 lg:grid-cols-3">
-            @csrf
-            <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
-            @foreach (Rules::BELIEFS as $key => $b)
-                <button name="belief" value="{{ $key }}" class="flex items-start gap-1.5 rounded border border-violet-800 bg-stone-900/70 px-2 py-1.5 text-left hover:border-violet-500 hover:bg-violet-950 sm:gap-2 sm:px-3 sm:py-2">
-                    <span class="text-base sm:text-xl">{{ $b['icon'] }}</span>
-                    <span class="min-w-0"><span class="block text-xs font-medium sm:text-sm">{{ $b['name'] }}</span><span class="block text-[11px] leading-snug text-stone-400 sm:text-xs">{{ $b['blurb'] }}</span></span>
-                </button>
-            @endforeach
-        </form>
-    </div>
-@endif
-
-{{-- Barbarians on the march toward the player's cities --}}
-@if ($raidsIncoming->isNotEmpty() && $game->isActive())
-    @foreach ($raidsIncoming as $r)
-        <div class="mb-3 flex flex-wrap items-center gap-3 rounded-lg border {{ $r['holds'] ? 'border-stone-700 bg-stone-900/70' : 'border-red-700 bg-red-950/50' }} px-4 py-2 text-sm">
-            <span class="text-2xl">☠</span>
-            <div class="min-w-0 flex-1">
-                <b>Barbarians march on <a href="?tile={{ $r['cityModel']->tile_id }}" data-tile="{{ $r['cityModel']->tile_id }}" class="map-tile-link underline">{{ $r['cityModel']->name }}</a></b>: strength {{ $r['strength'] }} against defence {{ $r['defense'] }}. They strike at the end of this turn.
-                <span class="{{ $r['holds'] ? 'text-emerald-300' : 'text-red-300' }}">{{ $r['holds'] ? 'The city should hold.' : 'The city will be sacked unless you add '.($r['strength'] - $r['defense']).' defence: train or buy units, buy walls, or clear the camp.' }}</span>
-            </div>
-            <a href="?tile={{ $r['camp'] }}" data-tile="{{ $r['camp'] }}" class="map-tile-link rounded border border-red-800 px-2 py-1 text-xs text-red-200 hover:bg-red-950">Show camp</a>
-        </div>
-    @endforeach
-@endif
-
 {{-- Turn toasts: what happened last turn, dismissible, newest first --}}
 @if ($toasts->isNotEmpty() && $game->isActive())
     <div id="toasts" class="pointer-events-none fixed bottom-4 right-4 z-40 flex w-80 max-w-[90vw] flex-col gap-2">
@@ -191,47 +159,91 @@
     </div>
 </div>
 
-@if ($happiness['unhappy'] && $game->isActive())
-    <div class="mb-4 rounded border border-red-800 bg-red-950/40 px-4 py-2 text-sm text-red-200">
-        Unrest: your people want {{ $happiness['demand'] }} happiness and you provide {{ $happiness['supply'] }}. Cities will not grow and production is down a quarter until you build monuments or temples (or lose some population).
-    </div>
-@endif
-@if ($tips && $game->isActive())
-    <div id="advisor" class="mb-4 space-y-2">
-        @foreach ($tips as $tip)
-            <div class="advisor-tip flex items-start gap-3 rounded border border-violet-800/70 bg-violet-950/40 px-4 py-2 text-sm text-violet-100" data-tip="{{ $tip['id'] }}">
-                <span class="mt-0.5">🧙</span>
-                <span class="flex-1">{{ $tip['text'] }}</span>
-                <button type="button" class="dismiss-tip text-violet-300 hover:text-white" aria-label="Dismiss">✕</button>
+@php
+    $alertsActive = $game->isActive() && ($pantheonReady || $raidsIncoming->isNotEmpty() || $happiness['unhappy'] || $player->settlers > 0 || $idleCities->isNotEmpty() || $tips);
+@endphp
+@if ($alertsActive)
+<div id="alerts" class="mb-4 divide-y divide-stone-800/80 overflow-hidden rounded-lg border border-stone-800 bg-stone-900/60 text-sm">
+    {{-- Barbarians on the march: the only thing here that costs you a city this turn --}}
+    @foreach ($raidsIncoming as $r)
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 {{ $r['holds'] ? '' : 'bg-red-950/50' }}">
+            <span aria-hidden="true">☠</span>
+            <span class="min-w-0 flex-1">
+                <b>Barbarians march on <a href="?tile={{ $r['cityModel']->tile_id }}" data-tile="{{ $r['cityModel']->tile_id }}" class="map-tile-link underline">{{ $r['cityModel']->name }}</a></b>
+                <span class="text-stone-400">· {{ $r['strength'] }} vs defence {{ $r['defense'] }} · strike at end of turn ·</span>
+                <span class="{{ $r['holds'] ? 'text-emerald-300' : 'text-red-300' }}">{{ $r['holds'] ? 'the city should hold' : 'add '.($r['strength'] - $r['defense']).' defence or it is sacked' }}</span>
+            </span>
+            <a href="?tile={{ $r['camp'] }}" data-tile="{{ $r['camp'] }}" class="map-tile-link rounded border border-red-800 px-2 py-0.5 text-xs text-red-200 hover:bg-red-950">Show camp</a>
+        </div>
+    @endforeach
+
+    @if ($happiness['unhappy'])
+        <div class="flex items-center gap-3 bg-red-950/30 px-3 py-2 text-red-200">
+            <span aria-hidden="true">😠</span>
+            <span class="flex-1"><b>Unrest:</b> {{ $happiness['supply'] }} happiness for a demand of {{ $happiness['demand'] }}. No growth and −25% production until you build monuments or temples.</span>
+        </div>
+    @endif
+
+    @if ($pantheonReady)
+        <details class="group bg-violet-950/30">
+            <summary class="flex cursor-pointer list-none items-center gap-3 px-3 py-2 [&::-webkit-details-marker]:hidden">
+                <span aria-hidden="true">🛐</span>
+                <span class="flex-1"><b>Choose a pantheon.</b> <span class="text-stone-400">Your cities have gathered {{ Rules::PANTHEON_CULTURE }} culture; pick a belief for the rest of the game.</span></span>
+                <span class="rounded bg-violet-600 px-2.5 py-0.5 text-xs font-medium text-white group-open:hidden">Choose</span>
+                <span class="hidden text-xs text-stone-400 group-open:inline">Hide</span>
+            </summary>
+            <div class="px-3 pb-3">
+                <form method="POST" action="{{ route('games.belief', $game) }}" class="grid grid-cols-2 gap-1.5 text-sm sm:gap-2 lg:grid-cols-3">
+                    @csrf
+                    <input type="hidden" name="tile" value="{{ $selTile?->id }}" class="selected-tile-input">
+                    @foreach (Rules::BELIEFS as $key => $b)
+                        <button name="belief" value="{{ $key }}" class="flex items-start gap-1.5 rounded border border-violet-800 bg-stone-900/70 px-2 py-1.5 text-left hover:border-violet-500 hover:bg-violet-950 sm:gap-2 sm:px-3 sm:py-2">
+                            <span class="text-base sm:text-xl">{{ $b['icon'] }}</span>
+                            <span class="min-w-0"><span class="block text-xs font-medium sm:text-sm">{{ $b['name'] }}</span><span class="block text-[11px] leading-snug text-stone-400 sm:text-xs">{{ $b['blurb'] }}</span></span>
+                        </button>
+                    @endforeach
+                </form>
             </div>
-        @endforeach
-    </div>
-@endif
-@if ($idleCities->isNotEmpty() && $game->isActive())
-    <div class="mb-4 rounded border border-sky-800 bg-sky-950/40 px-4 py-2 text-sm text-sky-200">
-        {{ $idleCities->count() === 1 ? 'A city is' : $idleCities->count().' cities are' }} producing Wealth while new buildings are available:
-        @foreach ($idleCities as $c)
-            <a href="{{ route('games.show', ['game' => $game, 'tile' => $c->tile_id]) }}" class="font-medium underline decoration-sky-500/50 hover:text-white">{{ $c->name }}</a>@if (! $loop->last), @endif
-        @endforeach
-    </div>
-@endif
-@if ($player->settlers > 0 && $game->isActive())
-    <div class="mb-4 flex flex-wrap items-center gap-3 rounded border border-emerald-700 bg-emerald-950/50 px-4 py-2 text-sm text-emerald-100">
-        <span class="text-lg">🏕️</span>
-        <span class="flex-1">
-            <b>Settlers ready.</b> The <span class="rounded bg-emerald-500/30 px-1">green tiles</span> on the map are places you can found a city. Click one, then press <b>Found city here</b>.
-            @if ($bestSite) The ★ marks the best site nearby. @endif
-            @if ($foundableCount === 0) No legal site is in reach right now: cities need {{ Rules::MIN_CITY_DISTANCE }} tiles between them and unclaimed land. @endif
-        </span>
-        @if ($bestSite)
-            <form method="POST" action="{{ route('games.found', $game) }}">
-                @csrf
-                <input type="hidden" name="tile" value="{{ $bestSite->id }}">
-                <button class="rounded bg-emerald-500 px-3 py-1.5 font-medium text-stone-950 hover:bg-emerald-400">Found at best site ★</button>
-            </form>
-            <a href="{{ route('games.show', ['game' => $game, 'tile' => $bestSite->id]) }}" class="map-tile-link text-xs text-emerald-300 underline" data-tile="{{ $bestSite->id }}">show me</a>
-        @endif
-    </div>
+        </details>
+    @endif
+
+    @if ($player->settlers > 0)
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-emerald-100">
+            <span aria-hidden="true">🏕️</span>
+            <span class="min-w-0 flex-1">
+                <b>Settlers ready.</b> <span class="text-stone-300">Click a <span class="rounded bg-emerald-500/30 px-1">green tile</span>, then <b>Found city here</b>.@if ($bestSite) ★ marks the best site.@endif</span>
+                @if ($foundableCount === 0)<span class="text-amber-300">No legal site in reach: cities need {{ Rules::MIN_CITY_DISTANCE }} tiles between them and unclaimed land.</span>@endif
+            </span>
+            @if ($bestSite)
+                <a href="{{ route('games.show', ['game' => $game, 'tile' => $bestSite->id]) }}" class="map-tile-link text-xs text-emerald-300 underline" data-tile="{{ $bestSite->id }}">show me</a>
+                <form method="POST" action="{{ route('games.found', $game) }}">
+                    @csrf
+                    <input type="hidden" name="tile" value="{{ $bestSite->id }}">
+                    <button class="rounded bg-emerald-500 px-2.5 py-0.5 text-xs font-medium text-stone-950 hover:bg-emerald-400">Found at ★</button>
+                </form>
+            @endif
+        </div>
+    @endif
+
+    @if ($idleCities->isNotEmpty())
+        <div class="flex items-center gap-3 px-3 py-2 text-sky-200">
+            <span aria-hidden="true">🏗️</span>
+            <span class="flex-1">{{ $idleCities->count() === 1 ? 'A city is' : $idleCities->count().' cities are' }} making Wealth while buildings are available:
+                @foreach ($idleCities as $c)
+                    <a href="{{ route('games.show', ['game' => $game, 'tile' => $c->tile_id]) }}" data-tile="{{ $c->tile_id }}" class="map-tile-link font-medium underline decoration-sky-500/50 hover:text-white">{{ $c->name }}</a>@if (! $loop->last), @endif
+                @endforeach
+            </span>
+        </div>
+    @endif
+
+    @foreach ($tips as $tip)
+        <div class="advisor-tip flex items-start gap-3 px-3 py-2 text-violet-100" data-tip="{{ $tip['id'] }}">
+            <span aria-hidden="true">🧙</span>
+            <span class="flex-1">{{ $tip['text'] }}</span>
+            <button type="button" class="dismiss-tip text-violet-300 hover:text-white" aria-label="Dismiss">✕</button>
+        </div>
+    @endforeach
+</div>
 @endif
 
 <div id="game-grid" class="grid gap-4 lg:grid-cols-[1fr_22rem]">

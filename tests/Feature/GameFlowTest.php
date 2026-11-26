@@ -625,7 +625,7 @@ class GameFlowTest extends TestCase
         // Announced for next turn: the banner shows, then a weak band breaks.
         $game->refresh();
         $game->update(['raids' => [['camp' => $camp->id, 'city' => $city->id, 'strength' => 1, 'arrives' => $game->turn]]]);
-        $this->actingAs($user)->get(route('games.show', $game))->assertSee('Barbarians march on')->assertSee('The city should hold.');
+        $this->actingAs($user)->get(route('games.show', $game))->assertSee('Barbarians march on')->assertSee('the city should hold');
         $pop = $city->fresh()->population;
         $this->actingAs($user)->post(route('games.end-turn', $game));
         $this->assertGreaterThanOrEqual($pop - 1, $city->fresh()->population);
@@ -831,10 +831,10 @@ class GameFlowTest extends TestCase
         $capital = $player->cities->first();
 
         $this->actingAs($user)->post(route('games.belief', $game), ['belief' => 'love'])->assertSessionHas('error');
-        $this->actingAs($user)->get(route('games.show', $game))->assertDontSee('seek a pantheon');
+        $this->actingAs($user)->get(route('games.show', $game))->assertDontSee('Choose a pantheon.');
 
         $capital->update(['culture' => Rules::PANTHEON_CULTURE]);
-        $this->actingAs($user)->get(route('games.show', $game))->assertSee('seek a pantheon');
+        $this->actingAs($user)->get(route('games.show', $game))->assertSee('Choose a pantheon.');
         $before = Economy::happiness($player->fresh()->load('cities'))['supply'];
         $this->actingAs($user)->post(route('games.belief', $game), ['belief' => 'love'])->assertSessionHas('status');
         $player = $player->fresh()->load('cities');
@@ -842,7 +842,7 @@ class GameFlowTest extends TestCase
         $this->assertSame($before + $player->cities->count(), Economy::happiness($player)['supply']);
 
         $this->actingAs($user)->post(route('games.belief', $game), ['belief' => 'war'])->assertSessionHas('error');
-        $this->actingAs($user)->get(route('games.show', $game))->assertDontSee('seek a pantheon');
+        $this->actingAs($user)->get(route('games.show', $game))->assertDontSee('Choose a pantheon.');
     }
 
     public function test_game_length_sets_the_turn_limit_and_scales_the_culture_goal(): void
