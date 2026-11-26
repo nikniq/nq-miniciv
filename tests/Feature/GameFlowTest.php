@@ -974,4 +974,17 @@ class GameFlowTest extends TestCase
         $this->assertSame('grand_expedition', $capital->current_build);
         $this->assertSame(0, $capital->production_stored);
     }
+
+    public function test_city_list_build_menu_sets_the_build_and_stays_on_the_list(): void
+    {
+        $user = User::factory()->create();
+        $game = $this->startGame($user);
+        $capital = $game->playerEmpire()->cities->first();
+
+        $this->actingAs($user)->get(route('games.show', $game))->assertOk()->assertSee('What '.$capital->name.' builds', false);
+        $this->actingAs($user)->post(route('games.build', [$game, $capital]), ['build' => 'warriors', 'from' => 'list'])
+            ->assertRedirect(route('games.show', $game))
+            ->assertSessionHas('status');
+        $this->assertSame('warriors', $capital->fresh()->current_build);
+    }
 }
